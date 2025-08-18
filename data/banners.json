@@ -1,0 +1,18 @@
+[
+  {
+    "id": "b1",
+    "titulo": "Promo cuadernos – 20% OFF",
+    "texto": "Aprovechá durante agosto",
+    "imagen": "https://images.unsplash.com/photo-1519681393784-d120267933ba?w=1600&q=80",
+    "color": "#FFD700",
+    "activo": true
+  },
+  {
+    "id": "b2",
+    "titulo": "Regalos personalizados desde $3.000",
+    "texto": "Hacelo único ✨",
+    "imagen": "https://images.unsplash.com/photo-1519682337058-a94d519337bc?w=1600&q=80",
+    "color": "#FF69B4",
+    "activo": true
+  }
+]
