@@ -2,20 +2,40 @@
 const state = {
   products: [],
   banners: [],
+  config: null,
   category: "Todos",
   cart: JSON.parse(localStorage.getItem("mgv_cart")||"[]"),
+  modal: { id: null }
 };
 const $ = (s)=>document.querySelector(s);
-const $$ = (s)=>document.querySelectorAll(s);
-function money(n){return "$ " + n.toLocaleString("es-AR")}
 
+function money(n){return "$ " + Number(n||0).toLocaleString("es-AR")}
 async function loadData(){
-  const [prodRes, banRes] = await Promise.all([
+  const [pr, br, cf] = await Promise.all([
     fetch("data/productos.json?ts="+Date.now()),
     fetch("data/banners.json?ts="+Date.now()),
+    fetch("data/config.json?ts="+Date.now())
   ]);
-  state.products = await prodRes.json();
-  state.banners = await banRes.json();
+  state.products = await pr.json();
+  state.banners = await br.json();
+  state.config = await cf.json();
+  applyConfig();
+}
+function applyConfig(){
+  if(!state.config) return;
+  $("#storeTitle").textContent = state.config.storeName || "Tienda";
+  document.title = state.config.seo?.title || "Tienda";
+  const desc = state.config.seo?.description || "";
+  const meta = document.querySelector("meta[name='description']");
+  if(meta) meta.setAttribute("content", desc);
+  $("#footerInfo").innerHTML = `WhatsApp: ${state.config.whatsapp?.number||""} · ${state.config.seo?.description||""}`;
+  const t = state.config.theme || {};
+  const root = document.documentElement;
+  Object.entries({
+    "--bg": t.bg, "--card": t.card, "--text": t.text,
+    "--muted": t.muted, "--border": t.border,
+    "--brand": t.brand, "--accent": t.accent
+  }).forEach(([k,v])=> v && root.style.setProperty(k, v));
 }
 
 function renderCategories(){
@@ -39,7 +59,7 @@ function renderBanners(){
     <article class="banner" style="display:${i===0?"block":"none"}">
       <img src="${b.imagen}" alt="${b.titulo}"/>
       <div class="content">
-        <div class="title" style="color:${b.color||'#ffd700'}">${b.titulo}</div>
+        <div class="title" style="color:${b.color||'var(--brand)'}">${b.titulo}</div>
         <div class="text">${b.texto||""}</div>
       </div>
       <div class="dots"></div>
@@ -66,13 +86,13 @@ function renderBanners(){
 }
 
 function renderProducts(){
-  const grid = $("#productGrid");
-  const q = $("#q").value.toLowerCase();
+  const grid = document.getElementById("productGrid");
+  const q = document.getElementById("q").value.toLowerCase();
   const items = state.products
     .filter(p=>state.category==="Todos" || p.categoria===state.category)
     .filter(p=>p.nombre.toLowerCase().includes(q)|| (p.descripcion||"").toLowerCase().includes(q));
   grid.innerHTML = items.map(p=>`
-    <article class="card">
+    <article class="card" data-open="${p.id}">
       <img src="${p.imagen}" alt="${p.nombre}"/>
       <div class="body">
         <div class="name">${p.nombre}</div>
@@ -85,15 +105,33 @@ function renderProducts(){
     </article>
   `).join("");
   grid.querySelectorAll("[data-add]").forEach(btn=>{
-    btn.onclick = ()=> addToCart(btn.dataset.add);
+    btn.onclick = (e)=>{ e.stopPropagation(); addToCart(btn.dataset.add); };
+  });
+  grid.querySelectorAll("[data-open]").forEach(card=>{
+    card.onclick = ()=> openModal(card.dataset.open);
   });
 }
 
+function openModal(id){
+  const p = state.products.find(x=>x.id===id);
+  if(!p) return;
+  state.modal.id = id;
+  document.getElementById("mImg").src = p.imagen;
+  document.getElementById("mName").textContent = p.nombre;
+  document.getElementById("mDesc").textContent = p.descripcion || "";
+  document.getElementById("mPrice").textContent = money(p.precio);
+  document.getElementById("productModal").style.display = "flex";
+}
+function closeModal(){ document.getElementById("productModal").style.display = "none"; }
+document.getElementById("mClose").onclick = closeModal;
+document.getElementById("mClose2").onclick = closeModal;
+document.getElementById("mAdd").onclick = ()=>{ if(state.modal.id){ addToCart(state.modal.id); closeModal(); } };
+
 function renderCart(){
-  const list = $("#cartItems");
+  const list = document.getElementById("cartItems");
   const total = state.cart.reduce((acc,it)=>acc + it.precio*it.cant, 0);
-  $("#cartTotal").textContent = money(total);
-  $("#cartCount").textContent = state.cart.reduce((a,b)=>a+b.cant,0);
+  document.getElementById("cartTotal").textContent = money(total);
+  document.getElementById("cartCount").textContent = state.cart.reduce((a,b)=>a+b.cant,0);
   list.innerHTML = state.cart.map(it=>`
     <div class="cart-item">
       <img src="${it.imagen}" />
@@ -102,9 +140,9 @@ function renderCart(){
         <div class="small">${money(it.precio)} x ${it.cant}</div>
       </div>
       <div>
-        <button class="btn" data-q="-1" data-id="${it.id}">-</button>
+        <button class="btn secondary" data-q="-1" data-id="${it.id}">-</button>
         <button class="btn" data-q="+1" data-id="${it.id}">+</button>
-        <button class="btn" data-del="${it.id}">x</button>
+        <button class="btn secondary" data-del="${it.id}">x</button>
       </div>
     </div>
   `).join("");
@@ -138,26 +176,20 @@ function removeFromCart(id){
   renderCart();
 }
 
-$("#cartFab").onclick = ()=> $("#cartPanel").style.display = "flex";
-$("#closeCart").onclick = ()=> $("#cartPanel").style.display = "none";
-$("#q").oninput = ()=> renderProducts();
+document.getElementById("cartFab").onclick = ()=> document.getElementById("cartPanel").style.display = "flex";
+document.getElementById("closeCart").onclick = ()=> document.getElementById("cartPanel").style.display = "none";
+document.getElementById("q").oninput = ()=> renderProducts();
 
-$("#checkoutBtn").onclick = async ()=>{
+document.getElementById("checkoutBtn").onclick = async ()=>{
   if(!state.cart.length){ alert("Tu carrito está vacío."); return; }
-  const backend = (window.APP_CONFIG||{}).MP_BACKEND_URL;
-  if(!backend){
-    alert("Para activar el pago con Mercado Pago, configurá MP_BACKEND_URL en app.js y desplegá la función de ejemplo (gratis) incluida en /functions.");
-    return;
-  }
-  try{
-    const items = state.cart.map(it=>({
-      title: it.nombre, quantity: it.cant, unit_price: it.precio, currency_id: "ARS"
-    }));
-    const res = await fetch(backend, { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ items })});
-    const data = await res.json();
-    if(data && data.init_point){ window.location.href = data.init_point; }
-    else alert("No se pudo iniciar el pago. Revisá la configuración.");
-  }catch(err){ console.error(err); alert("Error al iniciar el pago."); }
+  const number = state.config?.whatsapp?.number || "";
+  if(!number){ alert("No hay número de WhatsApp configurado."); return; }
+  const items = state.cart.map(it=>`• ${it.nombre} x ${it.cant} — ${money(it.precio*it.cant)}`).join("%0A");
+  const total = state.cart.reduce((a,i)=>a+i.precio*i.cant,0);
+  const header = encodeURIComponent(state.config?.whatsapp?.preHeader || "Nuevo pedido");
+  const msg = `${header}%0A%0A${items}%0A%0ATotal: ${money(total)}%0A%0A`;
+  const url = `https://wa.me/${encodeURIComponent(number)}?text=${msg}`;
+  window.open(url, "_blank");
 };
 
 (async function(){

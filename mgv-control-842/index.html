@@ -8,20 +8,22 @@
   <link rel="stylesheet" href="../styles.css"/>
   <style>
     .wrap{max-width:1100px;margin:0 auto;padding:16px}
-    .cardx{background:#131722;border:1px solid #23283b;border-radius:16px;padding:16px;margin:12px 0}
+    .cardx{background:#fff;border:1px solid var(--border);border-radius:16px;padding:16px;margin:12px 0}
     .row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
     .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
-    input,select,textarea{width:100%;padding:10px;border-radius:12px;border:1px solid #2b3347;background:#0f1115;color:#e9eef7}
-    label{font-size:12px;color:#9aa3b2}
+    input,select,textarea{width:100%;padding:10px;border-radius:12px;border:1px solid var(--border);background:#fff;color:#111}
+    label{font-size:12px;color:var(--muted)}
     table{width:100%;border-collapse:collapse}
-    th,td{text-align:left;padding:8px;border-bottom:1px solid #222}
+    th,td{text-align:left;padding:8px;border-bottom:1px solid var(--border)}
     .flex{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
     .right{margin-left:auto}
-    .danger{background:#421f24;border-color:#5b2731}
-    .success{background:#244225;border-color:#2f5b31}
-    .muted{color:#9aa3b2;font-size:12px}
+    .danger{background:#ffe9e9;border-color:#f3b3b3;color:#a00}
+    .success{background:#e9ffed;border-color:#b3f3c5;color:#064}
+    .muted{color:var(--muted);font-size:12px}
     .hidden{display:none}
-    .pill{border:1px solid #2b3347;border-radius:999px;padding:6px 10px}
+    .pill{border:1px solid var(--border);border-radius:999px;padding:6px 10px}
+    .btn{background:#111;color:#fff;border:1px solid #111;border-radius:12px;padding:8px 12px;cursor:pointer}
+    .btn.secondary{background:#fff;color:#111;border:1px solid var(--border)}
   </style>
 </head>
 <body>
@@ -30,7 +32,7 @@
       <img src="../assets/logo.png" style="height:40px;border-radius:10px">
       <h2>Panel oculto MGV</h2>
       <div class="right flex muted">
-        <span id="ghStatus" class="pill">GitHub: sin token</span>
+        <span id="apiStatus" class="pill">API: sin configurar</span>
       </div>
     </header>
 
@@ -48,7 +50,7 @@
       </div>
       <div class="flex" style="margin-top:12px">
         <button class="btn" id="loginBtn">Ingresar</button>
-        <span class="muted">Tip: cambiá la contraseña después de entrar.</span>
+        <span class="muted">Contraseña temporal: <code>MGV2025!</code> — cambiala en Config.</span>
       </div>
     </section>
 
@@ -66,6 +68,7 @@
         <div class="flex">
           <h3>Productos</h3>
           <button class="btn right" id="nuevoProd">Nuevo producto</button>
+          <button class="btn secondary" id="saveNow">Guardar ahora</button>
         </div>
         <table id="tablaProductos">
           <thead>
@@ -79,6 +82,7 @@
         <div class="flex">
           <h3>Banners</h3>
           <button class="btn right" id="nuevoBanner">Nuevo banner</button>
+          <button class="btn secondary" id="saveNow2">Guardar ahora</button>
         </div>
         <table id="tablaBanners">
           <thead>
@@ -92,7 +96,56 @@
         <h3>Configuración</h3>
         <div class="row">
           <div>
-            <label>Nueva contraseña (opcional)</label>
+            <label>Nombre de la tienda</label>
+            <input id="sName">
+          </div>
+          <div>
+            <label>Número WhatsApp (sin +)</label>
+            <input id="waNum" placeholder="549351...">
+          </div>
+        </div>
+        <div class="row3" style="margin-top:8px">
+          <div><label>Color texto</label><input id="cText" type="color"></div>
+          <div><label>Color tarjeta</label><input id="cCard" type="color"></div>
+          <div><label>Color borde</label><input id="cBorder" type="color"></div>
+        </div>
+        <div class="row3" style="margin-top:8px">
+          <div><label>Brand</label><input id="cBrand" type="color"></div>
+          <div><label>Accent</label><input id="cAccent" type="color"></div>
+          <div><label>BG</label><input id="cBg" type="color"></div>
+        </div>
+        <h4 style="margin-top:12px">SEO</h4>
+        <div class="row">
+          <div><label>Título</label><input id="seoTitle"></div>
+          <div><label>Descripción</label><input id="seoDesc"></div>
+        </div>
+        <h4 style="margin-top:12px">Páginas</h4>
+        <div class="row">
+          <div><label>Quiénes somos</label><textarea id="pgAbout" rows="4"></textarea></div>
+          <div><label>Contacto</label><textarea id="pgContact" rows="4"></textarea></div>
+        </div>
+        <div class="row">
+          <div><label>Cambios/Devoluciones</label><textarea id="pgReturns" rows="4"></textarea></div>
+          <div><label>Privacidad</label><textarea id="pgPrivacy" rows="4"></textarea></div>
+        </div>
+        <hr/>
+        <h3>Guardar en GitHub</h3>
+        <p class="muted">Configurar una vez y queda listo:</p>
+        <div class="row3">
+          <div><label>API Base (ej: /api)</label><input id="apiBase" placeholder="/api"></div>
+          <div><label>Save Token</label><input id="saveToken" placeholder="(no se guarda en repo)"></div>
+          <div><label>Probar conexión</label><button class="btn" id="testApi">Test</button></div>
+        </div>
+        <div class="flex" style="margin-top:8px">
+          <button class="btn success" id="saveAll">Guardar todo</button>
+          <button class="btn secondary" id="dlAll">Descargar JSON</button>
+        </div>
+
+        <hr/>
+        <h3>Seguridad</h3>
+        <div class="row">
+          <div>
+            <label>Nueva contraseña</label>
             <input id="newPass" type="password" placeholder="Nueva contraseña">
           </div>
           <div>
@@ -100,44 +153,14 @@
             <input id="newPass2" type="password" placeholder="Repetir contraseña">
           </div>
         </div>
-        <hr/>
-        <h4>Guardar cambios</h4>
-        <p class="muted">Elegí cómo guardar los cambios en <code>data/*.json</code>.</p>
-        <div class="row">
-          <div class="cardx">
-            <h4>1) Descargar archivos</h4>
-            <p>Descargá los JSON y subilos al repo por GitHub (Add file → Upload files).</p>
-            <button class="btn" id="dlProductos">Descargar productos.json</button>
-            <button class="btn" id="dlBanners">Descargar banners.json</button>
-          </div>
-          <div class="cardx">
-            <h4>2) Guardar directo en GitHub (opcional)</h4>
-            <p>Pegá un GitHub Token (repo scope) – se guarda sólo en tu navegador (localStorage).</p>
-            <label>Token</label>
-            <input id="ghToken" placeholder="ghp_...">
-            <label>Owner</label>
-            <input id="ghOwner" placeholder="usuario-o-org">
-            <label>Repo</label>
-            <input id="ghRepo" placeholder="mgv-tienda">
-            <label>Branch</label>
-            <input id="ghBranch" placeholder="main" value="main">
-            <div class="flex" style="margin-top:8px">
-              <button class="btn success" id="saveGitHub">Guardar en GitHub</button>
-              <span class="muted">⚠️ Sólo usar en privado y con cuidado.</span>
-            </div>
-          </div>
-        </div>
-
-        <hr/>
-        <h4>Mercado Pago (opcional)</h4>
-        <p>Endpoint backend para crear preferencias (Netlify/Cloudflare). Editá <code>APP_CONFIG.MP_BACKEND_URL</code> en <code>/app.js</code>.</p>
+        <div class="muted">Al cambiarla, te damos el hash para reemplazar en este archivo (subir al repo).</div>
       </section>
     </section>
   </div>
 
   <script>
     const SALT = "mgv~panel#2025";
-    const HASHED = "e13fcbd099220d799d26f927451b0c530ccd466011e5dafaddc8136ca5a0bb89";
+    const HASHED = "b950ddfbf98b1a566a9445e569d2e31e894a8026cbf0eb447846b254c820ce23"; // contraseña temporal
     async function sha256(str){const buf = new TextEncoder().encode(str); const hash = await crypto.subtle.digest('SHA-256', buf); return [...new Uint8Array(hash)].map(b=>b.toString(16).padStart(2,'0')).join('');}
     function show(id, yes){ document.getElementById(id).classList.toggle('hidden', !yes) }
 
@@ -161,7 +184,8 @@
       show("appSec", sess.logged);
       if(sess.logged){
         loadTables();
-        updateGhStatus();
+        hydrateConfigUI();
+        updateApiStatus();
       }
     }
 
@@ -177,11 +201,14 @@
 
     let productos = [];
     let banners = [];
+    let config = null;
     async function loadTables(){
       productos = await (await fetch("../data/productos.json?ts="+Date.now())).json();
       banners = await (await fetch("../data/banners.json?ts="+Date.now())).json();
+      config = await (await fetch("../data/config.json?ts="+Date.now())).json();
       renderProductos();
       renderBanners();
+      hydrateConfigUI();
     }
 
     function renderProductos(){
@@ -194,7 +221,7 @@
           <td><input value="${p.precio}" type="number" data-f="precio" data-id="${p.id}"/></td>
           <td><input value="${p.categoria}" data-f="categoria" data-id="${p.id}"/></td>
           <td><input value="${p.imagen}" data-f="imagen" data-id="${p.id}"/></td>
-          <td class="flex"><button class="btn" data-ed="${p.id}">Editar</button> <button class="btn danger" data-del="${p.id}">Borrar</button></td>
+          <td class="flex"><button class="btn secondary" data-ed="${p.id}">Desc</button> <button class="btn danger" data-del="${p.id}">Borrar</button></td>
         `;
         tbody.appendChild(tr);
       });
@@ -211,7 +238,7 @@
           const id = b.dataset.ed;
           const p = productos.find(x=>x.id===id);
           const desc = prompt("Descripción", p.descripcion||"");
-          if(desc!==null){ p.descripcion = desc; renderProductos(); }
+          if(desc!==null){ p.descripcion = desc; }
         };
       });
       tbody.querySelectorAll("[data-del]").forEach(b=>{
@@ -238,7 +265,7 @@
         tr.innerHTML = `
           <td><input value="${b.titulo}" data-f="titulo" data-id="${b.id}"/></td>
           <td><input value="${b.texto||''}" data-f="texto" data-id="${b.id}"/></td>
-          <td><input value="${b.color||'#ffd700'}" data-f="color" data-id="${b.id}"/></td>
+          <td><input value="${b.color||'#111111'}" data-f="color" data-id="${b.id}"/></td>
           <td><input type="checkbox" ${b.activo!==false?'checked':''} data-f="activo" data-id="${b.id}"/></td>
           <td class="flex"><button class="btn danger" data-del="${b.id}">Borrar</button></td>
         `;
@@ -254,83 +281,107 @@
       });
       document.getElementById("nuevoBanner").onclick = ()=>{
         const id = "b"+Math.random().toString(36).slice(2,7);
-        banners.unshift({id, titulo:"Nuevo banner", texto:"", imagen:"", color:"#ffd700", activo:true});
+        banners.unshift({id, titulo:"Nuevo banner", texto:"", imagen:"", color:"#111111", activo:true});
         renderBanners();
       };
     }
 
-    function download(filename, text){
-      const blob = new Blob([text], {type:"application/json"});
-      const a = document.createElement("a");
-      a.href = URL.createObjectURL(blob);
-      a.download = filename;
-      a.click();
-      URL.revokeObjectURL(a.href);
-    }
-    document.getElementById("dlProductos").onclick = ()=> download("productos.json", JSON.stringify(productos, null, 2));
-    document.getElementById("dlBanners").onclick = ()=> download("banners.json", JSON.stringify(banners, null, 2));
+    function hydrateConfigUI(){
+      if(!config) return;
+      document.getElementById("sName").value = config.storeName||"";
+      document.getElementById("waNum").value = (config.whatsapp&&config.whatsapp.number)||"";
+      const t = config.theme||{};
+      document.getElementById("cText").value = t.text||"#111111";
+      document.getElementById("cCard").value = t.card||"#f7f7f8";
+      document.getElementById("cBorder").value = t.border||"#e5e7eb";
+      document.getElementById("cBrand").value = t.brand||"#111111";
+      document.getElementById("cAccent").value = t.accent||"#d4af37";
+      document.getElementById("cBg").value = t.bg||"#ffffff";
+      document.getElementById("seoTitle").value = (config.seo&&config.seo.title)||"";
+      document.getElementById("seoDesc").value = (config.seo&&config.seo.description)||"";
+      document.getElementById("pgAbout").value = (config.pages&&config.pages.about)||"";
+      document.getElementById("pgContact").value = (config.pages&&config.pages.contact)||"";
+      document.getElementById("pgReturns").value = (config.pages&&config.pages.returns)||"";
+      document.getElementById("pgPrivacy").value = (config.pages&&config.pages.privacy)||"";
 
-    const $ghToken = document.getElementById("ghToken");
-    const $ghOwner = document.getElementById("ghOwner");
-    const $ghRepo = document.getElementById("ghRepo");
-    const $ghBranch = document.getElementById("ghBranch");
-    const $ghStatus = document.getElementById("ghStatus");
-    [$ghToken,$ghOwner,$ghRepo,$ghBranch].forEach(inp=>{
-      inp.value = localStorage.getItem("mgv_"+inp.id) || inp.value;
-      inp.oninput = ()=> localStorage.setItem("mgv_"+inp.id, inp.value);
-    });
-
-    function updateGhStatus(){
-      const t = localStorage.getItem("mgv_ghToken");
-      $ghStatus.textContent = "GitHub: " + (t? "token listo" : "sin token");
-    }
-
-    async function saveGithubFile(path, content, message){
-      const token = localStorage.getItem("mgv_ghToken");
-      const owner = localStorage.getItem("mgv_ghOwner");
-      const repo = localStorage.getItem("mgv_ghRepo");
-      const branch = localStorage.getItem("mgv_ghBranch") || "main";
-      if(!token || !owner || !repo) throw new Error("Faltan credenciales de GitHub");
-      let sha = null;
-      const getRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path}?ref=${branch}`,{
-        headers:{Authorization:"Bearer "+token,"Accept":"application/vnd.github+json"}
-      });
-      if(getRes.status===200){
-        const j = await getRes.json();
-        sha = j.sha;
-      }
-      const putRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path}`,{
-        method:"PUT",
-        headers:{Authorization:"Bearer "+token,"Accept":"application/vnd.github+json"},
-        body: JSON.stringify({
-          message,
-          content: btoa(unescape(encodeURIComponent(content))),
-          branch,
-          sha
-        })
-      });
-      if(!putRes.ok){
-        const txt = await putRes.text();
-        throw new Error("GitHub error: "+txt);
-      }
+      document.getElementById("apiBase").value = localStorage.getItem("mgv_apiBase") || "/api";
+      document.getElementById("saveToken").value = localStorage.getItem("mgv_saveToken") || "";
+      document.getElementById("testApi").onclick = testApi;
+      document.getElementById("saveAll").onclick = saveAll;
+      document.getElementById("dlAll").onclick = dlAll;
+      document.getElementById("saveNow").onclick = saveAll;
+      document.getElementById("saveNow2").onclick = saveAll;
     }
 
-    document.getElementById("saveGitHub").onclick = async ()=>{
+    function gatherConfigFromUI(){
+      const t = (config.theme = config.theme||{});
+      config.storeName = document.getElementById("sName").value;
+      config.whatsapp = config.whatsapp||{};
+      config.whatsapp.number = document.getElementById("waNum").value;
+      t.text = document.getElementById("cText").value;
+      t.card = document.getElementById("cCard").value;
+      t.border = document.getElementById("cBorder").value;
+      t.brand = document.getElementById("cBrand").value;
+      t.accent = document.getElementById("cAccent").value;
+      t.bg = document.getElementById("cBg").value;
+      config.seo = config.seo||{};
+      config.seo.title = document.getElementById("seoTitle").value;
+      config.seo.description = document.getElementById("seoDesc").value;
+      config.pages = config.pages||{};
+      config.pages.about = document.getElementById("pgAbout").value;
+      config.pages.contact = document.getElementById("pgContact").value;
+      config.pages.returns = document.getElementById("pgReturns").value;
+      config.pages.privacy = document.getElementById("pgPrivacy").value;
+    }
+
+    function updateApiStatus(){
+      const base = localStorage.getItem("mgv_apiBase");
+      const tok = localStorage.getItem("mgv_saveToken");
+      document.getElementById("apiStatus").textContent = `API: ${base||'sin URL'} · Token ${tok?'listo':'falta'}`;
+    }
+
+    async function testApi(){
+      const base = document.getElementById("apiBase").value.trim()||"/api";
+      const tok = document.getElementById("saveToken").value.trim();
+      localStorage.setItem("mgv_apiBase", base);
+      localStorage.setItem("mgv_saveToken", tok);
+      updateApiStatus();
       try{
-        await saveGithubFile("data/productos.json", JSON.stringify(productos, null, 2), "chore: update productos.json");
-        await saveGithubFile("data/banners.json", JSON.stringify(banners, null, 2), "chore: update banners.json");
-        alert("Archivos guardados en GitHub ✔️");
-      }catch(e){
-        alert(e.message);
-      }
-    };
+        const r = await fetch(base+"/ping");
+        if(r.ok){ alert("Conexión OK"); } else { alert("La API respondió con estado "+r.status); }
+      }catch(e){ alert("No se pudo conectar: "+e.message); }
+    }
+
+    function dlAll(){
+      const a=(name,txt)=>{const blob=new Blob([txt],{type:"application/json"}); const el=document.createElement("a"); el.href=URL.createObjectURL(blob); el.download=name; el.click(); URL.revokeObjectURL(el.href);};
+      gatherConfigFromUI();
+      a("productos.json", JSON.stringify(productos,null,2));
+      a("banners.json", JSON.stringify(banners,null,2));
+      a("config.json", JSON.stringify(config,null,2));
+    }
+
+    async function saveAll(){
+      gatherConfigFromUI();
+      const base = localStorage.getItem("mgv_apiBase")||"/api";
+      const tok = localStorage.getItem("mgv_saveToken")||"";
+      try{
+        const r = await fetch(base+"/save-catalog",{
+          method:"POST",
+          headers:{"Content-Type":"application/json","Authorization":"Bearer "+tok},
+          body: JSON.stringify({ productos, banners, config })
+        });
+        const j = await r.json().catch(()=>({}));
+        if(r.ok){ alert("Guardado en GitHub ✔️ "+(j.commit||"")); }
+        else { alert("Error "+r.status+": "+(j.error||JSON.stringify(j))); }
+      }catch(e){ alert("Error de red: "+e.message); }
+    }
 
     document.getElementById("newPass2").onchange = async ()=>{
       const p1 = document.getElementById("newPass").value;
       const p2 = document.getElementById("newPass2").value;
       if(!p1 || p1!==p2){ alert("Las contraseñas no coinciden"); return; }
       const h = await sha256(SALT + p1);
-      alert("Hash generado. Para cambiarlo permanentemente, reemplazá HASHED en este archivo por:\n\n"+h+"\n\n(sugerencia: descargá este HTML, reemplazá y subí al repo).");
+      alert("Hash generado. Para cambiarla, abrí este archivo y reemplazá HASHED por:\n\n"+h+"\n\nLuego subilo al repo.");
     };
 
     boot();

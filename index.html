@@ -4,6 +4,7 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>MGV Librería–Regalería</title>
+  <meta name="description" content="Artículos de librería y regalería. Comprá por WhatsApp; coordinamos la entrega."/>
   <link rel="icon" href="assets/logo.png"/>
   <link rel="stylesheet" href="styles.css"/>
 </head>
@@ -11,9 +12,8 @@
   <div class="topbar">
     <header class="header container">
       <img src="assets/logo.png" alt="MGV"/>
-      <div class="title">MGV Librería–Regalería</div>
+      <div class="title" id="storeTitle">MGV Librería–Regalería</div>
       <div class="search">
-        <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#9aa3b2" d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5m-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14Z"/></svg>
         <input id="q" placeholder="Buscar..."/>
       </div>
     </header>
@@ -35,19 +35,34 @@
   <div class="cart-panel" id="cartPanel">
     <div class="cart-header">
       <strong>Tu carrito</strong>
-      <button class="btn" id="closeCart">Cerrar</button>
+      <button class="btn secondary" id="closeCart">Cerrar</button>
     </div>
     <div class="cart-items" id="cartItems"></div>
     <div class="cart-footer">
       <div class="cart-total"><span>Total</span><strong id="cartTotal">$ 0</strong></div>
-      <button class="btn" id="checkoutBtn">Pagar con Mercado Pago</button>
-      <div class="small">El pago se completa en la página segura de Mercado Pago.</div>
+      <button class="btn" id="checkoutBtn">Finalizar por WhatsApp</button>
+      <div class="small">Te llevamos al chat con el resumen del pedido para coordinar entrega y pago.</div>
     </div>
   </div>
 
-  <script>
-    window.APP_CONFIG = {{ MP_BACKEND_URL: "" }};
-  </script>
+  <div class="modal" id="productModal">
+    <div class="sheet">
+      <img id="mImg" src="" alt=""/>
+      <div class="content">
+        <div class="close-x" id="mClose">✕</div>
+        <h3 id="mName"></h3>
+        <p id="mDesc"></p>
+        <div class="row"><strong id="mPrice"></strong></div>
+        <div class="row">
+          <button class="btn" id="mAdd">Agregar al carrito</button>
+          <button class="btn secondary" id="mClose2">Cerrar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="container footer" id="footerInfo"></footer>
+
   <script src="app.js"></script>
 </body>
 </html>
