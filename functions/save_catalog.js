@@ -40,9 +40,14 @@ export default async (request, context) => {
     const payload = { iat: now - 60, exp: now + 540, iss: process.env.GH_APP_ID };
     const b64url = (obj) => Buffer.from(JSON.stringify(obj)).toString("base64url");
     const unsigned = `${b64url(header)}.${b64url(payload)}`;
+
+    // Normalizar la key por si la pegaron con \n o con CRLF
+    const rawKey = process.env.GH_PRIVATE_KEY || "";
+    const pk = rawKey.replace(/\\n/g, '\n').replace(/\r\n/g, '\n');
+
     const signer = createSign("RSA-SHA256");
     signer.update(unsigned);
-    const signature = signer.sign(process.env.GH_PRIVATE_KEY, "base64url");
+    const signature = signer.sign(pk, "base64url");
     const jwt = `${unsigned}.${signature}`;
 
     // --- Installation token ---
