@@ -7,6 +7,12 @@ function json(data, status = 200, extra = {}) {
   });
 }
 
+// base64url helper (compatible con Node 16/18)
+function toB64Url(input) {
+  const b64 = Buffer.from(input).toString("base64");
+  return b64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+}
+
 export default async (request, context) => {
   const cors = {
     "Access-Control-Allow-Origin": process.env.PANEL_ORIGIN || "*",
@@ -34,12 +40,11 @@ export default async (request, context) => {
       return json({ error: "Missing payload" }, 400, cors);
     }
 
-    // --- JWT de GitHub App ---
+    // --- JWT de GitHub App (sin 'base64url' nativo) ---
     const now = Math.floor(Date.now() / 1000);
     const header = { alg: "RS256", typ: "JWT" };
     const payload = { iat: now - 60, exp: now + 540, iss: process.env.GH_APP_ID };
-    const b64url = (obj) => Buffer.from(JSON.stringify(obj)).toString("base64url");
-    const unsigned = `${b64url(header)}.${b64url(payload)}`;
+    const unsigned = `${toB64Url(JSON.stringify(header))}.${toB64Url(JSON.stringify(payload))}`;
 
     // Normalizar la key por si la pegaron con \n o con CRLF
     const rawKey = process.env.GH_PRIVATE_KEY || "";
@@ -47,7 +52,8 @@ export default async (request, context) => {
 
     const signer = createSign("RSA-SHA256");
     signer.update(unsigned);
-    const signature = signer.sign(pk, "base64url");
+    const sigBase64 = signer.sign(pk).toString("base64");
+    const signature = sigBase64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
     const jwt = `${unsigned}.${signature}`;
 
     // --- Installation token ---
