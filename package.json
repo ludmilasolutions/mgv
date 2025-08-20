@@ -1,10 +1,9 @@
 {
   "name": "mgv-site",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "MGV Netlify site with functions",
   "license": "UNLICENSED",
-  "type": "module",
   "dependencies": {
     "jsonwebtoken": "^9.0.2"
   }
