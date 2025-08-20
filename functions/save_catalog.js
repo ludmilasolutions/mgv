@@ -13,6 +13,9 @@ function ok(body = {}, statusCode = 200) {
     body: JSON.stringify(body)
   };
 }
+function err(statusCode = 500, message = "error", extra = {}) {
+  return ok({ error: message, ...extra }, statusCode);
+}
 
 const jwt = require('jsonwebtoken');
 
@@ -39,29 +42,29 @@ function makeAppJWT() {
 }
 async function ghInstallationToken() {
   const tokenApp = makeAppJWT();
-  const r = await fetch(\`\${GITHUB_API}/app/installations/\${process.env.GH_INSTALLATION_ID}/access_tokens\`, {
+  const r = await fetch(`${GITHUB_API}/app/installations/${process.env.GH_INSTALLATION_ID}/access_tokens`, {
     method: "POST",
     headers: {
       "accept": "application/vnd.github+json",
-      "authorization": \`Bearer \${tokenApp}\`,
+      "authorization": `Bearer ${tokenApp}`,
       "user-agent": "mgv-app/1.0"
     }
   });
   const text = await r.text();
-  if (!r.ok) throw new Error(\`installation token \${r.status}: \${text}\`);
+  if (!r.ok) throw new Error(`installation token ${r.status}: ${text}`);
   return JSON.parse(text).token;
 }
 async function getCurrentSha(path, token) {
-  const url = \`\${GITHUB_API}/repos/\${process.env.GH_OWNER}/\${process.env.GH_REPO}/contents/\${encodeURIComponent(path)}?ref=\${encodeURIComponent(process.env.GH_BRANCH)}\`;
+  const url = `${GITHUB_API}/repos/${process.env.GH_OWNER}/${process.env.GH_REPO}/contents/${encodeURIComponent(path)}?ref=${encodeURIComponent(process.env.GH_BRANCH)}`;
   const r = await fetch(url, {
     headers: {
       "accept": "application/vnd.github+json",
-      "authorization": \`Bearer \${token}\`,
+      "authorization": `Bearer ${token}`,
       "user-agent": "mgv-app/1.0"
     }
   });
   if (r.status === 404) return null;
-  if (!r.ok) throw new Error(\`get sha \${r.status}\`);
+  if (!r.ok) throw new Error(`get sha ${r.status}`);
   const j = await r.json();
   return j.sha || null;
 }
@@ -75,19 +78,19 @@ async function putFile({ path, message, jsonOrString }) {
     content: Buffer.from(contentStr, "utf8").toString("base64"),
     ...(sha ? { sha } : {})
   };
-  const url = \`\${GITHUB_API}/repos/\${process.env.GH_OWNER}/\${process.env.GH_REPO}/contents/\${encodeURIComponent(path)}\`;
+  const url = `${GITHUB_API}/repos/${process.env.GH_OWNER}/${process.env.GH_REPO}/contents/${encodeURIComponent(path)}`;
   const r = await fetch(url, {
     method: "PUT",
     headers: {
       "accept": "application/vnd.github+json",
-      "authorization": \`Bearer \${token}\`,
+      "authorization": `Bearer ${token}`,
       "content-type": "application/json",
       "user-agent": "mgv-app/1.0"
     },
     body: JSON.stringify(body)
   });
   const text = await r.text();
-  if (!r.ok) throw new Error(\`putFile \${path} \${r.status}: \${text}\`);
+  if (!r.ok) throw new Error(`putFile ${path} ${r.status}: ${text}`);
   return JSON.parse(text);
 }
 
@@ -123,8 +126,8 @@ exports.handler = async function(event) {
         jsonOrString: config
       }));
     }
-    return ok({ done: true, commits: results.map(r => r?.commit?.sha) });
+    return ok({ done: true, commits: results.map(r => r && r.commit ? r.commit.sha : null) });
   } catch (e) {
-    return err(500, "save_catalog failed", { message: e.message, stack: e.stack });
+    return err(502, "save_catalog failed", { message: e.message, stack: e.stack });
   }
 };
