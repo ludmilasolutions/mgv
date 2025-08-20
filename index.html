@@ -7,6 +7,39 @@
   <meta name="description" content="Artículos de librería y regalería. Comprá por WhatsApp; coordinamos la entrega."/>
   <link rel="icon" href="assets/logo.png"/>
   <link rel="stylesheet" href="styles.css"/>
+
+  <!-- Parche RAW: redirige /data/*.json a GitHub RAW con cache-busting -->
+  <script>
+  (function () {
+    const OWNER  = "ludmilasolutions"; // cambiar si fuera otro owner
+    const REPO   = "mgv";              // cambiar si fuera otro repo
+    const BRANCH = "main";             // cambiar si fuera otra rama
+    const RAW_BASE = `https://raw.githubusercontent.com/${OWNER}/${REPO}/${BRANCH}/data`;
+
+    const targets = ["productos.json","banners.json","config.json"];
+    const mapPath = new Map();
+    for (const name of targets) {
+      mapPath.set(`/data/${name}`, `${RAW_BASE}/${name}`);
+      mapPath.set(`data/${name}`,  `${RAW_BASE}/${name}`);
+    }
+
+    const origFetch = window.fetch.bind(window);
+    window.fetch = function (input, init) {
+      try {
+        const url = new URL(typeof input === "string" ? input : input.url, location.href);
+        const path = url.pathname;
+        const target = mapPath.get(path) || mapPath.get(path.replace(/^\//, ""));
+        if (target) {
+          const bust = (target.includes("?") ? "&" : "?") + "ts=" + Date.now();
+          const newUrl = target + bust;
+          const newInit = Object.assign({ cache: "no-store" }, init || {});
+          return origFetch(newUrl, newInit);
+        }
+      } catch (e) { /* fallback */ }
+      return origFetch(input, init);
+    };
+  })();
+  </script>
 </head>
 <body>
   <div class="topbar">
@@ -62,39 +95,6 @@
   </div>
 
   <footer class="container footer" id="footerInfo"></footer>
-
-  <!-- Opción B: leer /data/*.json directo desde GitHub Raw con cache-buster -->
-  <script>
-  (function () {
-    const OWNER  = "ludmilasolutions";     // <— cambiar si fuera otro owner
-    const REPO   = "mgv";                   // <— cambiar si fuera otro repo
-    const BRANCH = "main";                  // <— cambiar si fuera otra rama
-    const RAW_BASE = `https://raw.githubusercontent.com/${OWNER}/${REPO}/${BRANCH}/data`;
-
-    const targets = ["productos.json","banners.json","config.json"];
-    const mapPath = new Map();
-    for (const name of targets) {
-      mapPath.set(`/data/${name}`, `${RAW_BASE}/${name}`);
-      mapPath.set(`data/${name}`,  `${RAW_BASE}/${name}`);
-    }
-
-    const origFetch = window.fetch.bind(window);
-    window.fetch = function (input, init) {
-      try {
-        const url = new URL(typeof input === "string" ? input : input.url, location.href);
-        const path = url.pathname;
-        const target = mapPath.get(path) || mapPath.get(path.replace(/^\//, ""));
-        if (target) {
-          const bust = (target.includes("?") ? "&" : "?") + "v=" + Date.now();
-          const newUrl = target + bust;
-          const newInit = Object.assign({ cache: "no-store" }, init || {});
-          return origFetch(newUrl, newInit);
-        }
-      } catch (e) { /* fallback */ }
-      return origFetch(input, init);
-    };
-  })();
-  </script>
 
   <!-- Tu app original -->
   <script src="app.js"></script>
