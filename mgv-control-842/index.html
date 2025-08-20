@@ -7,10 +7,6 @@
   <link rel="icon" href="../assets/logo.png"/>
   <link rel="stylesheet" href="../styles.css"/>
   <style>
-    :root{
-      --border:#e5e7eb;
-      --muted:#6b7280;
-    }
     .wrap{max-width:1100px;margin:0 auto;padding:16px}
     .cardx{background:#fff;border:1px solid var(--border);border-radius:16px;padding:16px;margin:12px 0}
     .row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
@@ -18,7 +14,7 @@
     input,select,textarea{width:100%;padding:10px;border-radius:12px;border:1px solid var(--border);background:#fff;color:#111}
     label{font-size:12px;color:var(--muted)}
     table{width:100%;border-collapse:collapse}
-    th,td{text-align:left;padding:8px;border-bottom:1px solid var(--border);vertical-align:top}
+    th,td{text-align:left;padding:8px;border-bottom:1px solid var(--border)}
     .flex{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
     .right{margin-left:auto}
     .danger{background:#ffe9e9;border-color:#f3b3b3;color:#a00}
@@ -28,17 +24,15 @@
     .pill{border:1px solid var(--border);border-radius:999px;padding:6px 10px}
     .btn{background:#111;color:#fff;border:1px solid #111;border-radius:12px;padding:8px 12px;cursor:pointer}
     .btn.secondary{background:#fff;color:#111;border:1px solid var(--border)}
-    /* Uploader */
-    .img-upload { display:inline-flex; align-items:center; gap:.5rem; padding:.5rem .75rem; border-radius:.75rem; border:1px solid var(--border); cursor:pointer; font-weight:600; }
-    .img-upload input[type=file]{ display:none; }
-    .preview-thumb{ width:64px; height:64px; object-fit:cover; border-radius:.5rem; border:1px solid rgba(0,0,0,.08); background:#fafafa }
-    .td-img{ display:flex; gap:.5rem; align-items:center; flex-wrap:wrap; max-width:360px }
-    .td-img .url{ min-width:220px; flex:1 }
-    .td-actions{ white-space:nowrap }
-    @media (max-width:800px){
-      .row, .row3{ grid-template-columns:1fr; }
-      .td-img{ max-width:100% }
-    }
+
+    /* === Uploader UI === */
+    .img-upload{display:inline-flex;align-items:center;gap:.5rem;padding:.5rem .75rem;border-radius:.75rem;border:1px solid var(--border);cursor:pointer;font-weight:600}
+    .img-upload input[type=file]{display:none}
+    .preview-thumb{width:64px;height:64px;object-fit:cover;border-radius:.5rem;border:1px solid rgba(0,0,0,.08);background:#fafafa}
+    .td-img{display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;max-width:360px}
+    .td-img .url{min-width:220px;flex:1}
+    .td-actions{white-space:nowrap}
+    @media (max-width:800px){.row,.row3{grid-template-columns:1fr}.td-img{max-width:100%}}
   </style>
 </head>
 <body>
@@ -178,7 +172,7 @@
     const GH_OWNER  = "ludmilasolutions";
     const GH_REPO   = "mgv";
     const GH_BRANCH = "main";
-    function rawBase(sha){ return \`https://raw.githubusercontent.com/\${GH_OWNER}/\${GH_REPO}/\${sha||GH_BRANCH}/data\`; }
+    function rawBase(sha){ return `https://raw.githubusercontent.com/${GH_OWNER}/${GH_REPO}/${sha||GH_BRANCH}/data`; }
     // --- Persistencia de último SHA guardado (para evitar caché al refrescar con F5) ---
     function setLastSHA(sha){
       try{
@@ -198,7 +192,7 @@
         if(ls) return ls;
       }catch(_){}
       try{
-        const m = document.cookie.match(/(?:^|;)\\s*mgvsha=([^;]+)/);
+        const m = document.cookie.match(/(?:^|;)\s*mgvsha=([^;]+)/);
         if(m) return m[1];
       }catch(_){}
       return null;
@@ -264,7 +258,6 @@
         }catch(_){}
         await new Promise(res=>setTimeout(res, wait));
       }
-      // último intento lanza error para debug
       const r = await fetch(url, {cache:"no-store"});
       return r.json();
     }
@@ -272,16 +265,16 @@
     async function loadTables(sha){
       const BASE = rawBase(sha || window.__MGV_PENDING_SHA);
       const ts = Date.now();
-      productos = await fetchJsonWithRetry(\`\${BASE}/productos.json?ts=\${ts}\`);
-      banners   = await fetchJsonWithRetry(\`\${BASE}/banners.json?ts=\${ts}\`);
-      config    = await fetchJsonWithRetry(\`\${BASE}/config.json?ts=\${ts}\`);
+      productos = await fetchJsonWithRetry(`${BASE}/productos.json?ts=${ts}`);
+      banners   = await fetchJsonWithRetry(`${BASE}/banners.json?ts=${ts}`);
+      config    = await fetchJsonWithRetry(`${BASE}/config.json?ts=${ts}`);
       window.__MGV_PENDING_SHA = null;
       renderProductos();
       renderBanners();
       hydrateConfigUI();
     }
 
-    // === Subida de imágenes (self-contained) ===
+    // === Subida de imágenes (usa Netlify Function /api/upload-image) ===
     async function uploadImageFile(file){
       if(!file) return { ok:false, error:"No file" };
       const fd = new FormData();
@@ -301,27 +294,28 @@
       tbody.innerHTML = "";
       productos.forEach(p=>{
         const tr = document.createElement("tr");
-        tr.innerHTML = \`
-          <td><input value="\${p.nombre ?? ''}" data-f="nombre" data-id="\${p.id}"/></td>
-          <td><input value="\${p.precio ?? 0}" type="number" step="0.01" data-f="precio" data-id="\${p.id}"/></td>
-          <td><input value="\${p.categoria ?? ''}" data-f="categoria" data-id="\${p.id}"/></td>
+        tr.innerHTML = `
+          <td><input value="${p.nombre ?? ''}" data-f="nombre" data-id="${p.id}"/></td>
+          <td><input value="${p.precio ?? 0}" type="number" step="0.01" data-f="precio" data-id="${p.id}"/></td>
+          <td><input value="${p.categoria ?? ''}" data-f="categoria" data-id="${p.id}"/></td>
           <td>
             <div class="td-img">
-              <input class="url" value="\${p.imagen ?? ''}" placeholder="https://…/img.jpg" data-f="imagen" data-id="\${p.id}"/>
+              <input class="url" value="${p.imagen ?? ''}" placeholder="https://…/img.jpg" data-f="imagen" data-id="${p.id}"/>
               <label class="img-upload">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 16v-8m0 0l-3 3m3-3l3 3M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
                 <span>Subir…</span>
-                <input type="file" accept="image/*" data-file="\${p.id}"/>
+                <input type="file" accept="image/*" data-file="${p.id}"/>
               </label>
-              <img class="preview-thumb" src="\${p.imagen || ''}" alt="Vista previa"/>
-              <span class="muted" data-status="\${p.id}"></span>
+              <img class="preview-thumb" src="${p.imagen || ''}" alt="Vista previa"/>
+              <span class="muted" data-status="${p.id}"></span>
             </div>
           </td>
-          <td class="td-actions"><button class="btn secondary" data-ed="\${p.id}">Desc</button> <button class="btn danger" data-del="\${p.id}">Borrar</button></td>
-        \`;
+          <td class="td-actions"><button class="btn secondary" data-ed="${p.id}">Desc</button> <button class="btn danger" data-del="${p.id}">Borrar</button></td>
+        `;
         tbody.appendChild(tr);
       });
-      // Sync de inputs
+
+      // Sync de inputs (incluye actualizar preview si se pega una URL)
       tbody.querySelectorAll("input.url, td input[type='text'], td input[type='number']").forEach(inp=>{
         const handler = ()=>{
           const id = inp.dataset.id, f = inp.dataset.f;
@@ -329,7 +323,6 @@
           const p = productos.find(x=>x.id===id);
           if(!p) return;
           p[f] = (f==="precio")? Number(inp.value||0) : inp.value;
-          // si cambian la URL manualmente, actualizo la preview del mismo row
           if(f==="imagen"){
             const row = inp.closest("tr");
             const img = row?.querySelector("img.preview-thumb");
@@ -339,6 +332,7 @@
         inp.addEventListener("input", handler);
         inp.addEventListener("change", handler);
       });
+
       // Botón "Desc"
       tbody.querySelectorAll("[data-ed]").forEach(b=>{
         b.onclick = ()=>{
@@ -348,6 +342,7 @@
           if(desc!==null){ p.descripcion = desc; }
         };
       });
+
       // Borrar
       tbody.querySelectorAll("[data-del]").forEach(b=>{
         b.onclick = ()=>{
@@ -358,12 +353,14 @@
           }
         };
       });
+
       // Nuevo
       document.getElementById("nuevoProd").onclick = ()=>{
         const id = "p"+Math.random().toString(36).slice(2,7);
         productos.unshift({id, nombre:"Nuevo producto", precio:0, categoria:"Librería", imagen:"", descripcion:""});
         renderProductos();
       };
+
       // Subida de imagen por fila
       tbody.querySelectorAll("input[type=file][data-file]").forEach(fi=>{
         fi.addEventListener("change", async ()=>{
@@ -384,7 +381,7 @@
               const p = productos.find(x=>x.id===id);
               if(p) p.imagen = res.url;
               st.textContent = "Listo ✔";
-              // Guarda SHA para evitar caché
+              // Guarda SHA para evitar caché en recarga
               if(res.commitSha){ setLastSHA(res.commitSha); window.__MGV_PENDING_SHA = res.commitSha; }
             }else{
               st.textContent = "Error: " + (res.error || "no se pudo subir");
@@ -401,13 +398,13 @@
       tbody.innerHTML = "";
       banners.forEach(b=>{
         const tr = document.createElement("tr");
-        tr.innerHTML = \`
-          <td><input value="\${b.titulo ?? ''}" data-f="titulo" data-id="\${b.id}"/></td>
-          <td><input value="\${b.texto ?? ''}" data-f="texto" data-id="\${b.id}"/></td>
-          <td><input value="\${b.color ?? '#111111'}" data-f="color" data-id="\${b.id}"/></td>
-          <td><input type="checkbox" \${b.activo!==false?'checked':''} data-f="activo" data-id="\${b.id}"/></td>
-          <td class="flex"><button class="btn danger" data-del="\${b.id}">Borrar</button></td>
-        \`;
+        tr.innerHTML = `
+          <td><input value="${b.titulo}" data-f="titulo" data-id="${b.id}"/></td>
+          <td><input value="${b.texto||''}" data-f="texto" data-id="${b.id}"/></td>
+          <td><input value="${b.color||'#111111'}" data-f="color" data-id="${b.id}"/></td>
+          <td><input type="checkbox" ${b.activo!==false?'checked':''} data-f="activo" data-id="${b.id}"/></td>
+          <td class="flex"><button class="btn danger" data-del="${b.id}">Borrar</button></td>
+        `;
         tbody.appendChild(tr);
       });
       tbody.querySelectorAll("input").forEach(inp=>{
@@ -478,7 +475,7 @@
     function updateApiStatus(){
       const base = localStorage.getItem("mgv_apiBase");
       const tok  = localStorage.getItem("mgv_saveToken");
-      document.getElementById("apiStatus").textContent = \`API: \${base||'sin URL'} · Token \${tok?'listo':'falta'}\`;
+      document.getElementById("apiStatus").textContent = `API: ${base||'sin URL'} · Token ${tok?'listo':'falta'}`;
     }
 
     async function testApi(){
