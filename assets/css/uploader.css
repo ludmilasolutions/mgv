@@ -1,0 +1,17 @@
+.img-upload {
+  display: inline-flex;
+  align-items: center;
+  gap: .5rem;
+  padding: .6rem .9rem;
+  border-radius: .75rem;
+  border: 1px solid var(--border, #e3e3e3);
+  cursor: pointer;
+  font-weight: 600;
+}
+.img-upload input[type=file] {
+  display: none;
+}
+.preview-thumb {
+  width: 64px; height: 64px; object-fit: cover; border-radius: .5rem;
+  border: 1px solid rgba(0,0,0,.08);
+}
