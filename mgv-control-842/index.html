@@ -159,7 +159,14 @@
   </div>
 
   <!-- Override: el panel también puede leer JSON directo del repo Raw -->
+  
   <script>
+    // --- RAW GitHub base to leer datos frescos del repo (evita esperar el deploy) ---
+    const GH_OWNER  = "ludmilasolutions";
+    const GH_REPO   = "mgv";
+    const GH_BRANCH = "main";
+    const RAW_BASE  = `https://raw.githubusercontent.com/${GH_OWNER}/${GH_REPO}/${GH_BRANCH}/data`;
+
   (function () {
     const OWNER  = "ludmilasolutions";
     const REPO   = "mgv";
@@ -240,9 +247,9 @@
     let banners = [];
     let config = null;
     async function loadTables(){
-      productos = await (await fetch("../data/productos.json?ts="+Date.now())).json();
-      banners   = await (await fetch("../data/banners.json?ts="+Date.now())).json();
-      config    = await (await fetch("../data/config.json?ts="+Date.now())).json();
+      productos = await (await fetch(RAW_BASE + "/productos.json?ts="+Date.now())).json();
+      banners   = await (await fetch(RAW_BASE + "/banners.json?ts="+Date.now())).json();
+      config    = await (await fetch(RAW_BASE + "/config.json?ts="+Date.now())).json();
       renderProductos();
       renderBanners();
       hydrateConfigUI();
@@ -409,7 +416,7 @@
           body: JSON.stringify({ productos, banners, config })
         });
         const j = await r.json().catch(()=>({}));
-        if(r.ok){ alert("Guardado en GitHub ✔️"); }
+        if(r.ok){ alert("Guardado en GitHub ✔️"); await loadTables(); }
         else { alert("Error "+r.status+": "+(j.error||JSON.stringify(j))); }
       }catch(e){ alert("Error de red: "+e.message); }
     }
