@@ -1,138 +1,125 @@
 // functions/upload-image.js
-// Subida de imágenes usando GitHub App (mismo esquema que save_catalog).
-// - Espera multipart/form-data con campo 'file'
-// - Verifica Authorization: Bearer <SAVE_TOKEN> si existe SAVE_TOKEN en env
-// - Escribe en: assets/uploads/YYYY/MM/<timestamp>_<slug>
-// - Responde: { ok:true, url, path, commitSha }
-const crypto = require("crypto");
+// Subida de imágenes con auth por SAVE_TOKEN (igual que save_catalog).
+// No usa dependencias externas (fetch nativo).
+// Requiere env: SAVE_TOKEN, GITHUB_OWNER, GITHUB_REPO, (opcional) GITHUB_DEFAULT_BRANCH, GITHUB_TOKEN.
 
-function json(body, statusCode = 200){
+function response(status, bodyObj, extraHeaders={}){
   return {
-    statusCode,
+    statusCode: status,
     headers: {
-      "content-type":"application/json; charset=utf-8",
-      "access-control-allow-origin": process.env.PANEL_ORIGIN || "*",
-      "access-control-allow-headers":"authorization, content-type",
-      "access-control-allow-methods":"OPTIONS, POST"
+      "Content-Type": "application/json",
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Headers": "authorization, content-type",
+      "Access-Control-Allow-Methods": "POST, OPTIONS",
+      ...extraHeaders
     },
-    body: JSON.stringify(body)
+    body: JSON.stringify(bodyObj)
   };
 }
 
+function parseBoundary(ct) {
+  const m = /boundary=(.*)$/i.exec(ct || "");
+  return m && m[1];
+}
+
+async function parseMultipart(event) {
+  const ct = event.headers["content-type"] || event.headers["Content-Type"] || "";
+  const boundary = parseBoundary(ct);
+  if (!boundary) throw new Error("Missing multipart boundary");
+
+  const buf = Buffer.from(event.body || "", event.isBase64Encoded ? "base64" : "utf8");
+  const b = Buffer.from("--" + boundary);
+  const parts = [];
+  let i = buf.indexOf(b);
+  while (i !== -1) {
+    const j = buf.indexOf(b, i + b.length);
+    if (j === -1) break;
+    const chunk = buf.slice(i + b.length + 2, j - 2); // skip \r\n
+    parts.push(chunk);
+    i = j;
+  }
+
+  for (const p of parts) {
+    const sep = p.indexOf(Buffer.from("\r\n\r\n"));
+    if (sep === -1) continue;
+    const head = p.slice(0, sep).toString("utf8");
+    const body = p.slice(sep + 4);
+    if (/name="file"/i.test(head)) {
+      const filename = /filename="([^"]+)"/i.exec(head)?.[1] || "upload.bin";
+      const contentType = /Content-Type:\s*([^\r\n]+)/i.exec(head)?.[1] || "application/octet-stream";
+      return { filename, contentType, bytes: body };
+    }
+  }
+  throw new Error("No 'file' field found");
+}
+
+function slug(name) {
+  return name.normalize("NFD")
+    .replace(/[\u0300-\u036f]/g,"")
+    .replace(/[^a-zA-Z0-9._-]+/g,"-")
+    .replace(/-+/g,"-")
+    .replace(/^-|-$/g,"")
+    .toLowerCase();
+}
+
 exports.handler = async (event) => {
+  if (event.httpMethod === "OPTIONS") {
+    return response(200, { ok: true });
+  }
+  if (event.httpMethod !== "POST") {
+    return response(405, { ok:false, error:"Method Not Allowed" });
+  }
+
   try{
-    if (event.httpMethod === "OPTIONS") return json({}, 200);
-    if (event.httpMethod !== "POST") return json({error:"Method Not Allowed"}, 405);
-
-    // Auth del panel (token corto) si está configurado
+    // --- Auth con SAVE_TOKEN ---
+    const saveToken = process.env.SAVE_TOKEN || "";
     const auth = event.headers.authorization || event.headers.Authorization || "";
-    const tokenClient = auth && auth.startsWith("Bearer ") ? auth.slice(7).trim() : "";
-    if (process.env.SAVE_TOKEN) {
-      if (!tokenClient || tokenClient !== process.env.SAVE_TOKEN) {
-        return json({ error:"unauthorized" }, 401);
-      }
+    const bearer = auth.startsWith("Bearer ") ? auth.slice(7) : "";
+    if (!saveToken || bearer !== saveToken) {
+      return response(401, { ok:false, error:"unauthorized" });
     }
 
-    // --- Parse multipart ---
-    const ct = event.headers["content-type"] || event.headers["Content-Type"] || "";
-    const m = /boundary=(.*)$/i.exec(ct);
-    if (!m) return json({ ok:false, error:"Missing multipart boundary" }, 400);
-    const boundary = m[1];
-    const buf = Buffer.from(event.body || "", event.isBase64Encoded ? "base64" : "utf8");
-    const boundaryBuf = Buffer.from("--" + boundary);
-    let start = 0, files = [];
-    while (true){
-      const i = buf.indexOf(boundaryBuf, start);
-      if (i === -1) break;
-      const j = buf.indexOf(boundaryBuf, i + boundaryBuf.length);
-      if (j === -1) break;
-      const part = buf.slice(i + boundaryBuf.length + 2, j - 2); // skip CRLFs
-      const sep = part.indexOf(Buffer.from("\r\n\r\n"));
-      if (sep !== -1) {
-        const head = part.slice(0, sep).toString("utf8");
-        const body = part.slice(sep + 4);
-        const isFile = /name="file"/i.test(head);
-        if (isFile) {
-          const fn = /filename="([^"]+)"/i.exec(head)?.[1] || "upload.bin";
-          const ct = /Content-Type:\s*([^\r\n]+)/i.exec(head)?.[1] || "application/octet-stream";
-          files.push({ filename: fn, contentType: ct, bytes: body });
-        }
-      }
-      start = j;
+    const owner  = process.env.GITHUB_OWNER;
+    const repo   = process.env.GITHUB_REPO;
+    const branch = process.env.GITHUB_DEFAULT_BRANCH || "main";
+    const gitTok = process.env.GITHUB_TOKEN; // PAT o token de app (ya resuelto)
+    if (!owner || !repo || !gitTok) {
+      return response(500, { ok:false, error:"Missing GitHub env" });
     }
-    if (!files.length) return json({ ok:false, error:"No 'file' field" }, 400);
-    const file = files[0];
-    if (!/^image\//i.test(file.contentType)) return json({ ok:false, error:"Not an image" }, 400);
 
-    // --- GitHub App auth ---
-    function b64url(input){
-      return Buffer.from(input).toString("base64").replace(/=/g,"").replace(/\+/g,"-").replace(/\//g,"_");
+    const { filename, contentType, bytes } = await parseMultipart(event);
+    if (!/^image\//i.test(contentType)) {
+      return response(400, { ok:false, error:"Not an image" });
     }
-    function getPem(){
-      if (process.env.GH_PRIVATE_KEY) return process.env.GH_PRIVATE_KEY;
-      if (process.env.GH_PRIVATE_KEY_B64) return Buffer.from(process.env.GH_PRIVATE_KEY_B64, "base64").toString("utf8");
-      return null;
-    }
-    const pem = getPem();
-    if (!pem || !process.env.GH_APP_ID || !process.env.GH_INSTALLATION_ID) {
-      return json({ ok:false, error:"Missing GH App env (GH_APP_ID/GH_INSTALLATION_ID/GH_PRIVATE_KEY[_B64])" }, 500);
-    }
-    const now = Math.floor(Date.now()/1000);
-    const header  = { alg:"RS256", typ:"JWT" };
-    const payload = { iat: now-60, exp: now+9*60, iss: process.env.GH_APP_ID };
-    const signingInput = b64url(JSON.stringify(header)) + "." + b64url(JSON.stringify(payload));
-    const signer = crypto.createSign("RSA-SHA256");
-    signer.update(signingInput);
-    const signature = b64url(signer.sign(pem));
-    const appJwt = signingInput + "." + signature;
 
-    const installUrl = `https://api.github.com/app/installations/${process.env.GH_INSTALLATION_ID}/access_tokens`;
-    const rTok = await fetch(installUrl, {
-      method:"POST",
-      headers:{ "accept":"application/vnd.github+json", "authorization":`Bearer ${appJwt}`, "user-agent":"mgv-app/1.0" }
-    });
-    const tokTxt = await rTok.text();
-    if (!rTok.ok) return json({ ok:false, error:`installation token ${rTok.status}: ${tokTxt}` }, 502);
-    const ghToken = JSON.parse(tokTxt).token;
+    const now = new Date();
+    const yyyy = String(now.getUTCFullYear());
+    const mm   = String(now.getUTCMonth()+1).padStart(2,"0");
+    const clean = slug(filename);
+    const path = `assets/uploads/${yyyy}/${mm}/${Date.now()}_${clean}`;
 
-    // --- Guardar archivo ---
-    function slug(name){
-      return name.normalize("NFD").replace(/[\u0300-\u036f]/g,"")
-        .replace(/[^a-zA-Z0-9._-]+/g,"-").replace(/-+/g,"-").replace(/^-|-$/g,"").toLowerCase();
-    }
-    const nowD = new Date();
-    const yyyy = String(nowD.getUTCFullYear());
-    const mm = String(nowD.getUTCMonth()+1).padStart(2,"0");
-    const clean = slug(file.filename || "upload");
-    const relPath = `assets/uploads/${yyyy}/${mm}/${Date.now()}_${clean}`;
-
-    const url = `https://api.github.com/repos/${process.env.GH_OWNER}/${process.env.GH_REPO}/contents/${encodeURIComponent(relPath)}`;
-    const resp = await fetch(url, {
-      method:"PUT",
-      headers:{
-        "accept":"application/vnd.github+json",
-        "authorization":`Bearer ${ghToken}`,
-        "content-type":"application/json",
-        "user-agent":"mgv-app/1.0"
+    const api = `https://api.github.com/repos/${owner}/${repo}/contents/${encodeURIComponent(path)}`;
+    const gh = await fetch(api, {
+      method: "PUT",
+      headers: {
+        "Authorization": `Bearer ${gitTok}`,
+        "Content-Type": "application/json",
+        "Accept": "application/vnd.github+json"
       },
       body: JSON.stringify({
         message: `panel: upload ${clean}`,
-        content: file.bytes.toString("base64"),
-        branch: process.env.GH_BRANCH || "main"
+        content: bytes.toString("base64"),
+        branch
       })
     });
-    const text = await resp.text();
-    if (!resp.ok) return json({ ok:false, error:`put ${resp.status}: ${text}` }, resp.status);
-
-    let data = {};
-    try{ data = JSON.parse(text); }catch(_){}
-    const commitSha = data?.commit?.sha || null;
-    const rawUrl = commitSha
-      ? `https://raw.githubusercontent.com/${process.env.GH_OWNER}/${process.env.GH_REPO}/${commitSha}/${relPath}`
-      : `https://raw.githubusercontent.com/${process.env.GH_OWNER}/${process.env.GH_REPO}/${process.env.GH_BRANCH || "main"}/${relPath}`;
-
-    return json({ ok:true, url: rawUrl, path: relPath, commitSha });
+    const data = await gh.json().catch(()=>({}));
+    if (!gh.ok) {
+      return response(gh.status, { ok:false, error: data?.message || "GitHub error" });
+    }
+    const commitSha = data?.commit?.sha;
+    const url = `https://raw.githubusercontent.com/${owner}/${repo}/${commitSha}/${path}`;
+    return response(200, { ok:true, url, path, commitSha });
   }catch(e){
-    return json({ ok:false, error: e.message || String(e) }, 500);
+    return response(500, { ok:false, error: e.message });
   }
 };
