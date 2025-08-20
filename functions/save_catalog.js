@@ -1,176 +1,132 @@
 
-// Netlify Function: save_catalog
-// Guarda productos/banners/config en GitHub (GitHub App o PAT).
-// CORS, OPTIONS y mensajes de error claros.
-
+/**
+ * Netlify Function: save_catalog
+ * Writes data/productos.json, data/banners.json, data/config.json to GitHub via GitHub App.
+ * Env required:
+ *  - SAVE_TOKEN (panel must send Bearer SAVE_TOKEN)
+ *  - GH_APP_ID
+ *  - GH_INSTALLATION_ID
+ *  - GH_OWNER
+ *  - GH_REPO
+ *  - GH_BRANCH (default: main)
+ *  - GH_PRIVATE_KEY  (PEM)  OR  GH_PRIVATE_KEY_B64 (base64 of PEM)
+ */
 const crypto = require("crypto");
-const GITHUB_API = "https://api.github.com";
 
-function jsonResponse(status, obj, extraHeaders = {}) {
-  return new Response(JSON.stringify(obj, null, 2), {
-    status,
-    headers: {
-      "content-type": "application/json; charset=utf-8",
-      "access-control-allow-origin": "*",
-      "access-control-allow-methods": "POST,OPTIONS",
-      "access-control-allow-headers": "Content-Type, Authorization",
-      ...extraHeaders,
-    },
-  });
+const ok = (status, body) => ({ statusCode: status, headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+const err = (status, msg, extra={}) => ok(status, { error: msg, **extra });
+
+function b64url(input) {
+  const b = (Buffer.isBuffer(input) ? input : Buffer.from(input));
+  return b.toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/,"");
 }
 
-function b64(str) {
-  return Buffer.from(str, "utf8").toString("base64");
-}
-
-// Build a GitHub App JWT (RS256)
-function buildAppJWT(appId, privateKeyPem) {
-  const now = Math.floor(Date.now() / 1000);
+function signAppJWT(appId, pem) {
+  const now = Math.floor(Date.now()/1000);
   const header = { alg: "RS256", typ: "JWT" };
-  const payload = { iat: now - 60, exp: now + 8 * 60, iss: appId };
-  const b64url = (obj) =>
-    Buffer.from(JSON.stringify(obj))
-      .toString("base64")
-      .replace(/=/g, "")
-      .replace(/\+/g, "-")
-      .replace(/\//g, "_");
-  const unsigned = b64url(header) + "." + b64url(payload);
+  const payload = { iat: now - 30, exp: now + (9*60), iss: appId };
+  const signingInput = b64url(JSON.stringify(header)) + "." + b64url(JSON.stringify(payload));
   const signer = crypto.createSign("RSA-SHA256");
-  signer.update(unsigned);
-  const sig = signer.sign(privateKeyPem).toString("base64").replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
-  return unsigned + "." + sig;
+  signer.update(signingInput);
+  const signature = signer.sign(pem);
+  return signingInput + "." + b64url(signature);
 }
 
-async function ghFetch(path, token, method = "GET", body) {
-  const url = `${GITHUB_API}${path}`;
+async function ghFetch(url, init) {
   const res = await fetch(url, {
-    method,
+    ...init,
     headers: {
-      "authorization": `token ${token}`,
       "accept": "application/vnd.github+json",
-      "x-github-api-version": "2022-11-28",
-      "user-agent": "mgv-netlify-fn",
-      "content-type": "application/json",
-    },
-    body: body ? JSON.stringify(body) : undefined,
+      "user-agent": "mgv-app/1.0",
+      ...(init && init.headers ? init.headers : {})
+    }
   });
   const text = await res.text();
-  let json;
-  try { json = JSON.parse(text || "{}"); } catch { json = { raw: text }; }
-  return { status: res.status, ok: res.ok, json };
-}
-
-// encode path safely (each segment)
-function encodePath(p) {
-  return p.split("/").map(encodeURIComponent).join("/");
-}
-
-async function createInstallationToken(appJWT, installationId) {
-  return ghFetch(`/app/installations/${installationId}/access_tokens`, appJWT, "POST", {});
-}
-
-async function putFileWithToken({ owner, repo, branch, path, contentStr, token }) {
-  const encPath = encodePath(path);
-  // 1) GET to know sha (if exists)
-  const get = await ghFetch(`/repos/${owner}/${repo}/contents/${encPath}?ref=${encodeURIComponent(branch)}`, token, "GET");
-  let sha = undefined;
-  if (get.ok && get.json && get.json.sha) sha = get.json.sha;
-
-  // 2) PUT create or update
-  const putBody = {
-    message: `chore(panel): update ${path} ${new Date().toISOString()}`,
-    content: b64(contentStr),
-    branch,
-  };
-  if (sha) putBody.sha = sha;
-  const put = await ghFetch(`/repos/${owner}/${repo}/contents/${encPath}`, token, "PUT", putBody);
-  return { get, put };
-}
-
-export default async (req) => {
-  if (req.method === "OPTIONS") return jsonResponse(204, {});
-
-  if (req.method !== "POST") {
-    return jsonResponse(405, { error: "Method Not Allowed. Use POST." });
+  let data = null;
+  try { data = text ? JSON.parse(text) : null; } catch(_) {}
+  if (!res.ok) {
+    const e = new Error(`GitHub ${res.status}: ${data && data.message ? data.message : text}`);
+    e.status = res.status;
+    e.data = data;
+    throw e;
   }
+  return data;
+}
 
-  const auth = req.headers.get("authorization") || "";
-  const tokenIn = auth.startsWith("Bearer ") ? auth.slice(7) : "";
-  const SAVE_TOKEN = process.env.SAVE_TOKEN || "";
-  if (!SAVE_TOKEN || tokenIn !== SAVE_TOKEN) {
-    return jsonResponse(401, { error: "Unauthorized. Missing/invalid token." });
-  }
+async function getInstallationToken(appJWT, installationId) {
+  const url = `https://api.github.com/app/installations/${installationId}/access_tokens`;
+  const data = await ghFetch(url, { method: "POST", headers: { authorization: `Bearer ${appJWT}` } });
+  return data.token;
+}
 
-  let body;
+async function getShaIfExists(token, owner, repo, path, branch) {
+  const url = `https://api.github.com/repos/${owner}/${repo}/contents/${encodeURIComponent(path)}?ref=${encodeURIComponent(branch)}`;
   try {
-    body = await req.json();
+    const data = await ghFetch(url, { headers: { authorization: `token ${token}` } });
+    return data && data.sha ? data.sha : null;
   } catch (e) {
-    return jsonResponse(400, { error: "Invalid JSON body." });
+    if (e.status === 404) return null; // new file
+    throw e;
   }
+}
 
-  const owner  = process.env.GH_OWNER || "ludmilasolutions";
-  const repo   = process.env.GH_REPO || "mgv";
-  const branch = process.env.GH_BRANCH || "main";
+async function putFile(token, owner, repo, branch, path, contentObj) {
+  const content = Buffer.from(JSON.stringify(contentObj, null, 2)).toString("base64");
+  const sha = await getShaIfExists(token, owner, repo, path, branch);
+  const url = `https://api.github.com/repos/${owner}/${repo}/contents/${encodeURIComponent(path)}`;
+  const body = {
+    message: `MGV: update ${path}`,
+    content,
+    branch,
+    ...(sha ? { sha } : {}),
+    committer: { name: "MGV Bot", email: "bot@mgv.local" }
+  };
+  const res = await ghFetch(url, { method: "PUT", headers: { authorization: `token ${token}` }, body: JSON.stringify(body) });
+  return { path, sha: res && res.content ? res.content.sha : null, commit: res && res.commit ? (res.commit.sha || res.commit.html_url) : null };
+}
 
-  const { productos = [], banners = [], config = {} } = body || {};
-
-  // Choose auth mode
-  const GH_PAT = process.env.GH_PAT || "";
-  let mode = "gh_app";
-  let ghToken = null;
-
-  if (GH_PAT) {
-    mode = "pat";
-    ghToken = GH_PAT;
-  } else {
-    const appId = process.env.GH_APP_ID;
-    const instId = process.env.GH_INSTALLATION_ID;
-    let priv = process.env.GH_PRIVATE_KEY;
-    const privB64 = process.env.GH_PRIVATE_KEY_B64;
-    if (!priv && privB64) {
-      try { priv = Buffer.from(privB64, "base64").toString("utf8"); } catch {}
+exports.handler = async (event) => {
+  try {
+    // Auth from panel
+    const auth = event.headers && event.headers.authorization || "";
+    const token = auth.startsWith("Bearer ") ? auth.slice(7).trim() : "";
+    if (!process.env.SAVE_TOKEN || token !== process.env.SAVE_TOKEN) {
+      return err(401, "Missing or invalid token");
     }
-    if (!appId || !instId || !priv) {
-      return jsonResponse(500, { error: "GitHub App env missing (GH_APP_ID/GH_INSTALLATION_ID/GH_PRIVATE_KEY or GH_PRIVATE_KEY_B64). Or set GH_PAT to use PAT mode." });
+
+    // Body
+    let payload = null;
+    try { payload = JSON.parse(event.body || "{}"); } catch(_) {}
+    if (!payload || !payload.productos || !payload.banners || !payload.config) {
+      return err(400, "Invalid body; expected { productos, banners, config }");
     }
-    // Build JWT and exchange for installation token
-    try {
-      const jwt = buildAppJWT(appId, priv);
-      const tokRes = await createInstallationToken(jwt, instId);
-      if (!tokRes.ok) {
-        return jsonResponse(500, { error: "install_token_failed", details: tokRes });
-      }
-      ghToken = tokRes.json.token;
-    } catch (e) {
-      return jsonResponse(500, { error: "jwt_build_failed", details: String(e) });
+
+    // Env
+    const APP_ID   = process.env.GH_APP_ID;
+    const INSTALL  = process.env.GH_INSTALLATION_ID;
+    const OWNER    = process.env.GH_OWNER;
+    const REPO     = process.env.GH_REPO;
+    const BRANCH   = process.env.GH_BRANCH || "main";
+    const pem      = process.env.GH_PRIVATE_KEY || (process.env.GH_PRIVATE_KEY_B64 ? Buffer.from(process.env.GH_PRIVATE_KEY_B64, "base64").toString("utf8") : null);
+
+    if (!APP_ID || !INSTALL || !OWNER || !REPO || !pem) {
+      return err(500, "Missing GH env", { present: {
+        GH_APP_ID: !!APP_ID, GH_INSTALLATION_ID: !!INSTALL, GH_OWNER: !!OWNER, GH_REPO: !!REPO, GH_PRIVATE_KEY: !!pem
+      }});
     }
+
+    // JWT & installation token
+    const appJWT = signAppJWT(APP_ID, pem);
+    const instToken = await getInstallationToken(appJWT, INSTALL);
+
+    // Write files (sequential to simplify)
+    const results = [];
+    results.push(await putFile(instToken, OWNER, REPO, BRANCH, "data/productos.json", payload.productos));
+    results.push(await putFile(instToken, OWNER, REPO, BRANCH, "data/banners.json",   payload.banners));
+    results.push(await putFile(instToken, OWNER, REPO, BRANCH, "data/config.json",    payload.config));
+
+    return ok(200, { ok: true, results });
+  } catch (e) {
+    return err(500, e.message || "internal_error", { stack: e.stack, gh: e.data });
   }
-
-  // Write all three files (secuencial para mensajes claros)
-  const results = {};
-  const files = [
-    ["data/productos.json", JSON.stringify(productos, null, 2) + "\n"],
-    ["data/banners.json",   JSON.stringify(banners,   null, 2) + "\n"],
-    ["data/config.json",    JSON.stringify(config,    null, 2) + "\n"],
-  ];
-
-  for (const [path, txt] of files) {
-    const r = await putFileWithToken({ owner, repo, branch, path, contentStr: txt, token: ghToken });
-    // Si GitHub devuelve 404 en PUT, normalmente es falta de acceso al repo para ese token (GitHub suele ocultar con 404).
-    if (!r.put.ok && r.put.status === 404 && mode === "gh_app" && GH_PAT) {
-      // fallback automático a PAT si está definido
-      const rr = await putFileWithToken({ owner, repo, branch, path, contentStr: txt, token: GH_PAT });
-      results[path] = { modeTried: "gh_app_then_pat", get: r.get, put: rr.put };
-      if (!rr.put.ok) {
-        return jsonResponse(500, { error: `putFile ${path} failed (fallback PAT)`, details: rr.put });
-      }
-    } else {
-      results[path] = { modeTried: mode, get: r.get, put: r.put };
-      if (!r.put.ok) {
-        return jsonResponse(500, { error: `putFile ${path} failed`, details: r.put });
-      }
-    }
-  }
-
-  return jsonResponse(200, { ok: true, mode, result: results });
 };
