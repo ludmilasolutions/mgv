@@ -1,5 +1,13 @@
 [
   {
+    "id": "bhcbue",
+    "titulo": "Nuevo banner",
+    "texto": "",
+    "imagen": "",
+    "color": "#111111",
+    "activo": true
+  },
+  {
     "id": "b1",
     "titulo": "Promo cuadernos – 20% OFF",
     "texto": "Aprovechá durante agosto",
