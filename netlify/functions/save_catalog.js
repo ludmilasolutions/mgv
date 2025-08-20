@@ -14,15 +14,19 @@ exports.handler = async (event) => {
       };
     }
 
-    const body = JSON.parse(event.body);
-    const { name, content } = body; // content = base64 de la imagen
+    const { catalog } = JSON.parse(event.body);
+    const content = Buffer.from(JSON.stringify(catalog, null, 2)).toString("base64");
 
-    if (!name || !content) {
-      return { statusCode: 400, body: JSON.stringify({ error: "Missing name/content" }) };
-    }
+    const url = `https://api.github.com/repos/${owner}/${repo}/contents/catalog.json`;
 
-    const url = `https://api.github.com/repos/${owner}/${repo}/contents/images/${name}`;
+    // Obtener sha actual
+    const currentFile = await fetch(url, {
+      headers: { Authorization: `token ${token}` },
+    }).then(r => r.json());
 
+    const sha = currentFile.sha;
+
+    // Guardar nuevo contenido
     const response = await fetch(url, {
       method: "PUT",
       headers: {
@@ -30,18 +34,17 @@ exports.handler = async (event) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        message: `Upload image ${name}`,
+        message: "Update catalog.json from panel",
         content,
         branch,
+        sha,
       }),
     });
 
     const data = await response.json();
-    if (!response.ok) throw new Error(data.message || "Error al subir imagen");
+    if (!response.ok) throw new Error(data.message || "Error al guardar");
 
-    const downloadUrl = data.content.download_url;
-
-    return { statusCode: 200, body: JSON.stringify({ ok: true, url: downloadUrl }) };
+    return { statusCode: 200, body: JSON.stringify({ ok: true, data }) };
   } catch (err) {
     return { statusCode: 500, body: JSON.stringify({ error: err.message }) };
   }
