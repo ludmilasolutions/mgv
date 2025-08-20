@@ -1,4 +1,4 @@
-// functions/save_catalog.js (v5) – soporta GH_PAT como fallback
+// functions/save_catalog.js (v6) – commit a GitHub + trigger Netlify build hook
 const GITHUB_API = "https://api.github.com";
 
 function json(body, statusCode = 200) {
@@ -34,14 +34,6 @@ async function ghInstallationToken(){
   return JSON.parse(text).token;
 }
 
-// === Nuevo: selector de token ===
-async function getGitHubToken(){
-  if (process.env.GH_PAT && process.env.GH_PAT.trim()) {
-    return { token: process.env.GH_PAT.trim(), kind: "pat" };
-  }
-  return { token: await ghInstallationToken(), kind: "app" };
-}
-
 async function ghGet(path, token, qs=""){
   const url = `${GITHUB_API}/repos/${process.env.GH_OWNER}/${process.env.GH_REPO}/contents/${encodeURIComponent(path)}${qs}`;
   return fetch(url, { headers: { "accept":"application/vnd.github+json", "authorization":`Bearer ${token}`, "user-agent":"mgv-app/1.0" } });
@@ -56,7 +48,7 @@ async function getCurrentSha(path, token){
 }
 
 async function putFile({ path, message, jsonOrString }){
-  const { token, kind } = await getGitHubToken();
+  const token = await ghInstallationToken();
   const contentStr = typeof jsonOrString === "string" ? jsonOrString : JSON.stringify(jsonOrString, null, 2);
   const sha = await getCurrentSha(path, token);
   const body = {
@@ -72,8 +64,21 @@ async function putFile({ path, message, jsonOrString }){
     body: JSON.stringify(body)
   });
   const text = await r.text();
-  if (!r.ok) throw new Error(`putFile ${path} ${r.status} (${kind}): ${text}`);
+  if (!r.ok) throw new Error(`putFile ${path} ${r.status}: ${text}`);
   return JSON.parse(text);
+}
+
+async function triggerBuildHook() {
+  const hook = process.env.NETLIFY_BUILD_HOOK || process.env.BUILD_HOOK_URL;
+  if (!hook) return { triggered:false, reason:"no BUILD_HOOK env" };
+  try {
+    const r = await fetch(hook, { method:"POST" });
+    const ok = r.ok;
+    const body = await r.text();
+    return { triggered: ok, status: r.status, body };
+  } catch (e) {
+    return { triggered:false, error: e.message };
+  }
 }
 
 exports.handler = async (event) => {
@@ -93,7 +98,8 @@ exports.handler = async (event) => {
         GH_BRANCH: !!process.env.GH_BRANCH,
         SAVE_TOKEN: !!process.env.SAVE_TOKEN,
         GH_PRIVATE_KEY_B64_len: (process.env.GH_PRIVATE_KEY_B64||"").length,
-        GH_PAT: !!process.env.GH_PAT
+        GH_CONTENT_BASE: (process.env.GH_CONTENT_BASE || "data"),
+        NETLIFY_BUILD_HOOK: !!(process.env.NETLIFY_BUILD_HOOK || process.env.BUILD_HOOK_URL)
       }});
     }
 
@@ -112,7 +118,9 @@ exports.handler = async (event) => {
       results.push(await putFile({ path: `${base}/config.json`, message: "panel: update config.json", jsonOrString: config }));
     }
 
-    return json({ done:true, commits: results.map(r => r?.commit?.sha || null), base });
+    const hook = await triggerBuildHook();
+
+    return json({ done:true, commits: results.map(r => r?.commit?.sha || null), base, build_hook: hook });
   }catch(e){
     console.error("save_catalog error", e);
     return json({ error:"save_catalog failed", message: e.message, stack: e.stack }, 502);
