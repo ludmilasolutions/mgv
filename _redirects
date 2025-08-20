@@ -1,3 +1,2 @@
-/api/save-catalog  /.netlify/functions/save_catalog  200
-/api/debug-gh     /.netlify/functions/debug_gh     200
-/api/*            /.netlify/functions/:splat       200
+/api/*                                 /.netlify/functions/:splat   200
+/.netlify/functions/save-catalog       /.netlify/functions/save_catalog 200
