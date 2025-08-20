@@ -1,51 +1,64 @@
-const fetch = require("node-fetch");
+// netlify/functions/save_catalog.js
+// Guarda los JSON (productos/banners/config) en /data del repo. Sin dependencias externas.
+// Requiere env vars: GITHUB_OWNER, GITHUB_REPO, GITHUB_DEFAULT_BRANCH (opcional), GITHUB_TOKEN
+// También acepta token desde header Authorization: Bearer XXX (prioridad sobre env).
+
+async function getSha(api, token) {
+  const r = await fetch(api, { headers: { "Authorization": `Bearer ${token}`, "Accept":"application/vnd.github+json" } });
+  if (r.status === 404) return null;
+  const j = await r.json();
+  return j && j.sha ? j.sha : null;
+}
+
+async function putFile(path, contentObj, token, owner, repo, branch, message){
+  const api = `https://api.github.com/repos/${owner}/${repo}/contents/${encodeURIComponent(path)}`;
+  const sha = await getSha(api, token);
+  const resp = await fetch(api, {
+    method: "PUT",
+    headers: {
+      "Authorization": `Bearer ${token}`,
+      "Content-Type": "application/json",
+      "Accept":"application/vnd.github+json"
+    },
+    body: JSON.stringify({
+      message,
+      content: Buffer.from(JSON.stringify(contentObj, null, 2)).toString("base64"),
+      branch,
+      ...(sha ? { sha } : {})
+    })
+  });
+  const data = await resp.json();
+  if (!resp.ok) throw new Error(data?.message || "GitHub error");
+  return data?.commit?.sha;
+}
 
 exports.handler = async (event) => {
   try {
-    const token = process.env.GITHUB_TOKEN;
+    if (event.httpMethod !== "POST") return { statusCode: 405, body: "Method Not Allowed" };
     const owner = process.env.GITHUB_OWNER;
     const repo = process.env.GITHUB_REPO;
     const branch = process.env.GITHUB_DEFAULT_BRANCH || "main";
+    const tokHeader = event.headers.authorization || event.headers.Authorization || "";
+    const token = (tokHeader.startsWith("Bearer ") ? tokHeader.slice(7) : "") || process.env.GITHUB_TOKEN;
 
-    if (!token || !owner || !repo) {
-      return {
-        statusCode: 500,
-        body: JSON.stringify({ error: "Missing GitHub env vars" }),
-      };
+    if (!owner || !repo || !token) {
+      return { statusCode: 500, body: JSON.stringify({ ok:false, error:"Missing GitHub env" }) };
     }
 
-    const { catalog } = JSON.parse(event.body);
-    const content = Buffer.from(JSON.stringify(catalog, null, 2)).toString("base64");
+    const bodyTxt = event.body || "{}";
+    let payload = {};
+    try { payload = JSON.parse(bodyTxt); } catch(_){}
+    const { productos=[], banners=[], config={} } = payload;
 
-    const url = `https://api.github.com/repos/${owner}/${repo}/contents/catalog.json`;
+    // Guardamos cada archivo por separado bajo /data
+    const commits = [];
+    const stamp = new Date().toISOString();
+    commits.push(await putFile("data/productos.json", productos, token, owner, repo, branch, `chore(panel): update productos ${stamp}`));
+    commits.push(await putFile("data/banners.json",   banners,   token, owner, repo, branch, `chore(panel): update banners ${stamp}`));
+    commits.push(await putFile("data/config.json",    config,    token, owner, repo, branch, `chore(panel): update config ${stamp}`));
 
-    // Obtener sha actual
-    const currentFile = await fetch(url, {
-      headers: { Authorization: `token ${token}` },
-    }).then(r => r.json());
-
-    const sha = currentFile.sha;
-
-    // Guardar nuevo contenido
-    const response = await fetch(url, {
-      method: "PUT",
-      headers: {
-        Authorization: `token ${token}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        message: "Update catalog.json from panel",
-        content,
-        branch,
-        sha,
-      }),
-    });
-
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.message || "Error al guardar");
-
-    return { statusCode: 200, body: JSON.stringify({ ok: true, data }) };
-  } catch (err) {
-    return { statusCode: 500, body: JSON.stringify({ error: err.message }) };
+    return { statusCode: 200, body: JSON.stringify({ ok:true, commits }) };
+  } catch (e) {
+    return { statusCode: 500, body: JSON.stringify({ ok:false, error: e.message }) };
   }
 };
