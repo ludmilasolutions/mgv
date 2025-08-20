@@ -25,6 +25,39 @@
     .btn{background:#111;color:#fff;border:1px solid #111;border-radius:12px;padding:8px 12px;cursor:pointer}
     .btn.secondary{background:#fff;color:#111;border:1px solid var(--border)}
   </style>
+
+  <!-- Parche RAW: el panel lee siempre data fresca desde GitHub RAW con cache-busting -->
+  <script>
+    (function () {
+      const GH_OWNER  = "ludmilasolutions";
+      const GH_REPO   = "mgv";
+      const GH_BRANCH = "main";
+      window.RAW_BASE = `https://raw.githubusercontent.com/${GH_OWNER}/${GH_REPO}/${GH_BRANCH}/data`;
+
+      const targets = ["productos.json","banners.json","config.json"];
+      const mapPath = new Map();
+      for (const name of targets) {
+        mapPath.set(`/data/${name}`, `${RAW_BASE}/${name}`);
+        mapPath.set(`data/${name}`,  `${RAW_BASE}/${name}`);
+      }
+
+      const origFetch = window.fetch.bind(window);
+      window.fetch = function (input, init) {
+        try {
+          const u = new URL(typeof input === "string" ? input : input.url, location.href);
+          const path = u.pathname;
+          const target = mapPath.get(path) || mapPath.get(path.replace(/^\//, ""));
+          if (target) {
+            const bust = (target.includes("?") ? "&" : "?") + "ts=" + Date.now();
+            const newUrl  = target + bust;
+            const newInit = Object.assign({ cache: "no-store" }, init || {});
+            return origFetch(newUrl, newInit);
+          }
+        } catch (_) {}
+        return origFetch(input, init);
+      };
+    })();
+  </script>
 </head>
 <body>
   <div class="wrap">
@@ -160,12 +193,6 @@
 
   <!-- Lógica del Panel -->
   <script>
-    // Base RAW (GitHub) para leer datos instantáneos
-    const GH_OWNER  = "ludmilasolutions";
-    const GH_REPO   = "mgv";
-    const GH_BRANCH = "main";
-    const RAW_BASE  = `https://raw.githubusercontent.com/${GH_OWNER}/${GH_REPO}/${GH_BRANCH}/data`;
-
     const SALT = "mgv~panel#2025";
     const HASHED = "b950ddfbf98b1a566a9445e569d2e31e894a8026cbf0eb447846b254c820ce23"; // contraseña temporal
     async function sha256(str){const buf = new TextEncoder().encode(str); const hash = await crypto.subtle.digest('SHA-256', buf); return [...new Uint8Array(hash)].map(b=>b.toString(16).padStart(2,'0')).join('');}
@@ -393,11 +420,7 @@
       const p2 = document.getElementById("newPass2").value;
       if(!p1 || p1!==p2){ alert("Las contraseñas no coinciden"); return; }
       const h = await sha256(SALT + p1);
-      alert("Hash generado. Para cambiarla, abrí este archivo y reemplazá HASHED por:
-
-"+h+"
-
-Luego subilo al repo.");
+      alert("Hash generado. Para cambiarla, abrí este archivo y reemplazá HASHED por:\n\n"+h+"\n\nLuego subilo al repo.");
     };
 
     boot();
