@@ -1,51 +1,65 @@
-import { createSign, createPrivateKey } from "node:crypto";
 
-function json(data, status = 200, extra = {}) {
-  return new Response(JSON.stringify(data), {
-    status,
+// v1 function (CommonJS). No ESM, no 'node:' prefixes.
+const { createSign, createPrivateKey } = require("crypto");
+
+function json(data, statusCode = 200, extra = {}) {
+  return {
+    statusCode,
     headers: { "Content-Type": "application/json", ...extra },
-  });
+    body: JSON.stringify(data),
+  };
 }
 
-const b64url = (buf) => Buffer.from(buf).toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+const b64url = (buf) =>
+  Buffer.from(buf).toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
 const b64urlStr = (s) => b64url(Buffer.from(s, "utf8"));
 
 function resolvePrivateKey() {
+  // Preferimos GH_PRIVATE_KEY_B64 si está
   const b64 = process.env.GH_PRIVATE_KEY_B64;
   if (b64) {
-    try { return Buffer.from(b64, "base64").toString("utf8"); } catch {}
+    try {
+      return Buffer.from(b64, "base64").toString("utf8");
+    } catch {}
   }
   const raw = process.env.GH_PRIVATE_KEY || "";
+  // Normalizar saltos
   return raw.replace(/\\n/g, "\n").replace(/\r\n/g, "\n");
 }
 
-export default async (request) => {
+exports.handler = async (event) => {
   const cors = {
     "Access-Control-Allow-Origin": process.env.PANEL_ORIGIN || "*",
     "Access-Control-Allow-Headers": "Content-Type, Authorization",
     "Access-Control-Allow-Methods": "POST, OPTIONS",
   };
-  if (request.method === "OPTIONS") return new Response(null, { status: 200, headers: cors });
+  if (event.httpMethod === "OPTIONS") {
+    return { statusCode: 200, headers: cors, body: "" };
+  }
 
   try {
-    const auth = request.headers.get("authorization") || "";
+    // Auth
+    const auth = event.headers["authorization"] || event.headers["Authorization"] || "";
     if (!auth.startsWith("Bearer ")) return json({ error: "Missing token" }, 401, cors);
     const token = auth.slice(7).trim();
     if (token !== process.env.SAVE_TOKEN) return json({ error: "Invalid token" }, 403, cors);
 
-    const body = await request.json().catch(() => ({}));
+    // Payload
+    let body = {};
+    try { body = JSON.parse(event.body || "{}"); } catch {}
     if (!body?.productos || !body?.banners || !body?.config) return json({ error: "Missing payload" }, 400, cors);
 
     // JWT
     const now = Math.floor(Date.now() / 1000);
-    const unsigned = `${b64urlStr(JSON.stringify({ alg: "RS256", typ: "JWT" }))}.${b64urlStr(JSON.stringify({ iat: now - 60, exp: now + 540, iss: process.env.GH_APP_ID }))}`;
+    const header = { alg: "RS256", typ: "JWT" };
+    const payload = { iat: now - 60, exp: now + 540, iss: process.env.GH_APP_ID };
+    const unsigned = `${b64urlStr(JSON.stringify(header))}.${b64urlStr(JSON.stringify(payload))}`;
 
-    // Importar clave como KeyObject; si es RSA PKCS#1 la convertimos a PKCS#8
+    // Importar clave como KeyObject (conversión a PKCS#8 para OpenSSL 3)
     const pem = resolvePrivateKey();
     let keyObj;
     try {
       keyObj = createPrivateKey({ key: pem, format: "pem" });
-      // Exportar a PKCS#8 y reimportar (max compat con OpenSSL 3)
       const pkcs8 = keyObj.export({ type: "pkcs8", format: "pem" });
       keyObj = createPrivateKey({ key: pkcs8, format: "pem" });
     } catch (e) {

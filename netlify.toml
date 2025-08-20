@@ -1,13 +1,6 @@
 
+[build]
+  publish = "."
+
 [functions]
   directory = "functions"
-
-[[redirects]]
-  from = "/api/ping"
-  to = "/.netlify/functions/ping"
-  status = 200
-
-[[redirects]]
-  from = "/api/save-catalog"
-  to = "/.netlify/functions/save_catalog"
-  status = 200

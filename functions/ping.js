@@ -1,12 +1,13 @@
-// v2 API: Request -> Response
-export default async (request, context) => {
+
+// v1 function (CommonJS) with CORS
+exports.handler = async (event, context) => {
   const headers = {
     "Access-Control-Allow-Origin": process.env.PANEL_ORIGIN || "*",
     "Access-Control-Allow-Headers": "Content-Type, Authorization",
     "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
   };
-  if (request.method === "OPTIONS") {
-    return new Response(null, { status: 200, headers });
+  if (event.httpMethod === "OPTIONS") {
+    return { statusCode: 200, headers, body: "" };
   }
-  return new Response("pong", { status: 200, headers });
+  return { statusCode: 200, headers, body: "pong" };
 };
