@@ -1,9 +1,5 @@
-/* assets/js/fetch-raw-patch.js
- * MGV – Instant data updates (RAW GitHub + cache-busting)
- * Intercepta fetch a /data/{productos|banners|config}.json y lo redirige a RAW con ?ts=<now>
- */
 (function () {
-  if (window.__MGV_FETCH_RAW_PATCH__) return; // evitar doble inyección
+  if (window.__MGV_FETCH_RAW_PATCH__) return;
   window.__MGV_FETCH_RAW_PATCH__ = true;
 
   var GH_OWNER  = (window.ENV && window.ENV.GH_OWNER)  || "ludmilasolutions";

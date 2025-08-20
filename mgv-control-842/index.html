@@ -25,39 +25,6 @@
     .btn{background:#111;color:#fff;border:1px solid #111;border-radius:12px;padding:8px 12px;cursor:pointer}
     .btn.secondary{background:#fff;color:#111;border:1px solid var(--border)}
   </style>
-
-  <!-- Parche RAW: el panel lee siempre data fresca desde GitHub RAW con cache-busting -->
-  <script>
-    (function () {
-      const GH_OWNER  = "ludmilasolutions";
-      const GH_REPO   = "mgv";
-      const GH_BRANCH = "main";
-      window.RAW_BASE = `https://raw.githubusercontent.com/${GH_OWNER}/${GH_REPO}/${GH_BRANCH}/data`;
-
-      const targets = ["productos.json","banners.json","config.json"];
-      const mapPath = new Map();
-      for (const name of targets) {
-        mapPath.set(`/data/${name}`, `${RAW_BASE}/${name}`);
-        mapPath.set(`data/${name}`,  `${RAW_BASE}/${name}`);
-      }
-
-      const origFetch = window.fetch.bind(window);
-      window.fetch = function (input, init) {
-        try {
-          const u = new URL(typeof input === "string" ? input : input.url, location.href);
-          const path = u.pathname;
-          const target = mapPath.get(path) || mapPath.get(path.replace(/^\//, ""));
-          if (target) {
-            const bust = (target.includes("?") ? "&" : "?") + "ts=" + Date.now();
-            const newUrl  = target + bust;
-            const newInit = Object.assign({ cache: "no-store" }, init || {});
-            return origFetch(newUrl, newInit);
-          }
-        } catch (_) {}
-        return origFetch(input, init);
-      };
-    })();
-  </script>
 </head>
 <body>
   <div class="wrap">
@@ -191,8 +158,13 @@
     </section>
   </div>
 
-  <!-- Lógica del Panel -->
   <script>
+    // --- Config RAW / helper para base según SHA ---
+    const GH_OWNER  = "ludmilasolutions";
+    const GH_REPO   = "mgv";
+    const GH_BRANCH = "main";
+    function rawBase(sha){ return `https://raw.githubusercontent.com/${GH_OWNER}/${GH_REPO}/${sha||GH_BRANCH}/data`; }
+
     const SALT = "mgv~panel#2025";
     const HASHED = "b950ddfbf98b1a566a9445e569d2e31e894a8026cbf0eb447846b254c820ce23"; // contraseña temporal
     async function sha256(str){const buf = new TextEncoder().encode(str); const hash = await crypto.subtle.digest('SHA-256', buf); return [...new Uint8Array(hash)].map(b=>b.toString(16).padStart(2,'0')).join('');}
@@ -240,10 +212,29 @@
     let banners = [];
     let config = null;
 
-    async function loadTables(){
-      productos = await (await fetch(RAW_BASE + "/productos.json?ts=" + Date.now())).json();
-      banners   = await (await fetch(RAW_BASE + "/banners.json?ts=" + Date.now())).json();
-      config    = await (await fetch(RAW_BASE + "/config.json?ts=" + Date.now())).json();
+    async function fetchJsonWithRetry(url, tries=6, wait=700){
+      for(let i=0;i<tries;i++){
+        try{
+          const r = await fetch(url, {cache:"no-store"});
+          if(r.ok){
+            const j = await r.json();
+            return j;
+          }
+        }catch(_){}
+        await new Promise(res=>setTimeout(res, wait));
+      }
+      // último intento lanza error para debug
+      const r = await fetch(url, {cache:"no-store"});
+      return r.json();
+    }
+
+    async function loadTables(sha){
+      const BASE = rawBase(sha || window.__MGV_PENDING_SHA);
+      const ts = Date.now();
+      productos = await fetchJsonWithRetry(`${BASE}/productos.json?ts=${ts}`);
+      banners   = await fetchJsonWithRetry(`${BASE}/banners.json?ts=${ts}`);
+      config    = await fetchJsonWithRetry(`${BASE}/config.json?ts=${ts}`);
+      window.__MGV_PENDING_SHA = null;
       renderProductos();
       renderBanners();
       hydrateConfigUI();
@@ -263,13 +254,16 @@
         `;
         tbody.appendChild(tr);
       });
+      // Escuchar input + change (para que el array se mantenga en sync aunque no pierdan foco)
       tbody.querySelectorAll("input").forEach(inp=>{
-        inp.onchange = ()=>{
+        const handler = ()=>{
           const id = inp.dataset.id, f = inp.dataset.f;
           const p = productos.find(x=>x.id===id);
           if(!p) return;
-          p[f] = (f==="precio")? Number(inp.value) : inp.value;
+          p[f] = (f==="precio")? Number(inp.value||0) : inp.value;
         };
+        inp.addEventListener("input", handler);
+        inp.addEventListener("change", handler);
       });
       tbody.querySelectorAll("[data-ed]").forEach(b=>{
         b.onclick = ()=>{
@@ -310,12 +304,14 @@
         tbody.appendChild(tr);
       });
       tbody.querySelectorAll("input").forEach(inp=>{
-        inp.onchange = ()=>{
+        const handler = ()=>{
           const id = inp.dataset.id, f = inp.dataset.f;
           const b = banners.find(x=>x.id===id);
           if(!b) return;
           b[f] = (f==="activo")? inp.checked : inp.value;
         };
+        inp.addEventListener("input", handler);
+        inp.addEventListener("change", handler);
       });
       document.getElementById("nuevoBanner").onclick = ()=>{
         const id = "b"+Math.random().toString(36).slice(2,7);
@@ -342,7 +338,6 @@
       document.getElementById("pgReturns").value = (config.pages&&config.pages.returns)||"";
       document.getElementById("pgPrivacy").value = (config.pages&&config.pages.privacy)||"";
 
-      // defaults y binds
       document.getElementById("apiBase").value   = localStorage.getItem("mgv_apiBase") || "/api";
       document.getElementById("saveToken").value = localStorage.getItem("mgv_saveToken") || "";
       document.getElementById("testApi").onclick = testApi;
@@ -391,6 +386,25 @@
       }catch(e){ alert("No se pudo conectar: "+e.message); }
     }
 
+    function syncTablesBeforeSave(){
+      // Productos
+      document.querySelectorAll("#tablaProductos tbody input").forEach(inp=>{
+        const id = inp.dataset.id, f = inp.dataset.f;
+        if(!id||!f) return;
+        const p = productos.find(x=>x.id===id);
+        if(!p) return;
+        p[f] = (f==="precio")? Number(inp.value||0) : inp.value;
+      });
+      // Banners
+      document.querySelectorAll("#tablaBanners tbody input").forEach(inp=>{
+        const id = inp.dataset.id, f = inp.dataset.f;
+        if(!id||!f) return;
+        const b = banners.find(x=>x.id===id);
+        if(!b) return;
+        b[f] = (f==="activo")? inp.checked : inp.value;
+      });
+    }
+
     function dlAll(){
       const a=(name,txt)=>{const blob=new Blob([txt],{type:"application/json"}); const el=document.createElement("a"); el.href=URL.createObjectURL(blob); el.download=name; el.click(); URL.revokeObjectURL(el.href);};
       gatherConfigFromUI();
@@ -400,6 +414,7 @@
     }
 
     async function saveAll(){
+      syncTablesBeforeSave();
       gatherConfigFromUI();
       const base = localStorage.getItem("mgv_apiBase")||"/api";
       const tok  = localStorage.getItem("mgv_saveToken")||"";
@@ -409,9 +424,18 @@
           headers:{"Content-Type":"application/json","Authorization":"Bearer "+tok},
           body: JSON.stringify({ productos, banners, config })
         });
-        const j = await r.json().catch(()=>({}));
-        if(r.ok){ alert("Guardado en GitHub ✔️"); await loadTables(); }
-        else { alert("Error "+r.status+": "+(j.error||JSON.stringify(j))); }
+        const txt = await r.text();
+        let j={}; try{ j = JSON.parse(txt); }catch(_){}
+        if(r.ok){
+          // Usa el último SHA devuelto para leer data nueva sin esperar propagación
+          if (j && Array.isArray(j.commits) && j.commits.length) {
+            window.__MGV_PENDING_SHA = j.commits[j.commits.length-1];
+          }
+          alert("Guardado en GitHub ✔️");
+          await loadTables(); // usa __MGV_PENDING_SHA si existe
+        } else {
+          alert("Error "+r.status+": "+(j.error||txt));
+        }
       }catch(e){ alert("Error de red: "+e.message); }
     }
 
