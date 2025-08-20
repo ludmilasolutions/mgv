@@ -164,6 +164,31 @@
     const GH_REPO   = "mgv";
     const GH_BRANCH = "main";
     function rawBase(sha){ return `https://raw.githubusercontent.com/${GH_OWNER}/${GH_REPO}/${sha||GH_BRANCH}/data`; }
+    // --- Persistencia de último SHA guardado (para evitar caché al refrescar con F5) ---
+    function setLastSHA(sha){
+      try{
+        if(!sha) return;
+        localStorage.setItem('mgv_last_sha', sha);
+        document.cookie = 'mgvsha='+sha+';path=/;max-age='+(60*60*24*30);
+      }catch(_){}
+    }
+    function getLastSHA(){
+      try{
+        const u = new URL(window.location.href);
+        const qs = u.searchParams.get('sha');
+        if(qs){ setLastSHA(qs); return qs; }
+      }catch(_){}
+      try{
+        const ls = localStorage.getItem('mgv_last_sha');
+        if(ls) return ls;
+      }catch(_){}
+      try{
+        const m = document.cookie.match(/(?:^|;)\s*mgvsha=([^;]+)/);
+        if(m) return m[1];
+      }catch(_){}
+      return null;
+    }
+
 
     const SALT = "mgv~panel#2025";
     const HASHED = "b950ddfbf98b1a566a9445e569d2e31e894a8026cbf0eb447846b254c820ce23"; // contraseña temporal
@@ -192,7 +217,8 @@
       show("loginSec", !sess.logged);
       show("appSec",  sess.logged);
       if(sess.logged){
-        loadTables();
+        const _sha=getLastSHA();
+        loadTables(_sha);
         hydrateConfigUI();
         updateApiStatus();
       }
@@ -429,12 +455,11 @@
         if(r.ok){
           // Usa el último SHA devuelto para leer data nueva sin esperar propagación
           if (j && Array.isArray(j.commits) && j.commits.length) {
-            var _sha = j.commits[j.commits.length-1];
-            window.__MGV_PENDING_SHA = _sha;
-            try { localStorage.setItem("mgv_last_sha", _sha); document.cookie = "mgvsha="+_sha+"; path=/; max-age=2592000"; } catch(_) {}
+            window.__MGV_PENDING_SHA = j.commits[j.commits.length-1];
+            setLastSHA(window.__MGV_PENDING_SHA);
           }
           alert("Guardado en GitHub ✔️");
-          await loadTables(); // usa __MGV_PENDING_SHA si existe
+          await loadTables(window.__MGV_PENDING_SHA); // usa __MGV_PENDING_SHA si existe
         } else {
           alert("Error "+r.status+": "+(j.error||txt));
         }
