@@ -16,15 +16,13 @@ function json(body, statusCode = 200) {
 
 const jwt = require('jsonwebtoken');
 
-function b64dec(s){ return Buffer.from(s, "base64").toString("utf8"); }
-function getPK(){
-  if (process.env.GH_PRIVATE_KEY_B64) return b64dec(process.env.GH_PRIVATE_KEY_B64);
-  return process.env.GH_PRIVATE_KEY;
-}
+const b64dec = (s) => Buffer.from(s, "base64").toString("utf8");
+const getPK = () => process.env.GH_PRIVATE_KEY_B64 ? b64dec(process.env.GH_PRIVATE_KEY_B64) : process.env.GH_PRIVATE_KEY;
 function makeAppJWT(){
   const now = Math.floor(Date.now()/1000);
-  return jwt.sign({ iat: now-60, exp: now+9*60, iss: process.env.GH_APP_ID }, getPK(), { algorithm: "RS256" });
+  return jwt.sign({ iat: now-60, exp: now+9*60, iss: process.env.GH_APP_ID }, getPK(), { algorithm:"RS256" });
 }
+
 async function ghInstallationToken(){
   const appJwt = makeAppJWT();
   const r = await fetch(`${GITHUB_API}/app/installations/${process.env.GH_INSTALLATION_ID}/access_tokens`, {
@@ -35,15 +33,21 @@ async function ghInstallationToken(){
   if (!r.ok) throw new Error(`installation token ${r.status}: ${text}`);
   return JSON.parse(text).token;
 }
+
+async function ghGet(path, token, qs=""){
+  const url = `${GITHUB_API}/repos/${process.env.GH_OWNER}/${process.env.GH_REPO}/contents/${encodeURIComponent(path)}${qs}`;
+  return fetch(url, { headers: { "accept":"application/vnd.github+json", "authorization":`Bearer ${token}`, "user-agent":"mgv-app/1.0" } });
+}
+
 async function getCurrentSha(path, token){
-  const url = `${GITHUB_API}/repos/${process.env.GH_OWNER}/${process.env.GH_REPO}/contents/${encodeURIComponent(path)}?ref=${encodeURIComponent(process.env.GH_BRANCH)}`;
-  const r = await fetch(url, { headers: { "accept":"application/vnd.github+json", "authorization":`Bearer ${token}`, "user-agent":"mgv-app/1.0" } });
+  const r = await ghGet(path, token, `?ref=${encodeURIComponent(process.env.GH_BRANCH)}`);
   if (r.status === 404) return null;
-  if (!r.ok) throw new Error(`get sha ${r.status}`);
+  if (!r.ok) throw new Error(`get sha ${r.status}: ${await r.text()}`);
   const j = await r.json();
   return j.sha || null;
 }
-async function putFile({ path, message, jsonOrString }){
+
+async function putFile({ path, message, jsonOrString, passthroughError = false }){
   const token = await ghInstallationToken();
   const contentStr = typeof jsonOrString === "string" ? jsonOrString : JSON.stringify(jsonOrString, null, 2);
   const sha = await getCurrentSha(path, token);
@@ -60,20 +64,21 @@ async function putFile({ path, message, jsonOrString }){
     body: JSON.stringify(body)
   });
   const text = await r.text();
-  if (!r.ok) throw new Error(`putFile ${path} ${r.status}: ${text}`);
+  if (!r.ok) {
+    if (passthroughError) return { ok:false, status:r.status, raw:text };
+    throw new Error(`putFile ${path} ${r.status}: ${text}`);
+  }
   return JSON.parse(text);
 }
 
-exports.handler = async function(event){
+exports.handler = async (event) => {
   try{
-    if (event.httpMethod === "OPTIONS") return json({ ok: true });
-    const params = event.queryStringParameters || {};
+    if (event.httpMethod === "OPTIONS") return json({ ok:true });
     const auth = event.headers.authorization || event.headers.Authorization || "";
     const tokenClient = auth.startsWith("Bearer ") ? auth.slice(7).trim() : "";
-    if (!tokenClient || tokenClient !== process.env.SAVE_TOKEN) {
-      return { statusCode: 401, body: "unauthorized" };
-    }
-    // modo debug superficial
+    if (!tokenClient || tokenClient !== process.env.SAVE_TOKEN) return { statusCode:401, body:"unauthorized" };
+
+    const params = event.queryStringParameters || {};
     if (params && params.debug === "1"){
       return json({ env_present: {
         GH_APP_ID: !!process.env.GH_APP_ID,
@@ -86,20 +91,24 @@ exports.handler = async function(event){
       }});
     }
 
+    const base = (process.env.GH_CONTENT_BASE || "data").replace(/^\/+|\/+$/g,"");
     const body = JSON.parse(event.body || "{}");
     const { productos, banners, config } = body;
     const results = [];
+
     if (Array.isArray(productos)) {
-      results.push(await putFile({ path: "data/productos.json", message: "panel: update productos.json", jsonOrString: productos }));
+      results.push(await putFile({ path: `${base}/productos.json`, message: "panel: update productos.json", jsonOrString: productos }));
     }
     if (Array.isArray(banners)) {
-      results.push(await putFile({ path: "data/banners.json", message: "panel: update banners.json", jsonOrString: banners }));
+      results.push(await putFile({ path: `${base}/banners.json`, message: "panel: update banners.json", jsonOrString: banners }));
     }
     if (config && typeof config === "object") {
-      results.push(await putFile({ path: "data/config.json", message: "panel: update config.json", jsonOrString: config }));
+      results.push(await putFile({ path: `${base}/config.json`, message: "panel: update config.json", jsonOrString: config }));
     }
-    return json({ done: true, commits: results.map(r => r && r.commit ? r.commit.sha : null) });
+
+    return json({ done:true, commits: results.map(r => r?.commit?.sha || null), base });
   }catch(e){
-    return json({ error: "save_catalog failed", message: e.message, stack: e.stack }, 502);
+    console.error("save_catalog error", e);
+    return json({ error:"save_catalog failed", message: e.message, stack: e.stack }, 502);
   }
 };
