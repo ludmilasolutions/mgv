@@ -1,2 +1,3 @@
-/*    /index.html   200
+# /_redirects
+# Alias para las funciones Netlify bajo /api
 /api/*  /.netlify/functions/:splat  200
