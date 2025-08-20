@@ -1,39 +1,69 @@
-(function () {
-  if (window.__MGV_FETCH_RAW_PATCH__) return;
-  window.__MGV_FETCH_RAW_PATCH__ = true;
+// assets/js/fetch-raw-patch.js
+// Reescribe los fetch() de /data/*.json para que lean desde raw.githubusercontent
+// usando el SHA más reciente guardado por el panel en cookie/localStorage.
+// No toca tu app.js: funciona como "shim" transparente.
 
-  var GH_OWNER  = (window.ENV && window.ENV.GH_OWNER)  || "ludmilasolutions";
-  var GH_REPO   = (window.ENV && window.ENV.GH_REPO)   || "mgv";
-  var GH_BRANCH = (window.ENV && window.ENV.GH_BRANCH) || "main";
+(function(){
+  const ENV = (window.ENV||{});
+  const OWNER  = ENV.GH_OWNER  || "ludmilasolutions";
+  const REPO   = ENV.GH_REPO   || "mgv";
+  const BRANCH = ENV.GH_BRANCH || "main";
 
-  var RAW_BASE = "https://raw.githubusercontent.com/" + GH_OWNER + "/" + GH_REPO + "/" + GH_BRANCH + "/data";
-  var re = /(?:^|\/)data\/(productos|banners|config)\.json(?:\?[^#]*)?(?:#.*)?$/i;
+  function setLastSHA(sha){
+    try{
+      if(!sha) return;
+      localStorage.setItem('mgv_last_sha', sha);
+      document.cookie = 'mgvsha='+sha+';path=/;max-age='+(60*60*24*30);
+    }catch(_){}
+  }
+  function getLastSHA(){
+    try{
+      const u = new URL(window.location.href);
+      const qs = u.searchParams.get('sha');
+      if(qs){ setLastSHA(qs); return qs; }
+    }catch(_){}
+    try{
+      const ls = localStorage.getItem('mgv_last_sha');
+      if(ls) return ls;
+    }catch(_){}
+    try{
+      const m = document.cookie.match(/(?:^|;)\s*mgvsha=([^;]+)/);
+      if(m) return m[1];
+    }catch(_){}
+    return null;
+  }
 
-  var loggedOnce = false;
-  function logOnce(){ if(!loggedOnce){ loggedOnce = true; try{
-    console.info("%cMGV RAW PATCH", "background:#222;color:#0f0;padding:2px 6px;border-radius:4px",
-      "Leyendo data desde:", RAW_BASE);
-  }catch(_){} }}
+  function rawBase(sha){
+    return `https://raw.githubusercontent.com/${OWNER}/${REPO}/${sha||BRANCH}/data`;
+  }
 
-  var origFetch = window.fetch;
-  window.fetch = function(input, init) {
-    try {
-      var urlStr = (typeof input === "string") ? input
-                 : (input && input.url) ? input.url
-                 : String(input || "");
-      if (re.test(urlStr)) {
-        var file = urlStr.match(/(?:^|\/)data\/(productos|banners|config)\.json/i)[1].toLowerCase();
-        var u = new URL(RAW_BASE + "/" + file + ".json");
-        try {
-          var old = new URL(urlStr, location.origin);
-          old.searchParams.forEach((v, k) => u.searchParams.set(k, v));
-        } catch (_) {}
-        u.searchParams.set("ts", Date.now());
-        if (typeof input === "string") input = u.toString();
-        else input = new Request(u.toString(), input);
-        logOnce();
+  // Exponer helpers por si querés usarlos en app.js
+  window.MGVData = {
+    get sha(){ return getLastSHA(); },
+    rawBase,
+    dataUrl: (rel)=> rawBase(getLastSHA()) + '/' + String(rel||'').replace(/^\.?\/?data\//,'')
+  };
+  window.__MGV_SHA = getLastSHA();
+
+  const isDataJson = (url)=>{
+    try{
+      const u = String(url);
+      if (/^https?:/i.test(u)) return /\/data\/[^?]+\.(json)(\?|$)/i.test(u);
+      return /^\.?\/?data\/[^?]+\.(json)(\?|$)/i.test(u);
+    }catch(_){ return false; }
+  };
+
+  const origFetch = window.fetch.bind(window);
+  window.fetch = function(input, init){
+    try{
+      const url = (typeof input==='string') ? input : (input && input.url);
+      if (url && isDataJson(url)){
+        const rel = String(url).replace(/^https?:\/\/[^/]+\/?/,'').replace(/^\.?\/?/,''); // strip origin & leading ./
+        const finalUrl = window.MGVData.dataUrl(rel) + (url.includes('?')?'&':'?') + 'ts=' + Date.now();
+        const opts = Object.assign({}, init||{}, { cache:'no-store' });
+        return origFetch(finalUrl, opts);
       }
-    } catch (e) { /* sigue fetch normal si algo falla */ }
-    return origFetch.apply(this, arguments);
+    }catch(_){}
+    return origFetch(input, init);
   };
 })();
