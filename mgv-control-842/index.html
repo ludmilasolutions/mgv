@@ -132,7 +132,7 @@
         <h3>Guardar en GitHub</h3>
         <p class="muted">Configurar una vez y queda listo:</p>
         <div class="row3">
-          <div><label>API Base (ej: /api)</label><input id="apiBase" placeholder="/api"></div>
+          <div><label>API Base (ej: /.netlify/functions)</label><input id="apiBase" placeholder="/.netlify/functions"></div>
           <div><label>Save Token</label><input id="saveToken" placeholder="(no se guarda en repo)"></div>
           <div><label>Probar conexión</label><button class="btn" id="testApi">Test</button></div>
         </div>
@@ -181,7 +181,7 @@
         const target = mapPath.get(path) || mapPath.get(path.replace(/^\//, ""));
         if (target) {
           const bust = (target.includes("?") ? "&" : "?") + "v=" + Date.now();
-          const newUrl = target + bust;
+          const newUrl  = target + bust;
           const newInit = Object.assign({ cache: "no-store" }, init || {});
           return origFetch(newUrl, newInit);
         }
@@ -213,8 +213,12 @@
     }
 
     function boot(){
+      // default para evitar 404 del alias /api
+      if(!localStorage.getItem("mgv_apiBase")){
+        localStorage.setItem("mgv_apiBase","/.netlify/functions");
+      }
       show("loginSec", !sess.logged);
-      show("appSec", sess.logged);
+      show("appSec",  sess.logged);
       if(sess.logged){
         loadTables();
         hydrateConfigUI();
@@ -337,7 +341,8 @@
       document.getElementById("pgReturns").value = (config.pages&&config.pages.returns)||"";
       document.getElementById("pgPrivacy").value = (config.pages&&config.pages.privacy)||"";
 
-      document.getElementById("apiBase").value   = localStorage.getItem("mgv_apiBase") || "/api";
+      // defaults y binds
+      document.getElementById("apiBase").value   = localStorage.getItem("mgv_apiBase") || "/.netlify/functions";
       document.getElementById("saveToken").value = localStorage.getItem("mgv_saveToken") || "";
       document.getElementById("testApi").onclick = testApi;
       document.getElementById("saveAll").onclick = saveAll;
@@ -374,7 +379,7 @@
     }
 
     async function testApi(){
-      const base = document.getElementById("apiBase").value.trim()||"/api";
+      const base = (document.getElementById("apiBase").value.trim()||"/.netlify/functions");
       const tok  = document.getElementById("saveToken").value.trim();
       localStorage.setItem("mgv_apiBase", base);
       localStorage.setItem("mgv_saveToken", tok);
@@ -395,7 +400,7 @@
 
     async function saveAll(){
       gatherConfigFromUI();
-      const base = localStorage.getItem("mgv_apiBase")||"/api";
+      const base = localStorage.getItem("mgv_apiBase")||"/.netlify/functions";
       const tok  = localStorage.getItem("mgv_saveToken")||"";
       try{
         const r = await fetch(base+"/save-catalog",{
