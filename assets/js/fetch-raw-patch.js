@@ -6,13 +6,26 @@
   var GH_REPO   = (window.ENV && window.ENV.GH_REPO)   || "mgv";
   var GH_BRANCH = (window.ENV && window.ENV.GH_BRANCH) || "main";
 
-  var RAW_BASE = "https://raw.githubusercontent.com/" + GH_OWNER + "/" + GH_REPO + "/" + GH_BRANCH + "/data";
+  var _sha = (function(){ 
+  try { 
+    var urlSha = new URL(window.location.href).searchParams.get("sha");
+    if (urlSha) return urlSha;
+  } catch(_) {}
+  try { 
+    var ls = localStorage.getItem("mgv_last_sha"); if (ls) return ls;
+  } catch(_) {}
+  try {
+    var m = document.cookie.match(/(?:^|;\s*)mgvsha=([^;]+)/); if (m) return decodeURIComponent(m[1]);
+  } catch(_) {}
+  return (window.ENV && window.ENV.GH_SHA) || GH_BRANCH;
+})();
+var RAW_BASE = "https://raw.githubusercontent.com/" + GH_OWNER + "/" + GH_REPO + "/" + _sha + "/data";
   var re = /(?:^|\/)data\/(productos|banners|config)\.json(?:\?[^#]*)?(?:#.*)?$/i;
 
   var loggedOnce = false;
   function logOnce(){ if(!loggedOnce){ loggedOnce = true; try{
     console.info("%cMGV RAW PATCH", "background:#222;color:#0f0;padding:2px 6px;border-radius:4px",
-      "Leyendo data desde:", RAW_BASE);
+      "Leyendo data desde:", RAW_BASE, "(sha="+_sha+")");
   }catch(_){} }}
 
   var origFetch = window.fetch;

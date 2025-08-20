@@ -429,7 +429,9 @@
         if(r.ok){
           // Usa el último SHA devuelto para leer data nueva sin esperar propagación
           if (j && Array.isArray(j.commits) && j.commits.length) {
-            window.__MGV_PENDING_SHA = j.commits[j.commits.length-1];
+            var _sha = j.commits[j.commits.length-1];
+            window.__MGV_PENDING_SHA = _sha;
+            try { localStorage.setItem("mgv_last_sha", _sha); document.cookie = "mgvsha="+_sha+"; path=/; max-age=2592000"; } catch(_) {}
           }
           alert("Guardado en GitHub ✔️");
           await loadTables(); // usa __MGV_PENDING_SHA si existe
