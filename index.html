@@ -8,38 +8,11 @@
   <link rel="icon" href="assets/logo.png"/>
   <link rel="stylesheet" href="styles.css"/>
 
-  <!-- Parche RAW: redirige /data/*.json a GitHub RAW con cache-busting -->
+  <!-- RAW patch: reescribe /data/*.json -> RAW GitHub con cache-busting -->
   <script>
-  (function () {
-    const OWNER  = "ludmilasolutions"; // cambiar si fuera otro owner
-    const REPO   = "mgv";              // cambiar si fuera otro repo
-    const BRANCH = "main";             // cambiar si fuera otra rama
-    const RAW_BASE = `https://raw.githubusercontent.com/${OWNER}/${REPO}/${BRANCH}/data`;
-
-    const targets = ["productos.json","banners.json","config.json"];
-    const mapPath = new Map();
-    for (const name of targets) {
-      mapPath.set(`/data/${name}`, `${RAW_BASE}/${name}`);
-      mapPath.set(`data/${name}`,  `${RAW_BASE}/${name}`);
-    }
-
-    const origFetch = window.fetch.bind(window);
-    window.fetch = function (input, init) {
-      try {
-        const url = new URL(typeof input === "string" ? input : input.url, location.href);
-        const path = url.pathname;
-        const target = mapPath.get(path) || mapPath.get(path.replace(/^\//, ""));
-        if (target) {
-          const bust = (target.includes("?") ? "&" : "?") + "ts=" + Date.now();
-          const newUrl = target + bust;
-          const newInit = Object.assign({ cache: "no-store" }, init || {});
-          return origFetch(newUrl, newInit);
-        }
-      } catch (e) { /* fallback */ }
-      return origFetch(input, init);
-    };
-  })();
+    window.ENV = { GH_OWNER: "ludmilasolutions", GH_REPO: "mgv", GH_BRANCH: "main" };
   </script>
+  <script src="assets/js/fetch-raw-patch.js"></script>
 </head>
 <body>
   <div class="topbar">
@@ -96,7 +69,7 @@
 
   <footer class="container footer" id="footerInfo"></footer>
 
-  <!-- Tu app original -->
+  <!-- Tu app -->
   <script src="app.js"></script>
 </body>
 </html>

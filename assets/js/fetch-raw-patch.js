@@ -1,16 +1,23 @@
 /* assets/js/fetch-raw-patch.js
- * Lee /data/{productos|banners|config}.json desde GitHub RAW con cache-busting.
- * Inyectar en <head> ANTES de cualquier script que haga fetch de esos JSON.
+ * MGV – Instant data updates (RAW GitHub + cache-busting)
+ * Intercepta fetch a /data/{productos|banners|config}.json y lo redirige a RAW con ?ts=<now>
  */
 (function () {
-  if (window.__MGV_FETCH_RAW_PATCH__) return;
+  if (window.__MGV_FETCH_RAW_PATCH__) return; // evitar doble inyección
   window.__MGV_FETCH_RAW_PATCH__ = true;
 
   var GH_OWNER  = (window.ENV && window.ENV.GH_OWNER)  || "ludmilasolutions";
   var GH_REPO   = (window.ENV && window.ENV.GH_REPO)   || "mgv";
   var GH_BRANCH = (window.ENV && window.ENV.GH_BRANCH) || "main";
-  var RAW_BASE  = "https://raw.githubusercontent.com/" + GH_OWNER + "/" + GH_REPO + "/" + GH_BRANCH + "/data";
+
+  var RAW_BASE = "https://raw.githubusercontent.com/" + GH_OWNER + "/" + GH_REPO + "/" + GH_BRANCH + "/data";
   var re = /(?:^|\/)data\/(productos|banners|config)\.json(?:\?[^#]*)?(?:#.*)?$/i;
+
+  var loggedOnce = false;
+  function logOnce(){ if(!loggedOnce){ loggedOnce = true; try{
+    console.info("%cMGV RAW PATCH", "background:#222;color:#0f0;padding:2px 6px;border-radius:4px",
+      "Leyendo data desde:", RAW_BASE);
+  }catch(_){} }}
 
   var origFetch = window.fetch;
   window.fetch = function(input, init) {
@@ -28,8 +35,9 @@
         u.searchParams.set("ts", Date.now());
         if (typeof input === "string") input = u.toString();
         else input = new Request(u.toString(), input);
+        logOnce();
       }
-    } catch (e) { /* sigue fetch normal */ }
+    } catch (e) { /* sigue fetch normal si algo falla */ }
     return origFetch.apply(this, arguments);
   };
 })();
