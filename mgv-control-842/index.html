@@ -25,39 +25,6 @@
     .btn{background:#111;color:#fff;border:1px solid #111;border-radius:12px;padding:8px 12px;cursor:pointer}
     .btn.secondary{background:#fff;color:#111;border:1px solid var(--border)}
   </style>
-
-  <!-- Parche RAW: el panel lee siempre data fresca desde GitHub RAW con cache-busting -->
-  <script>
-    (function () {
-      const GH_OWNER  = "ludmilasolutions";
-      const GH_REPO   = "mgv";
-      const GH_BRANCH = "main";
-      window.RAW_BASE = `https://raw.githubusercontent.com/${GH_OWNER}/${GH_REPO}/${GH_BRANCH}/data`;
-
-      const targets = ["productos.json","banners.json","config.json"];
-      const mapPath = new Map();
-      for (const name of targets) {
-        mapPath.set(`/data/${name}`, `${RAW_BASE}/${name}`);
-        mapPath.set(`data/${name}`,  `${RAW_BASE}/${name}`);
-      }
-
-      const origFetch = window.fetch.bind(window);
-      window.fetch = function (input, init) {
-        try {
-          const u = new URL(typeof input === "string" ? input : input.url, location.href);
-          const path = u.pathname;
-          const target = mapPath.get(path) || mapPath.get(path.replace(/^\//, ""));
-          if (target) {
-            const bust = (target.includes("?") ? "&" : "?") + "ts=" + Date.now();
-            const newUrl  = target + bust;
-            const newInit = Object.assign({ cache: "no-store" }, init || {});
-            return origFetch(newUrl, newInit);
-          }
-        } catch (_) {}
-        return origFetch(input, init);
-      };
-    })();
-  </script>
 </head>
 <body>
   <div class="wrap">
@@ -191,7 +158,39 @@
     </section>
   </div>
 
-  <!-- Lógica del Panel -->
+  <!-- Override: el panel también puede leer JSON directo del repo Raw -->
+  <script>
+  (function () {
+    const OWNER  = "ludmilasolutions";
+    const REPO   = "mgv";
+    const BRANCH = "main";
+    const RAW_BASE = `https://raw.githubusercontent.com/${OWNER}/${REPO}/${BRANCH}/data`;
+
+    const targets = ["productos.json","banners.json","config.json"];
+    const mapPath = new Map();
+    for (const name of targets) {
+      mapPath.set(`/data/${name}`, `${RAW_BASE}/${name}`);
+      mapPath.set(`data/${name}`,  `${RAW_BASE}/${name}`);
+    }
+
+    const origFetch = window.fetch.bind(window);
+    window.fetch = function (input, init) {
+      try {
+        const u = new URL(typeof input === "string" ? input : input.url, location.href);
+        const path = u.pathname;
+        const target = mapPath.get(path) || mapPath.get(path.replace(/^\//, ""));
+        if (target) {
+          const bust = (target.includes("?") ? "&" : "?") + "v=" + Date.now();
+          const newUrl  = target + bust;
+          const newInit = Object.assign({ cache: "no-store" }, init || {});
+          return origFetch(newUrl, newInit);
+        }
+      } catch (_) {}
+      return origFetch(input, init);
+    };
+  })();
+  </script>
+
   <script>
     const SALT = "mgv~panel#2025";
     const HASHED = "b950ddfbf98b1a566a9445e569d2e31e894a8026cbf0eb447846b254c820ce23"; // contraseña temporal
@@ -214,6 +213,7 @@
     }
 
     function boot(){
+      // default para evitar 404 del alias /api
       if(!localStorage.getItem("mgv_apiBase")){
         localStorage.setItem("mgv_apiBase","/api");
       }
@@ -239,11 +239,10 @@
     let productos = [];
     let banners = [];
     let config = null;
-
     async function loadTables(){
-      productos = await (await fetch(RAW_BASE + "/productos.json?ts=" + Date.now())).json();
-      banners   = await (await fetch(RAW_BASE + "/banners.json?ts=" + Date.now())).json();
-      config    = await (await fetch(RAW_BASE + "/config.json?ts=" + Date.now())).json();
+      productos = await (await fetch("../data/productos.json?ts="+Date.now())).json();
+      banners   = await (await fetch("../data/banners.json?ts="+Date.now())).json();
+      config    = await (await fetch("../data/config.json?ts="+Date.now())).json();
       renderProductos();
       renderBanners();
       hydrateConfigUI();
@@ -410,7 +409,7 @@
           body: JSON.stringify({ productos, banners, config })
         });
         const j = await r.json().catch(()=>({}));
-        if(r.ok){ alert("Guardado en GitHub ✔️"); await loadTables(); }
+        if(r.ok){ alert("Guardado en GitHub ✔️"); }
         else { alert("Error "+r.status+": "+(j.error||JSON.stringify(j))); }
       }catch(e){ alert("Error de red: "+e.message); }
     }
