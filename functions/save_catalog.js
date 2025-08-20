@@ -1,5 +1,5 @@
 
-// v1 function (CommonJS). No ESM, no 'node:' prefixes.
+// v1 function (CommonJS) + build hook trigger
 const { createSign, createPrivateKey } = require("crypto");
 
 function json(data, statusCode = 200, extra = {}) {
@@ -15,15 +15,11 @@ const b64url = (buf) =>
 const b64urlStr = (s) => b64url(Buffer.from(s, "utf8"));
 
 function resolvePrivateKey() {
-  // Preferimos GH_PRIVATE_KEY_B64 si está
   const b64 = process.env.GH_PRIVATE_KEY_B64;
   if (b64) {
-    try {
-      return Buffer.from(b64, "base64").toString("utf8");
-    } catch {}
+    try { return Buffer.from(b64, "base64").toString("utf8"); } catch {}
   }
   const raw = process.env.GH_PRIVATE_KEY || "";
-  // Normalizar saltos
   return raw.replace(/\\n/g, "\n").replace(/\r\n/g, "\n");
 }
 
@@ -33,9 +29,7 @@ exports.handler = async (event) => {
     "Access-Control-Allow-Headers": "Content-Type, Authorization",
     "Access-Control-Allow-Methods": "POST, OPTIONS",
   };
-  if (event.httpMethod === "OPTIONS") {
-    return { statusCode: 200, headers: cors, body: "" };
-  }
+  if (event.httpMethod === "OPTIONS") return { statusCode: 200, headers: cors, body: "" };
 
   try {
     // Auth
@@ -51,11 +45,9 @@ exports.handler = async (event) => {
 
     // JWT
     const now = Math.floor(Date.now() / 1000);
-    const header = { alg: "RS256", typ: "JWT" };
-    const payload = { iat: now - 60, exp: now + 540, iss: process.env.GH_APP_ID };
-    const unsigned = `${b64urlStr(JSON.stringify(header))}.${b64urlStr(JSON.stringify(payload))}`;
+    const unsigned = `${b64urlStr(JSON.stringify({ alg: "RS256", typ: "JWT" }))}.${b64urlStr(JSON.stringify({ iat: now - 60, exp: now + 540, iss: process.env.GH_APP_ID }))}`;
 
-    // Importar clave como KeyObject (conversión a PKCS#8 para OpenSSL 3)
+    // Key import (PKCS#1 -> PKCS#8 for OpenSSL 3)
     const pem = resolvePrivateKey();
     let keyObj;
     try {
@@ -68,12 +60,7 @@ exports.handler = async (event) => {
 
     const signer = createSign("RSA-SHA256");
     signer.update(unsigned);
-    let signature;
-    try {
-      signature = signer.sign(keyObj);
-    } catch (e) {
-      return json({ error: "sign_error", detail: String(e?.message || e) }, 500, cors);
-    }
+    const signature = signer.sign(keyObj);
     const jwt = `${unsigned}.${b64url(signature)}`;
 
     // Installation token
@@ -111,6 +98,12 @@ exports.handler = async (event) => {
     await putFile("data/productos.json", JSON.stringify(body.productos, null, 2), "chore: update productos.json");
     await putFile("data/banners.json", JSON.stringify(body.banners, null, 2), "chore: update banners.json");
     await putFile("data/config.json", JSON.stringify(body.config, null, 2), "chore: update config.json");
+
+    // 🔔 Disparar redeploy de Netlify (Build Hook)
+    const hook = process.env.NETLIFY_BUILD_HOOK_URL || process.env.NETLIFY_BUILD_HOOK || process.env.BUILD_HOOK_URL;
+    if (hook) {
+      try { await fetch(hook, { method: "POST" }); } catch (e) { /* ignore hook errors */ }
+    }
 
     return json({ ok: true }, 200, cors);
   } catch (e) {
