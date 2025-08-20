@@ -132,7 +132,7 @@
         <h3>Guardar en GitHub</h3>
         <p class="muted">Configurar una vez y queda listo:</p>
         <div class="row3">
-          <div><label>API Base (ej: /.netlify/functions)</label><input id="apiBase" placeholder="/.netlify/functions"></div>
+          <div><label>API Base (ej: /api)</label><input id="apiBase" placeholder="/api"></div>
           <div><label>Save Token</label><input id="saveToken" placeholder="(no se guarda en repo)"></div>
           <div><label>Probar conexión</label><button class="btn" id="testApi">Test</button></div>
         </div>
@@ -158,6 +158,7 @@
     </section>
   </div>
 
+  <!-- Override: el panel también puede leer JSON directo del repo Raw -->
   <script>
   (function () {
     const OWNER  = "ludmilasolutions";
@@ -170,7 +171,6 @@
     for (const name of targets) {
       mapPath.set(`/data/${name}`, `${RAW_BASE}/${name}`);
       mapPath.set(`data/${name}`,  `${RAW_BASE}/${name}`);
-      mapPath.set(`../data/${name}`,  `${RAW_BASE}/${name}`);
     }
 
     const origFetch = window.fetch.bind(window);
@@ -213,8 +213,9 @@
     }
 
     function boot(){
+      // default para evitar 404 del alias /api
       if(!localStorage.getItem("mgv_apiBase")){
-        localStorage.setItem("mgv_apiBase","/.netlify/functions");
+        localStorage.setItem("mgv_apiBase","/api");
       }
       show("loginSec", !sess.logged);
       show("appSec",  sess.logged);
@@ -239,9 +240,9 @@
     let banners = [];
     let config = null;
     async function loadTables(){
-      productos = await (await fetch("../data/productos.json")).json();
-      banners   = await (await fetch("../data/banners.json")).json();
-      config    = await (await fetch("../data/config.json")).json();
+      productos = await (await fetch("../data/productos.json?ts="+Date.now())).json();
+      banners   = await (await fetch("../data/banners.json?ts="+Date.now())).json();
+      config    = await (await fetch("../data/config.json?ts="+Date.now())).json();
       renderProductos();
       renderBanners();
       hydrateConfigUI();
@@ -340,7 +341,8 @@
       document.getElementById("pgReturns").value = (config.pages&&config.pages.returns)||"";
       document.getElementById("pgPrivacy").value = (config.pages&&config.pages.privacy)||"";
 
-      document.getElementById("apiBase").value   = localStorage.getItem("mgv_apiBase") || "/.netlify/functions";
+      // defaults y binds
+      document.getElementById("apiBase").value   = localStorage.getItem("mgv_apiBase") || "/api";
       document.getElementById("saveToken").value = localStorage.getItem("mgv_saveToken") || "";
       document.getElementById("testApi").onclick = testApi;
       document.getElementById("saveAll").onclick = saveAll;
@@ -377,15 +379,14 @@
     }
 
     async function testApi(){
-      const base = (document.getElementById("apiBase").value.trim()||"/.netlify/functions");
+      const base = (document.getElementById("apiBase").value.trim()||"/api");
       const tok  = document.getElementById("saveToken").value.trim();
       localStorage.setItem("mgv_apiBase", base);
       localStorage.setItem("mgv_saveToken", tok);
       updateApiStatus();
       try{
-        const r = await fetch(base+"/save_catalog", { method:"POST", headers:{"Authorization":"Bearer "+tok,"Content-Type":"application/json"}, body: JSON.stringify({productos:[],banners:[],config:{_ping:true}})});
-        const ok = r.status === 200 || r.status === 401 || r.status === 500 || r.status === 404;
-        alert(ok? "Conexión OK (status "+r.status+")" : "Status "+r.status);
+        const r = await fetch(base+"/ping");
+        if(r.ok){ alert("Conexión OK"); } else { alert("La API respondió con estado "+r.status); }
       }catch(e){ alert("No se pudo conectar: "+e.message); }
     }
 
@@ -399,10 +400,10 @@
 
     async function saveAll(){
       gatherConfigFromUI();
-      const base = localStorage.getItem("mgv_apiBase")||"/.netlify/functions";
+      const base = localStorage.getItem("mgv_apiBase")||"/api";
       const tok  = localStorage.getItem("mgv_saveToken")||"";
       try{
-        const r = await fetch(base+"/save_catalog",{
+        const r = await fetch(base+"/save-catalog",{
           method:"POST",
           headers:{"Content-Type":"application/json","Authorization":"Bearer "+tok},
           body: JSON.stringify({ productos, banners, config })
