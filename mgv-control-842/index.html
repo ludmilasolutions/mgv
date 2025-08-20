@@ -403,7 +403,7 @@
       const base = localStorage.getItem("mgv_apiBase")||"/api";
       const tok  = localStorage.getItem("mgv_saveToken")||"";
       try{
-        const r = await fetch(base+"/save-catalog",{
+        const r = await fetch(base+"/save_catalog",{
           method:"POST",
           headers:{"Content-Type":"application/json","Authorization":"Bearer "+tok},
           body: JSON.stringify({ productos, banners, config })
