@@ -1,23 +1,7 @@
-# Netlify config: map /api/* -> Netlify Functions (folder: functions)
 [build]
-  publish = "."
+  functions = "functions"
 
-[functions]
-  directory = "functions"
-
-# Specific alias for hyphenated route
-[[redirects]]
-  from = "/api/save-catalog"
-  to   = "/.netlify/functions/save_catalog"
-  status = 200
-
-[[redirects]]
-  from = "/api/debug-gh"
-  to   = "/.netlify/functions/debug_gh"
-  status = 200
-
-# Fallback wildcard
 [[redirects]]
   from = "/api/*"
-  to   = "/.netlify/functions/:splat"
+  to = "/.netlify/functions/:splat"
   status = 200
