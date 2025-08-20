@@ -7,67 +7,62 @@ function json(data, status = 200, extra = {}) {
   });
 }
 
-function b64urlFromBuffer(buf) {
-  return Buffer.from(buf).toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
-}
+const b64url = (buf) => Buffer.from(buf).toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+const b64urlStr = (s) => b64url(Buffer.from(s, "utf8"));
 
-function b64urlFromString(str) {
-  return Buffer.from(str, "utf8").toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
-}
-
-// Obtiene la clave privada desde GH_PRIVATE_KEY_B64 (base64) o GH_PRIVATE_KEY (PEM)
 function resolvePrivateKey() {
   const b64 = process.env.GH_PRIVATE_KEY_B64;
   if (b64) {
-    try {
-      return Buffer.from(b64, "base64").toString("utf8");
-    } catch {}
+    try { return Buffer.from(b64, "base64").toString("utf8"); } catch {}
   }
   const raw = process.env.GH_PRIVATE_KEY || "";
   return raw.replace(/\\n/g, "\n").replace(/\r\n/g, "\n");
 }
 
-export default async (request, context) => {
+export default async (request) => {
   const cors = {
     "Access-Control-Allow-Origin": process.env.PANEL_ORIGIN || "*",
     "Access-Control-Allow-Headers": "Content-Type, Authorization",
     "Access-Control-Allow-Methods": "POST, OPTIONS",
   };
-  if (request.method === "OPTIONS") {
-    return new Response(null, { status: 200, headers: cors });
-  }
+  if (request.method === "OPTIONS") return new Response(null, { status: 200, headers: cors });
 
   try {
-    // --- Auth del panel ---
     const auth = request.headers.get("authorization") || "";
     if (!auth.startsWith("Bearer ")) return json({ error: "Missing token" }, 401, cors);
     const token = auth.slice(7).trim();
     if (token !== process.env.SAVE_TOKEN) return json({ error: "Invalid token" }, 403, cors);
 
-    // --- Payload ---
     const body = await request.json().catch(() => ({}));
     if (!body?.productos || !body?.banners || !body?.config) return json({ error: "Missing payload" }, 400, cors);
 
-    // --- JWT de GitHub App (compat) ---
+    // JWT
     const now = Math.floor(Date.now() / 1000);
-    const header = { alg: "RS256", typ: "JWT" };
-    const payload = { iat: now - 60, exp: now + 540, iss: process.env.GH_APP_ID };
-    const unsigned = `${b64urlFromString(JSON.stringify(header))}.${b64urlFromString(JSON.stringify(payload))}`;
+    const unsigned = `${b64urlStr(JSON.stringify({ alg: "RS256", typ: "JWT" }))}.${b64urlStr(JSON.stringify({ iat: now - 60, exp: now + 540, iss: process.env.GH_APP_ID }))}`;
 
-    // Preparar clave (convierte PKCS#1 -> PKCS#8 si hace falta)
-    const pemMaybe = resolvePrivateKey();
-    let pemForSign = pemMaybe;
+    // Importar clave como KeyObject; si es RSA PKCS#1 la convertimos a PKCS#8
+    const pem = resolvePrivateKey();
+    let keyObj;
     try {
-      const keyObj = createPrivateKey({ key: pemMaybe, format: "pem" });
-      pemForSign = keyObj.export({ type: "pkcs8", format: "pem" });
-    } catch {}
+      keyObj = createPrivateKey({ key: pem, format: "pem" });
+      // Exportar a PKCS#8 y reimportar (max compat con OpenSSL 3)
+      const pkcs8 = keyObj.export({ type: "pkcs8", format: "pem" });
+      keyObj = createPrivateKey({ key: pkcs8, format: "pem" });
+    } catch (e) {
+      return json({ error: "key_import_error", detail: String(e?.message || e) }, 500, cors);
+    }
 
     const signer = createSign("RSA-SHA256");
     signer.update(unsigned);
-    const sig = signer.sign(pemForSign);
-    const jwt = `${unsigned}.${b64urlFromBuffer(sig)}`;
+    let signature;
+    try {
+      signature = signer.sign(keyObj);
+    } catch (e) {
+      return json({ error: "sign_error", detail: String(e?.message || e) }, 500, cors);
+    }
+    const jwt = `${unsigned}.${b64url(signature)}`;
 
-    // --- Installation token ---
+    // Installation token
     const inst = process.env.GH_INSTALLATION_ID;
     const itRes = await fetch(`https://api.github.com/app/installations/${inst}/access_tokens`, {
       method: "POST",
@@ -96,14 +91,14 @@ export default async (request, context) => {
         headers: { Authorization: `Bearer ${ghToken}`, Accept: "application/vnd.github+json", "User-Agent": "mgv-editor/1.0" },
         body: JSON.stringify({ message, branch, content: Buffer.from(content, "utf8").toString("base64"), sha }),
       });
-      if (!r.ok) throw new Error(`GitHub PUT error: ${await r.text()}`);
+      if (!r.ok) return json({ error: "GitHub PUT error", detail: await r.text() }, 500, cors);
     }
 
     await putFile("data/productos.json", JSON.stringify(body.productos, null, 2), "chore: update productos.json");
     await putFile("data/banners.json", JSON.stringify(body.banners, null, 2), "chore: update banners.json");
     await putFile("data/config.json", JSON.stringify(body.config, null, 2), "chore: update config.json");
 
-    return json({ ok: true, commit: "changes queued" }, 200, cors);
+    return json({ ok: true }, 200, cors);
   } catch (e) {
     return json({ error: e.message || String(e) }, 500, cors);
   }
