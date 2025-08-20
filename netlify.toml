@@ -1,23 +1,2 @@
-# Netlify config: map /api/* -> Netlify Functions, and fix hyphen/underscore names
 [build]
-  publish = "."
-
-[functions]
-  directory = "functions"
-
-# Specific routes first (hyphen -> underscore)
-[[redirects]]
-  from = "/api/save-catalog"
-  to   = "/.netlify/functions/save_catalog"
-  status = 200
-
-[[redirects]]
-  from = "/api/debug-gh"
-  to   = "/.netlify/functions/debug_gh"
-  status = 200
-
-# Fallback wildcard (for /api/ping etc. where names coinciden)
-[[redirects]]
-  from = "/api/*"
-  to   = "/.netlify/functions/:splat"
-  status = 200
+  functions = "netlify/functions"

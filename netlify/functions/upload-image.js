@@ -1,31 +1,18 @@
 // netlify/functions/upload-image.js
-// Upload product images to GitHub repo via Netlify Function (securely uses PAT)
-// - Expects multipart/form-data with field 'file' and optional 'subdir'
-// - Writes to repo path: assets/uploads/<YYYY>/<MM>/<slugified-name>
-// - Returns: { ok: true, url, path, commitSha }
-//
-// Env vars required in Netlify settings:
-//   GITHUB_OWNER, GITHUB_REPO, GITHUB_DEFAULT_BRANCH (e.g. "main"), GITHUB_TOKEN
-//
-// Optional:
-//   MAX_BYTES (default 6_000_000)  ~6 MB
-//
-// Note: You can add SHARP optimization later if you want (commented below).
+// Ruta: /.netlify/functions/upload-image
+// Requiere env vars en Netlify:
+//   GITHUB_OWNER, GITHUB_REPO, GITHUB_DEFAULT_BRANCH (p.ej. "main"), GITHUB_TOKEN
+// Opcional: MAX_BYTES (default 6000000)
 
-import { Octokit } from "@octokit/rest";
-
-export const config = {
-  path: "/api/upload-image",
-};
+const crypto = require("crypto");
 
 function parseBoundary(ct) {
   const m = /boundary=(.*)$/i.exec(ct || "");
   return m && m[1];
 }
-
-// Very light multipart parser (for a single file part). Good enough for our panel.
 async function parseMultipart(event) {
-  const boundary = parseBoundary(event.headers["content-type"] || event.headers["Content-Type"]);
+  const ct = event.headers["content-type"] || event.headers["Content-Type"] || "";
+  const boundary = parseBoundary(ct);
   if (!boundary) throw new Error("Missing multipart boundary");
 
   const bodyBuffer = Buffer.from(event.body || "", event.isBase64Encoded ? "base64" : "utf8");
@@ -35,12 +22,11 @@ async function parseMultipart(event) {
   while (start !== -1) {
     const end = bodyBuffer.indexOf(boundaryBuf, start + boundaryBuf.length);
     if (end === -1) break;
-    const part = bodyBuffer.slice(start + boundaryBuf.length + 2, end - 2); // skip \r\n
+    const part = bodyBuffer.slice(start + boundaryBuf.length + 2, end - 2); // salteo \r\n
     parts.push(part);
     start = end;
   }
 
-  // Find the part with name="file"
   for (const p of parts) {
     const sep = p.indexOf(Buffer.from("\r\n\r\n"));
     if (sep === -1) continue;
@@ -64,7 +50,7 @@ function slugifyFilename(name) {
     .toLowerCase();
 }
 
-export async function handler(event) {
+exports.handler = async (event) => {
   try {
     if (event.httpMethod !== "POST") {
       return { statusCode: 405, body: "Method Not Allowed" };
@@ -75,11 +61,16 @@ export async function handler(event) {
     const repo = process.env.GITHUB_REPO;
     const branch = process.env.GITHUB_DEFAULT_BRANCH || "main";
     const token = process.env.GITHUB_TOKEN;
+
     if (!owner || !repo || !token) {
       return { statusCode: 500, body: JSON.stringify({ ok: false, error: "Missing GitHub env" }) };
     }
 
     const { filename, contentType, bytes } = await parseMultipart(event);
+
+    if (!/^image\//i.test(contentType)) {
+      return { statusCode: 400, body: JSON.stringify({ ok: false, error: "Not an image" }) };
+    }
     if (bytes.length > MAX_BYTES) {
       return { statusCode: 413, body: JSON.stringify({ ok: false, error: "File too large" }) };
     }
@@ -87,51 +78,41 @@ export async function handler(event) {
     const now = new Date();
     const yyyy = String(now.getUTCFullYear());
     const mm = String(now.getUTCMonth() + 1).padStart(2, "0");
-
     const clean = slugifyFilename(filename);
     const path = `assets/uploads/${yyyy}/${mm}/${Date.now()}_${clean}`;
 
-    // Optional: image type guard
-    if (!/^image\//i.test(contentType)) {
-      return { statusCode: 400, body: JSON.stringify({ ok: false, error: "Not an image" }) };
-    }
+    const b64 = bytes.toString("base64");
+    const api = `https://api.github.com/repos/${owner}/${repo}/contents/${encodeURIComponent(path)}`;
 
-    // If you want to add compression with sharp, uncomment below & add it to package.json
-    // const sharp = await import("sharp");
-    // const img = sharp.default(bytes);
-    // const meta = await img.metadata();
-    // let output = bytes;
-    // if (meta.format === "jpeg" || meta.format === "jpg") {
-    //   output = await img.jpeg({ quality: 82 }).toBuffer();
-    // } else if (meta.format === "png") {
-    //   output = await img.png({ compressionLevel: 8 }).toBuffer();
-    // } else if (meta.format === "webp") {
-    //   output = await img.webp({ quality: 80 }).toBuffer();
-    // }
-    // const b64 = output.toString("base64");
-
-    const b64 = Buffer.from(bytes).toString("base64");
-
-    const octokit = new Octokit({ auth: token });
-    const commit = await octokit.repos.createOrUpdateFileContents({
-      owner,
-      repo,
-      path,
-      message: `feat(panel): upload image ${clean}`,
-      content: b64,
-      branch,
+    const resp = await fetch(api, {
+      method: "PUT",
+      headers: {
+        "Authorization": `Bearer ${token}`,
+        "Content-Type": "application/json",
+        "User-Agent": "mgv-uploader",
+        "Accept": "application/vnd.github+json"
+      },
+      body: JSON.stringify({
+        message: `feat(panel): upload image ${clean}`,
+        content: b64,
+        branch
+      })
     });
 
-    const sha = commit.data.commit.sha;
-    // Raw URL pinned to commit
-    const url = `https://raw.githubusercontent.com/${owner}/${repo}/${sha}/${path}`;
+    const data = await resp.json();
+    if (!resp.ok) {
+      return { statusCode: resp.status, body: JSON.stringify({ ok: false, error: data?.message || "GitHub error" }) };
+    }
+
+    const commitSha = data?.commit?.sha;
+    const url = `https://raw.githubusercontent.com/${owner}/${repo}/${commitSha}/${path}`;
 
     return {
       statusCode: 200,
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ ok: true, url, path, commitSha: sha }),
+      body: JSON.stringify({ ok: true, url, path, commitSha })
     };
   } catch (err) {
     return { statusCode: 500, body: JSON.stringify({ ok: false, error: err.message }) };
   }
-}
+};

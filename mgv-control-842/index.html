@@ -24,8 +24,7 @@
     .pill{border:1px solid var(--border);border-radius:999px;padding:6px 10px}
     .btn{background:#111;color:#fff;border:1px solid #111;border-radius:12px;padding:8px 12px;cursor:pointer}
     .btn.secondary{background:#fff;color:#111;border:1px solid var(--border)}
-
-    /* === Uploader UI === */
+    /* uploader */
     .img-upload{display:inline-flex;align-items:center;gap:.5rem;padding:.5rem .75rem;border-radius:.75rem;border:1px solid var(--border);cursor:pointer;font-weight:600}
     .img-upload input[type=file]{display:none}
     .preview-thumb{width:64px;height:64px;object-fit:cover;border-radius:.5rem;border:1px solid rgba(0,0,0,.08);background:#fafafa}
@@ -168,40 +167,23 @@
   </div>
 
   <script>
-    // --- Config RAW / helper para base según SHA ---
     const GH_OWNER  = "ludmilasolutions";
     const GH_REPO   = "mgv";
     const GH_BRANCH = "main";
     function rawBase(sha){ return `https://raw.githubusercontent.com/${GH_OWNER}/${GH_REPO}/${sha||GH_BRANCH}/data`; }
-    // --- Persistencia de último SHA guardado (para evitar caché al refrescar con F5) ---
     function setLastSHA(sha){
-      try{
-        if(!sha) return;
-        localStorage.setItem('mgv_last_sha', sha);
-        document.cookie = 'mgvsha='+sha+';path=/;max-age='+(60*60*24*30);
-      }catch(_){}
+      try{ if(!sha) return; localStorage.setItem('mgv_last_sha', sha); document.cookie='mgvsha='+sha+';path=/;max-age='+(60*60*24*30);}catch(_){}
     }
     function getLastSHA(){
-      try{
-        const u = new URL(window.location.href);
-        const qs = u.searchParams.get('sha');
-        if(qs){ setLastSHA(qs); return qs; }
-      }catch(_){}
-      try{
-        const ls = localStorage.getItem('mgv_last_sha');
-        if(ls) return ls;
-      }catch(_){}
-      try{
-        const m = document.cookie.match(/(?:^|;)\s*mgvsha=([^;]+)/);
-        if(m) return m[1];
-      }catch(_){}
+      try{ const u=new URL(location.href); const qs=u.searchParams.get('sha'); if(qs){ setLastSHA(qs); return qs; } }catch(_){}
+      try{ const ls=localStorage.getItem('mgv_last_sha'); if(ls) return ls; }catch(_){}
+      try{ const m=document.cookie.match(/(?:^|;)\s*mgvsha=([^;]+)/); if(m) return m[1]; }catch(_){}
       return null;
     }
 
-    // --- Auth panel ---
     const SALT = "mgv~panel#2025";
-    const HASHED = "b950ddfbf98b1a566a9445e569d2e31e894a8026cbf0eb447846b254c820ce23"; // contraseña temporal
-    async function sha256(str){const buf = new TextEncoder().encode(str); const hash = await crypto.subtle.digest('SHA-256', buf); return [...new Uint8Array(hash)].map(b=>b.toString(16).padStart(2,'0')).join('');}
+    const HASHED = "b950ddfbf98b1a566a9445e569d2e31e894a8026cbf0eb447846b254c820ce23";
+    async function sha256(str){const buf=new TextEncoder().encode(str); const hash=await crypto.subtle.digest('SHA-256',buf); return [...new Uint8Array(hash)].map(b=>b.toString(16).padStart(2,'0')).join('');}
     function show(id, yes){ document.getElementById(id).classList.toggle('hidden', !yes) }
 
     const sess = {
@@ -211,55 +193,39 @@
     };
 
     async function doLogin(){
-      const u = document.getElementById("user").value.trim();
-      const p = document.getElementById("pass").value;
+      const u=document.getElementById("user").value.trim();
+      const p=document.getElementById("pass").value;
       if(u!=="admin"){ alert("Usuario inválido"); return; }
-      const h = await sha256(SALT + p);
+      const h=await sha256(SALT+p);
       if(h!==HASHED){ alert("Contraseña incorrecta"); return; }
       sess.login(); boot();
     }
 
     function boot(){
-      if(!localStorage.getItem("mgv_apiBase")){
-        localStorage.setItem("mgv_apiBase","/api");
-      }
+      if(!localStorage.getItem("mgv_apiBase")) localStorage.setItem("mgv_apiBase","/.netlify/functions");
       show("loginSec", !sess.logged);
       show("appSec",  sess.logged);
       if(sess.logged){
-        const _sha=getLastSHA();
-        loadTables(_sha);
+        loadTables(getLastSHA());
         hydrateConfigUI();
         updateApiStatus();
       }
     }
 
-    document.getElementById("loginBtn").onclick = doLogin;
-    document.getElementById("logoutBtn").onclick = ()=>{ sess.logout(); boot(); }
+    document.getElementById("loginBtn").onclick=doLogin;
+    document.getElementById("logoutBtn").onclick=()=>{ sess.logout(); boot(); };
 
-    const tabs = { productosSec: "tabProductos", bannersSec: "tabBanners", configSec: "tabConfig" };
-    Object.entries(tabs).forEach(([sec, btn])=>{
-      document.getElementById(btn).onclick = ()=>{
-        Object.keys(tabs).forEach(id=> show(id, id===sec));
-      };
+    const tabs={productosSec:"tabProductos",bannersSec:"tabBanners",configSec:"tabConfig"};
+    Object.entries(tabs).forEach(([sec,btn])=>{
+      document.getElementById(btn).onclick=()=>{ Object.keys(tabs).forEach(id=>show(id,id===sec)); };
     });
 
-    let productos = [];
-    let banners = [];
-    let config = null;
+    let productos=[], banners=[], config=null;
 
     async function fetchJsonWithRetry(url, tries=6, wait=700){
-      for(let i=0;i<tries;i++){
-        try{
-          const r = await fetch(url, {cache:"no-store"});
-          if(r.ok){
-            const j = await r.json();
-            return j;
-          }
-        }catch(_){}
-        await new Promise(res=>setTimeout(res, wait));
-      }
-      const r = await fetch(url, {cache:"no-store"});
-      return r.json();
+      for(let i=0;i<tries;i++){ try{ const r=await fetch(url,{cache:"no-store"}); if(r.ok) return await r.json(); }catch(_){}
+        await new Promise(res=>setTimeout(res,wait)); }
+      const r=await fetch(url,{cache:"no-store"}); return r.json();
     }
 
     async function loadTables(sha){
@@ -269,32 +235,23 @@
       banners   = await fetchJsonWithRetry(`${BASE}/banners.json?ts=${ts}`);
       config    = await fetchJsonWithRetry(`${BASE}/config.json?ts=${ts}`);
       window.__MGV_PENDING_SHA = null;
-      renderProductos();
-      renderBanners();
-      hydrateConfigUI();
+      renderProductos(); renderBanners(); hydrateConfigUI();
     }
 
-    // === Subida de imágenes (usa Netlify Function /api/upload-image) ===
     async function uploadImageFile(file){
       if(!file) return { ok:false, error:"No file" };
-      const fd = new FormData();
-      fd.append("file", file, file.name);
-      const api = (localStorage.getItem("mgv_apiBase")||"/api") + "/upload-image";
-      const resp = await fetch(api, { method:"POST", body: fd });
-      try{
-        const j = await resp.json();
-        return j;
-      }catch(_){
-        return { ok:false, error:"Respuesta inválida de la API" };
-      }
+      const fd=new FormData(); fd.append("file",file,file.name);
+      const api=(localStorage.getItem("mgv_apiBase")||"/.netlify/functions")+"/upload-image";
+      const resp=await fetch(api,{method:"POST",body:fd});
+      try{ return await resp.json(); }catch(_){ return {ok:false,error:"Respuesta inválida de la API"}; }
     }
 
     function renderProductos(){
-      const tbody = document.querySelector("#tablaProductos tbody");
-      tbody.innerHTML = "";
+      const tbody=document.querySelector("#tablaProductos tbody");
+      tbody.innerHTML="";
       productos.forEach(p=>{
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
+        const tr=document.createElement("tr");
+        tr.innerHTML=`
           <td><input value="${p.nombre ?? ''}" data-f="nombre" data-id="${p.id}"/></td>
           <td><input value="${p.precio ?? 0}" type="number" step="0.01" data-f="precio" data-id="${p.id}"/></td>
           <td><input value="${p.categoria ?? ''}" data-f="categoria" data-id="${p.id}"/></td>
@@ -310,115 +267,72 @@
               <span class="muted" data-status="${p.id}"></span>
             </div>
           </td>
-          <td class="td-actions"><button class="btn secondary" data-ed="${p.id}">Desc</button> <button class="btn danger" data-del="${p.id}">Borrar</button></td>
-        `;
+          <td class="td-actions"><button class="btn secondary" data-ed="${p.id}">Desc</button> <button class="btn danger" data-del="${p.id}">Borrar</button></td>`;
         tbody.appendChild(tr);
       });
-
-      // Sync de inputs (incluye actualizar preview si se pega una URL)
       tbody.querySelectorAll("input.url, td input[type='text'], td input[type='number']").forEach(inp=>{
-        const handler = ()=>{
-          const id = inp.dataset.id, f = inp.dataset.f;
-          if(!id||!f) return;
-          const p = productos.find(x=>x.id===id);
-          if(!p) return;
-          p[f] = (f==="precio")? Number(inp.value||0) : inp.value;
-          if(f==="imagen"){
-            const row = inp.closest("tr");
-            const img = row?.querySelector("img.preview-thumb");
-            if(img) img.src = inp.value.trim();
-          }
+        const handler=()=>{
+          const id=inp.dataset.id, f=inp.dataset.f; if(!id||!f) return;
+          const p=productos.find(x=>x.id===id); if(!p) return;
+          p[f]=(f==="precio")? Number(inp.value||0):inp.value;
+          if(f==="imagen"){ const row=inp.closest("tr"); const img=row?.querySelector("img.preview-thumb"); if(img) img.src=inp.value.trim(); }
         };
-        inp.addEventListener("input", handler);
-        inp.addEventListener("change", handler);
+        inp.addEventListener("input",handler); inp.addEventListener("change",handler);
       });
-
-      // Botón "Desc"
       tbody.querySelectorAll("[data-ed]").forEach(b=>{
-        b.onclick = ()=>{
-          const id = b.dataset.ed;
-          const p = productos.find(x=>x.id===id);
-          const desc = prompt("Descripción", p.descripcion||"");
-          if(desc!==null){ p.descripcion = desc; }
-        };
+        b.onclick=()=>{ const id=b.dataset.ed; const p=productos.find(x=>x.id===id); const d=prompt("Descripción",p.descripcion||""); if(d!==null) p.descripcion=d; };
       });
-
-      // Borrar
       tbody.querySelectorAll("[data-del]").forEach(b=>{
-        b.onclick = ()=>{
-          const id = b.dataset.del;
-          if(confirm("¿Eliminar producto?")){
-            productos = productos.filter(x=>x.id!==id);
-            renderProductos();
-          }
-        };
+        b.onclick=()=>{ const id=b.dataset.del; if(confirm("¿Eliminar producto?")){ productos=productos.filter(x=>x.id!==id); renderProductos(); } };
       });
-
-      // Nuevo
-      document.getElementById("nuevoProd").onclick = ()=>{
-        const id = "p"+Math.random().toString(36).slice(2,7);
+      document.getElementById("nuevoProd").onclick=()=>{
+        const id="p"+Math.random().toString(36).slice(2,7);
         productos.unshift({id, nombre:"Nuevo producto", precio:0, categoria:"Librería", imagen:"", descripcion:""});
         renderProductos();
       };
-
-      // Subida de imagen por fila
       tbody.querySelectorAll("input[type=file][data-file]").forEach(fi=>{
         fi.addEventListener("change", async ()=>{
-          const id = fi.dataset.file;
-          const row = fi.closest("tr");
-          const urlInp = row.querySelector("input.url[data-id='"+id+"']");
-          const prev = row.querySelector("img.preview-thumb");
-          const st   = row.querySelector("[data-status='"+id+"']");
-          const file = fi.files?.[0];
+          const id=fi.dataset.file;
+          const row=fi.closest("tr");
+          const urlInp=row.querySelector("input.url[data-id='"+id+"']");
+          const prev=row.querySelector("img.preview-thumb");
+          const st=row.querySelector("[data-status='"+id+"']");
+          const file=fi.files?.[0];
           fi.value="";
           if(!file) return;
-          st.textContent = "Subiendo imagen…";
+          st.textContent="Subiendo imagen…";
           try{
-            const res = await uploadImageFile(file);
+            const res=await uploadImageFile(file);
             if(res.ok){
-              urlInp.value = res.url;
-              if(prev) prev.src = res.url;
-              const p = productos.find(x=>x.id===id);
-              if(p) p.imagen = res.url;
-              st.textContent = "Listo ✔";
-              // Guarda SHA para evitar caché en recarga
-              if(res.commitSha){ setLastSHA(res.commitSha); window.__MGV_PENDING_SHA = res.commitSha; }
-            }else{
-              st.textContent = "Error: " + (res.error || "no se pudo subir");
-            }
-          }catch(e){
-            st.textContent = "Error: " + e.message;
-          }
+              urlInp.value=res.url; if(prev) prev.src=res.url;
+              const p=productos.find(x=>x.id===id); if(p) p.imagen=res.url;
+              st.textContent="Listo ✔";
+              if(res.commitSha){ setLastSHA(res.commitSha); window.__MGV_PENDING_SHA=res.commitSha; }
+            }else{ st.textContent="Error: "+(res.error||"no se pudo subir"); }
+          }catch(e){ st.textContent="Error: "+e.message; }
         });
       });
     }
 
     function renderBanners(){
-      const tbody = document.querySelector("#tablaBanners tbody");
-      tbody.innerHTML = "";
+      const tbody=document.querySelector("#tablaBanners tbody");
+      tbody.innerHTML="";
       banners.forEach(b=>{
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td><input value="${b.titulo}" data-f="titulo" data-id="${b.id}"/></td>
-          <td><input value="${b.texto||''}" data-f="texto" data-id="${b.id}"/></td>
-          <td><input value="${b.color||'#111111'}" data-f="color" data-id="${b.id}"/></td>
+        const tr=document.createElement("tr");
+        tr.innerHTML=`
+          <td><input value="${b.titulo ?? ''}" data-f="titulo" data-id="${b.id}"/></td>
+          <td><input value="${b.texto ?? ''}" data-f="texto" data-id="${b.id}"/></td>
+          <td><input value="${b.color ?? '#111111'}" data-f="color" data-id="${b.id}"/></td>
           <td><input type="checkbox" ${b.activo!==false?'checked':''} data-f="activo" data-id="${b.id}"/></td>
-          <td class="flex"><button class="btn danger" data-del="${b.id}">Borrar</button></td>
-        `;
+          <td class="flex"><button class="btn danger" data-del="${b.id}">Borrar</button></td>`;
         tbody.appendChild(tr);
       });
       tbody.querySelectorAll("input").forEach(inp=>{
-        const handler = ()=>{
-          const id = inp.dataset.id, f = inp.dataset.f;
-          const b = banners.find(x=>x.id===id);
-          if(!b) return;
-          b[f] = (f==="activo")? inp.checked : inp.value;
-        };
-        inp.addEventListener("input", handler);
-        inp.addEventListener("change", handler);
+        const handler=()=>{ const id=inp.dataset.id, f=inp.dataset.f; const b=banners.find(x=>x.id===id); if(!b) return; b[f]=(f==="activo")? inp.checked:inp.value; };
+        inp.addEventListener("input",handler); inp.addEventListener("change",handler);
       });
-      document.getElementById("nuevoBanner").onclick = ()=>{
-        const id = "b"+Math.random().toString(36).slice(2,7);
+      document.getElementById("nuevoBanner").onclick=()=>{
+        const id="b"+Math.random().toString(36).slice(2,7);
         banners.unshift({id, titulo:"Nuevo banner", texto:"", imagen:"", color:"#111111", activo:true});
         renderBanners();
       };
@@ -428,21 +342,21 @@
       if(!config) return;
       document.getElementById("sName").value = config.storeName||"";
       document.getElementById("waNum").value = (config.whatsapp&&config.whatsapp.number)||"";
-      const t = config.theme||{};
-      document.getElementById("cText").value   = t.text||"#111111";
-      document.getElementById("cCard").value   = t.card||"#f7f7f8";
-      document.getElementById("cBorder").value = t.border||"#e5e7eb";
-      document.getElementById("cBrand").value  = t.brand||"#111111";
-      document.getElementById("cAccent").value = t.accent||"#d4af37";
-      document.getElementById("cBg").value     = t.bg||"#ffffff";
-      document.getElementById("seoTitle").value = (config.seo&&config.seo.title)||"";
-      document.getElementById("seoDesc").value  = (config.seo&&config.seo.description)||"";
-      document.getElementById("pgAbout").value   = (config.pages&&config.pages.about)||"";
-      document.getElementById("pgContact").value = (config.pages&&config.pages.contact)||"";
-      document.getElementById("pgReturns").value = (config.pages&&config.pages.returns)||"";
-      document.getElementById("pgPrivacy").value = (config.pages&&config.pages.privacy)||"";
+      const t=config.theme||{};
+      document.getElementById("cText").value=t.text||"#111111";
+      document.getElementById("cCard").value=t.card||"#f7f7f8";
+      document.getElementById("cBorder").value=t.border||"#e5e7eb";
+      document.getElementById("cBrand").value=t.brand||"#111111";
+      document.getElementById("cAccent").value=t.accent||"#d4af37";
+      document.getElementById("cBg").value=t.bg||"#ffffff";
+      document.getElementById("seoTitle").value=(config.seo&&config.seo.title)||"";
+      document.getElementById("seoDesc").value =(config.seo&&config.seo.description)||"";
+      document.getElementById("pgAbout").value =(config.pages&&config.pages.about)||"";
+      document.getElementById("pgContact").value=(config.pages&&config.pages.contact)||"";
+      document.getElementById("pgReturns").value=(config.pages&&config.pages.returns)||"";
+      document.getElementById("pgPrivacy").value=(config.pages&&config.pages.privacy)||"";
 
-      document.getElementById("apiBase").value   = localStorage.getItem("mgv_apiBase") || "/api";
+      document.getElementById("apiBase").value   = localStorage.getItem("mgv_apiBase") || "/.netlify/functions";
       document.getElementById("saveToken").value = localStorage.getItem("mgv_saveToken") || "";
       document.getElementById("testApi").onclick = testApi;
       document.getElementById("saveAll").onclick = saveAll;
@@ -452,60 +366,54 @@
     }
 
     function gatherConfigFromUI(){
-      const t = (config.theme = config.theme||{});
-      config.storeName = document.getElementById("sName").value;
-      config.whatsapp = config.whatsapp||{};
-      config.whatsapp.number = document.getElementById("waNum").value;
-      t.text   = document.getElementById("cText").value;
-      t.card   = document.getElementById("cCard").value;
-      t.border = document.getElementById("cBorder").value;
-      t.brand  = document.getElementById("cBrand").value;
-      t.accent = document.getElementById("cAccent").value;
-      t.bg     = document.getElementById("cBg").value;
-      config.seo = config.seo||{};
-      config.seo.title = document.getElementById("seoTitle").value;
-      config.seo.description = document.getElementById("seoDesc").value;
-      config.pages = config.pages||{};
-      config.pages.about   = document.getElementById("pgAbout").value;
-      config.pages.contact = document.getElementById("pgContact").value;
-      config.pages.returns = document.getElementById("pgReturns").value;
-      config.pages.privacy = document.getElementById("pgPrivacy").value;
+      const t=(config.theme=config.theme||{});
+      config.storeName=document.getElementById("sName").value;
+      config.whatsapp=config.whatsapp||{};
+      config.whatsapp.number=document.getElementById("waNum").value;
+      t.text  =document.getElementById("cText").value;
+      t.card  =document.getElementById("cCard").value;
+      t.border=document.getElementById("cBorder").value;
+      t.brand =document.getElementById("cBrand").value;
+      t.accent=document.getElementById("cAccent").value;
+      t.bg    =document.getElementById("cBg").value;
+      config.seo=config.seo||{};
+      config.seo.title=document.getElementById("seoTitle").value;
+      config.seo.description=document.getElementById("seoDesc").value;
+      config.pages=config.pages||{};
+      config.pages.about  =document.getElementById("pgAbout").value;
+      config.pages.contact=document.getElementById("pgContact").value;
+      config.pages.returns=document.getElementById("pgReturns").value;
+      config.pages.privacy=document.getElementById("pgPrivacy").value;
     }
 
     function updateApiStatus(){
-      const base = localStorage.getItem("mgv_apiBase");
-      const tok  = localStorage.getItem("mgv_saveToken");
-      document.getElementById("apiStatus").textContent = `API: ${base||'sin URL'} · Token ${tok?'listo':'falta'}`;
+      const base=localStorage.getItem("mgv_apiBase");
+      const tok =localStorage.getItem("mgv_saveToken");
+      document.getElementById("apiStatus").textContent=`API: ${base||'sin URL'} · Token ${tok?'listo':'falta'}`;
     }
 
     async function testApi(){
-      const base = (document.getElementById("apiBase").value.trim()||"/api");
-      const tok  = document.getElementById("saveToken").value.trim();
+      const base=(document.getElementById("apiBase").value.trim()||"/.netlify/functions");
+      const tok =document.getElementById("saveToken").value.trim();
       localStorage.setItem("mgv_apiBase", base);
       localStorage.setItem("mgv_saveToken", tok);
       updateApiStatus();
       try{
-        const r = await fetch(base+"/ping");
-        if(r.ok){ alert("Conexión OK"); } else { alert("La API respondió con estado "+r.status); }
+        const r=await fetch(base+"/ping");
+        alert(r.ok? "Conexión OK" : ("La API respondió con estado "+r.status));
       }catch(e){ alert("No se pudo conectar: "+e.message); }
     }
 
     function syncTablesBeforeSave(){
-      // Productos
       document.querySelectorAll("#tablaProductos tbody input").forEach(inp=>{
-        const id = inp.dataset.id, f = inp.dataset.f;
-        if(!id||!f) return;
-        const p = productos.find(x=>x.id===id);
-        if(!p) return;
-        p[f] = (f==="precio")? Number(inp.value||0) : inp.value;
+        const id=inp.dataset.id, f=inp.dataset.f; if(!id||!f) return;
+        const p=productos.find(x=>x.id===id); if(!p) return;
+        p[f]=(f==="precio")? Number(inp.value||0):inp.value;
       });
-      // Banners
       document.querySelectorAll("#tablaBanners tbody input").forEach(inp=>{
-        const id = inp.dataset.id, f = inp.dataset.f;
-        if(!id||!f) return;
-        const b = banners.find(x=>x.id===id);
-        if(!b) return;
-        b[f] = (f==="activo")? inp.checked : inp.value;
+        const id=inp.dataset.id, f=inp.dataset.f; if(!id||!f) return;
+        const b=banners.find(x=>x.id===id); if(!b) return;
+        b[f]=(f==="activo")? inp.checked:inp.value;
       });
     }
 
@@ -518,37 +426,24 @@
     }
 
     async function saveAll(){
-      syncTablesBeforeSave();
-      gatherConfigFromUI();
-      const base = localStorage.getItem("mgv_apiBase")||"/api";
-      const tok  = localStorage.getItem("mgv_saveToken")||"";
+      syncTablesBeforeSave(); gatherConfigFromUI();
+      const base=localStorage.getItem("mgv_apiBase")||"/.netlify/functions";
+      const tok =localStorage.getItem("mgv_saveToken")||"";
       try{
-        const r = await fetch(base+"/save_catalog",{
-          method:"POST",
-          headers:{"Content-Type":"application/json","Authorization":"Bearer "+tok},
-          body: JSON.stringify({ productos, banners, config })
-        });
-        const txt = await r.text();
-        let j={}; try{ j = JSON.parse(txt); }catch(_){}
+        const r=await fetch(base+"/save_catalog",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+tok},body:JSON.stringify({productos,banners,config})});
+        const txt=await r.text(); let j={}; try{ j=JSON.parse(txt);}catch(_){}
         if(r.ok){
-          // Usa el último SHA devuelto para leer data nueva sin esperar propagación
-          if (j && Array.isArray(j.commits) && j.commits.length) {
-            window.__MGV_PENDING_SHA = j.commits[j.commits.length-1];
-            setLastSHA(window.__MGV_PENDING_SHA);
-          }
-          alert("Guardado en GitHub ✔️");
-          await loadTables(window.__MGV_PENDING_SHA); // usa __MGV_PENDING_SHA si existe
-        } else {
-          alert("Error "+r.status+": "+(j.error||txt));
-        }
+          if (j && Array.isArray(j.commits) && j.commits.length) { window.__MGV_PENDING_SHA=j.commits[j.commits.length-1]; setLastSHA(window.__MGV_PENDING_SHA); }
+          alert("Guardado en GitHub ✔️"); await loadTables(window.__MGV_PENDING_SHA);
+        } else { alert("Error "+r.status+": "+(j.error||txt)); }
       }catch(e){ alert("Error de red: "+e.message); }
     }
 
-    document.getElementById("newPass2").onchange = async ()=>{
-      const p1 = document.getElementById("newPass").value;
-      const p2 = document.getElementById("newPass2").value;
+    document.getElementById("newPass2").onchange=async ()=>{
+      const p1=document.getElementById("newPass").value;
+      const p2=document.getElementById("newPass2").value;
       if(!p1 || p1!==p2){ alert("Las contraseñas no coinciden"); return; }
-      const h = await sha256(SALT + p1);
+      const h=await sha256(SALT+p1);
       alert("Hash generado. Para cambiarla, abrí este archivo y reemplazá HASHED por:\n\n"+h+"\n\nLuego subilo al repo.");
     };
 
