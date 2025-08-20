@@ -1,4 +1,4 @@
-// functions/save_catalog.js
+// functions/save_catalog.js (v5) – soporta GH_PAT como fallback
 const GITHUB_API = "https://api.github.com";
 
 function json(body, statusCode = 200) {
@@ -34,6 +34,14 @@ async function ghInstallationToken(){
   return JSON.parse(text).token;
 }
 
+// === Nuevo: selector de token ===
+async function getGitHubToken(){
+  if (process.env.GH_PAT && process.env.GH_PAT.trim()) {
+    return { token: process.env.GH_PAT.trim(), kind: "pat" };
+  }
+  return { token: await ghInstallationToken(), kind: "app" };
+}
+
 async function ghGet(path, token, qs=""){
   const url = `${GITHUB_API}/repos/${process.env.GH_OWNER}/${process.env.GH_REPO}/contents/${encodeURIComponent(path)}${qs}`;
   return fetch(url, { headers: { "accept":"application/vnd.github+json", "authorization":`Bearer ${token}`, "user-agent":"mgv-app/1.0" } });
@@ -47,8 +55,8 @@ async function getCurrentSha(path, token){
   return j.sha || null;
 }
 
-async function putFile({ path, message, jsonOrString, passthroughError = false }){
-  const token = await ghInstallationToken();
+async function putFile({ path, message, jsonOrString }){
+  const { token, kind } = await getGitHubToken();
   const contentStr = typeof jsonOrString === "string" ? jsonOrString : JSON.stringify(jsonOrString, null, 2);
   const sha = await getCurrentSha(path, token);
   const body = {
@@ -64,10 +72,7 @@ async function putFile({ path, message, jsonOrString, passthroughError = false }
     body: JSON.stringify(body)
   });
   const text = await r.text();
-  if (!r.ok) {
-    if (passthroughError) return { ok:false, status:r.status, raw:text };
-    throw new Error(`putFile ${path} ${r.status}: ${text}`);
-  }
+  if (!r.ok) throw new Error(`putFile ${path} ${r.status} (${kind}): ${text}`);
   return JSON.parse(text);
 }
 
@@ -87,7 +92,8 @@ exports.handler = async (event) => {
         GH_REPO: !!process.env.GH_REPO,
         GH_BRANCH: !!process.env.GH_BRANCH,
         SAVE_TOKEN: !!process.env.SAVE_TOKEN,
-        GH_PRIVATE_KEY_B64_len: (process.env.GH_PRIVATE_KEY_B64||"").length
+        GH_PRIVATE_KEY_B64_len: (process.env.GH_PRIVATE_KEY_B64||"").length,
+        GH_PAT: !!process.env.GH_PAT
       }});
     }
 
