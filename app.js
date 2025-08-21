@@ -1,45 +1,75 @@
 
-// Robust WhatsApp sender (single encode; includes customer name)
+// ===== Patch v9: robust checkout (no NaN, includes names, safe handlers) =====
 (function(){
-  const btn = document.getElementById('checkoutBtn');
-  if(!btn) return;
-  btn.addEventListener('click', (e)=>{
+  function toNumber(x){
     try{
-      const name = (document.getElementById('customerName')?.value||'').trim();
-      if(!name){ alert('Por favor, ingresá tu nombre para enviar el pedido.'); return; }
-      if(!state || !Array.isArray(state.cart) || state.cart.length===0){ alert('Agregá algún producto al carrito.'); return; }
-      const money = n => `$ ${n.toLocaleString('es-AR')}`;
-      const items = state.cart.map(i => `• ${i.name} ×${i.qty} – ${money(i.price*i.qty)}`).join('\n');
-      const total = state.cart.reduce((a,b)=>a + b.qty*b.price, 0);
-      const text = [
-        `Pedido de: ${name}`,
-        'Hola, quiero hacer un pedido:',
-        items,
-        '',
-        `Total: ${money(total)}`
-      ].join('\n');
-      const url = 'https://wa.me/5493412272899?text=' + encodeURIComponent(text);
-      window.open(url, '_blank');
-      // Vaciar y cerrar
-      state.cart = []; localStorage.setItem('mgv_cart', JSON.stringify(state.cart)); renderCart();
-      const p = document.getElementById('cartPanel'); if(p) p.style.display='none';
-    }catch(err){ console.error(err); }
-  }, { once:false });
-})();
+      const s = String(x ?? '').replace(/[^\d,.\-]/g, '');
+      // Convert 1.234,56 -> 1234.56 ; 1,234.56 -> 1234.56 ; 1234 -> 1234
+      if(s.includes(',') && s.includes('.')){
+        // assume dot thousands, comma decimals
+        return parseFloat(s.replace(/\./g,'').replace(',', '.'));
+      }else if(s.includes(',')){
+        // assume comma decimals
+        return parseFloat(s.replace(/\./g,'').replace(',', '.'));
+      }else{
+        return parseFloat(s.replace(/,/g,''));
+      }
+    }catch(_){ return 0; }
+  }
+  const money = n => `$ ${Number(n||0).toLocaleString('es-AR')}`;
 
+  function installCheckout(){
+    const oldBtn = document.getElementById('checkoutBtn');
+    if(!oldBtn) return;
+    // Drop old listeners by cloning
+    const btn = oldBtn.cloneNode(true);
+    oldBtn.parentNode.replaceChild(btn, oldBtn);
 
-// FAB hide/show using IntersectionObserver (promo in view -> hide)
-(function(){
-  const fab = document.getElementById('cartFab');
-  const promoEl = document.querySelector('.promo-card');
-  if(fab && promoEl && 'IntersectionObserver' in window){
-    const io = new IntersectionObserver((entries)=>{
-      entries.forEach(entry=>{
-        if(entry.isIntersecting){ fab.classList.add('fab-hidden'); }
-        else{ fab.classList.remove('fab-hidden'); }
-      });
-    }, { root:null, rootMargin:'0px 0px 0px 0px', threshold: 0.15 });
-    io.observe(promoEl);
+    btn.addEventListener('click', (e)=>{
+      try{
+        const nameInput = document.getElementById('customerName');
+        const name = (nameInput?.value || '').trim();
+        if(nameInput){ nameInput.classList.remove('error'); }
+        if(!name){
+          if(nameInput){ nameInput.classList.add('error'); nameInput.focus(); }
+          alert('Por favor, ingresá tu nombre para enviar el pedido.');
+          return; // IMPORTANT: do NOT clear cart
+        }
+        if(!window.state || !Array.isArray(window.state.cart) || state.cart.length===0){
+          alert('Agregá algún producto al carrito.');
+          return;
+        }
+        const lines = [];
+        lines.push(`Pedido de: ${name}`);
+        lines.push('Hola, quiero hacer un pedido:');
+        const items = state.cart.map(it=>{
+          const nm = it.name || it.title || it.nombre || 'Producto';
+          const qty = Number(it.qty)||1;
+          const unit = toNumber(it.price);
+          const sub = unit * qty;
+          return `• ${nm} ×${qty} – ${money(sub)}`;
+        });
+        items.forEach(l=>lines.push(l));
+        const total = state.cart.reduce((acc, it)=> acc + (toNumber(it.price) * (Number(it.qty)||1)), 0);
+        lines.push('');
+        lines.push(`Total: ${money(total)}`);
+        const text = lines.join('\n');
+        const url = 'https://wa.me/5493412272899?text=' + encodeURIComponent(text);
+        window.open(url, '_blank');
+
+        // Now clear and close
+        state.cart = [];
+        localStorage.setItem('mgv_cart', JSON.stringify(state.cart));
+        if(typeof renderCart === 'function'){ renderCart(); }
+        const p = document.getElementById('cartPanel'); if(p) p.style.display='none';
+      }catch(err){ console.error(err); }
+    });
+  }
+
+  if(document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', installCheckout);
+  }else{
+    installCheckout();
   }
 })();
 
