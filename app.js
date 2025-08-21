@@ -1,92 +1,4 @@
 
-// ===== Patch v12: checkout uses state OR localStorage; keeps cart when name missing =====
-(function(){
-  function toNumber(x){
-    try{
-      const s = String(x ?? '').replace(/[^\d,.\-]/g, '');
-      if(s.includes(',') && s.includes('.')){
-        return parseFloat(s.replace(/\./g,'').replace(',', '.'));
-      }else if(s.includes(',')){
-        return parseFloat(s.replace(/\./g,'').replace(',', '.'));
-      }else{
-        return parseFloat(s.replace(/,/g,''));
-      }
-    }catch(_){ return 0; }
-  }
-  const money = n => `$ ${Number(n||0).toLocaleString('es-AR')}`;
-
-  function getCart(){
-    try{
-      if(window.state && Array.isArray(window.state.cart) && window.state.cart.length){
-        return window.state.cart;
-      }
-      const raw = localStorage.getItem('mgv_cart');
-      const arr = raw ? JSON.parse(raw) : [];
-      return Array.isArray(arr) ? arr : [];
-    }catch(_){ return []; }
-  }
-
-  function setCart(arr){
-    try{
-      if(window.state){ window.state.cart = Array.isArray(arr) ? arr : []; }
-      localStorage.setItem('mgv_cart', JSON.stringify(getCart()));
-    }catch(_){}
-  }
-
-  function installCheckout(){
-    const oldBtn = document.getElementById('checkoutBtn');
-    if(!oldBtn) return;
-    const btn = oldBtn.cloneNode(true);
-    oldBtn.parentNode.replaceChild(btn, oldBtn);
-
-    btn.addEventListener('click', ()=>{
-      try{
-        const nameInput = document.getElementById('customerName');
-        const name = (nameInput?.value || '').trim();
-        if(nameInput){ nameInput.classList.remove('error'); }
-        if(!name){
-          if(nameInput){ nameInput.classList.add('error'); nameInput.focus(); }
-          alert('Por favor, ingresá tu nombre para enviar el pedido.');
-          return; // do NOT clear cart
-        }
-        const cart = getCart();
-        if(!cart.length){
-          alert('Agregá algún producto al carrito.');
-          return;
-        }
-        const lines = [];
-        lines.push(`Pedido de: ${name}`);
-        lines.push('Hola, quiero hacer un pedido:');
-        cart.forEach(it=>{
-          const nm = it.name || it.title || it.nombre || 'Producto';
-          const qty = Number(it.qty)||1;
-          const unit = toNumber(it.price);
-          const sub = unit * qty;
-          lines.push(`• ${nm} ×${qty} – ${money(sub)}`);
-        });
-        const total = cart.reduce((acc, it)=> acc + (toNumber(it.price) * (Number(it.qty)||1)), 0);
-        lines.push('');
-        lines.push(`Total: ${money(total)}`);
-        const text = lines.join('\n');
-        const url = 'https://wa.me/5493412272899?text=' + encodeURIComponent(text);
-        window.open(url, '_blank');
-
-        // clear & close AFTER sending
-        setCart([]);
-        if(typeof renderCart === 'function'){ renderCart(); }
-        const p = document.getElementById('cartPanel'); if(p) p.style.display='none';
-      }catch(err){ console.error(err); }
-    });
-  }
-
-  if(document.readyState === 'loading'){
-    document.addEventListener('DOMContentLoaded', installCheckout);
-  }else{
-    installCheckout();
-  }
-})();
-
-
 const state = {
   products: [],
   banners: [],
@@ -268,19 +180,60 @@ document.getElementById("cartFab").onclick = ()=> document.getElementById("cartP
 document.getElementById("closeCart").onclick = ()=> document.getElementById("cartPanel").style.display = "none";
 document.getElementById("q").oninput = ()=> renderProducts();
 
-document.getElementById("checkoutBtn").onclick = async ()=>{
-  if(!state.cart.length){ alert("Tu carrito está vacío."); return; }
-  const number = state.config?.whatsapp?.number || "";
-  if(!number){ alert("No hay número de WhatsApp configurado."); return; }
-  const items = state.cart.map(it=>`• ${it.nombre} x ${it.cant} — ${money(it.precio*it.cant)}`).join("%0A");
-  const total = state.cart.reduce((a,i)=>a+i.precio*i.cant,0);
-  const header = encodeURIComponent(state.config?.whatsapp?.preHeader || "Nuevo pedido");
-  const msg = `${header}%0A%0A${items}%0A%0ATotal: ${money(total)}%0A%0A`;
-  // Vaciar carrito luego de enviar
-  state.cart = [];
-  localStorage.setItem("mgv_cart", JSON.stringify(state.cart));
-  renderCart();
-  document.getElementById("cartPanel").style.display = "none";};
+
+document.getElementById("checkoutBtn").onclick = ()=>{
+  try{
+    const cart = (Array.isArray(state?.cart) && state.cart.length) ? state.cart
+                 : (JSON.parse(localStorage.getItem("mgv_cart")||"[]") || []);
+    if(!cart.length){ alert("Tu carrito está vacío."); return; }
+    const nameInput = document.getElementById("customerName");
+    const name = (nameInput?.value || "").trim();
+    if(nameInput){ nameInput.classList.remove("error"); }
+    if(!name){
+      if(nameInput){ nameInput.classList.add("error"); nameInput.focus(); }
+      alert("Por favor, ingresá tu nombre para enviar el pedido.");
+      return;
+    }
+    const number = state?.config?.whatsapp?.number || "5493412272899";
+    const preHeader = state?.config?.whatsapp?.preHeader || "Nuevo pedido";
+    const toNumber = (x)=>{
+      try{
+        const s = String(x ?? "").replace(/[^\d,\.\-]/g, "");
+        if(s.includes(",") && s.includes(".")){
+          return parseFloat(s.replace(/\./g,"").replace(",", "."));
+        }else if(s.includes(",")){
+          return parseFloat(s.replace(/\./g,"").replace(",", "."));
+        }else{
+          return parseFloat(s.replace(/,/g,""));
+        }
+      }catch(_){ return 0; }
+    };
+    const money = (n)=> "$ " + Number(n||0).toLocaleString("es-AR");
+    const items = cart.map(it=>{
+      const nm = it.nombre || it.name || it.title || "Producto";
+      const qty = Number(it.cant ?? it.qty ?? 1);
+      const unit = toNumber(it.precio ?? it.price ?? 0);
+      const sub = unit * qty;
+      return `• ${nm} ×${qty} — ${money(sub)}`;
+    });
+    const total = cart.reduce((acc, it)=> acc + (toNumber(it.precio ?? it.price ?? 0) * Number(it.cant ?? it.qty ?? 1)), 0);
+    const lines = [
+      `Pedido de: ${name}`,
+      preHeader,
+      "Hola, quiero hacer un pedido:",
+      ...items,
+      "",
+      `Total: ${money(total)}`
+    ];
+    const text = lines.join("\n");
+    const url = "https://wa.me/" + encodeURIComponent(number) + "?text=" + encodeURIComponent(text);
+    window.open(url, "_blank");
+    state.cart = [];
+    localStorage.setItem("mgv_cart", JSON.stringify(state.cart));
+    if(typeof renderCart === "function"){ renderCart(); }
+    const panel = document.getElementById("cartPanel"); if(panel) panel.style.display = "none";
+  }catch(err){ console.error(err); }
+};
 
 (async function(){
   await loadData();
