@@ -1,5 +1,5 @@
 /* =========================================================
-   MGV – App JS (banners normalizados + carrito ordenado)
+   MGV – App JS (banners + carrito con resumen + layout fijo)
    ========================================================= */
 const $ = (sel, ctx=document) => ctx.querySelector(sel);
 const $$ = (sel, ctx=document) => [...ctx.querySelectorAll(sel)];
@@ -36,6 +36,37 @@ function normalizeBanners(arr){
     text:  b.text   || b.texto  || "",
     active: (typeof b.active !== "undefined" ? b.active : b.activo)
   })).filter(b=> b.img && (b.active === undefined || b.active === true));
+}
+
+/* ================== Estructura del panel ================== */
+function ensureCartLayout(){
+  const panel = document.getElementById("cartPanel");
+  if(!panel) return {};
+  const footer = panel.querySelector(".cart-footer");
+
+  // 1) Asegurar bloque de ítems
+  let items = document.getElementById("cartItems");
+  if(!items){
+    items = document.createElement("div");
+    items.id = "cartItems";
+    items.className = "cart-items";
+  }
+  if(footer && items.nextElementSibling !== footer){
+    panel.insertBefore(items, footer);
+  }else if(!footer && !items.parentElement){
+    panel.appendChild(items);
+  }
+
+  // 2) Resumen compacto justo arriba de los ítems
+  let summary = document.getElementById("cartSummary");
+  if(!summary){
+    summary = document.createElement("div");
+    summary.id = "cartSummary";
+    summary.className = "cart-summary";
+    panel.insertBefore(summary, items);
+  }
+
+  return {panel, items, summary, footer};
 }
 
 /* ==== FORMA DE ENTREGA – UI (texto + ayuda) ==== */
@@ -117,18 +148,7 @@ function applyShippingUI(){
   updateUI();
 }
 
-/* === Mover “Forma de entrega” dentro del footer del carrito === */
-function placeShippingInFooter(){
-  const panel = document.getElementById("cartPanel");
-  if(!panel) return;
-  const shipField = document.getElementById("shipMethod")?.parentElement || null;
-  const footer = panel.querySelector(".cart-footer");
-  if(shipField && footer && shipField.parentElement !== footer){
-    footer.insertBefore(shipField, footer.firstChild);
-  }
-}
-
-/* ================== BANNERS (restaurados) ================== */
+/* ================== BANNERS ================== */
 function renderBanners(){
   const wrap = document.getElementById("bannerCarousel");
   if(!wrap) return;
@@ -225,21 +245,26 @@ function removeFromCart(id){
 }
 
 function renderCart(){
-  const list = document.getElementById("cartItems");
-  const total = state.cart.reduce((acc,it)=> acc + (Number(it.precio||0) * Number(it.cant||1)), 0);
-  const ship = (state.shipping?.method === "envio") ? Number(state.shipping?.price||0) : 0;
-  const grand = total + ship;
+  const {items, summary} = ensureCartLayout();
+  if(!items || !summary) return;
+
+  const subtotal = state.cart.reduce((acc,it)=> acc + (Number(it.precio||0) * Number(it.cant||1)), 0);
+  const envio = (state.shipping?.method === "envio") ? Number(state.shipping?.price||0) : 0;
+  const total = subtotal + envio;
 
   const count = state.cart.reduce((a,b)=> a + Number(b.cant||1), 0);
-  document.getElementById("cartTotal").textContent = money(grand);
-  document.getElementById("cartCount").textContent = String(count);
+  const cartFabCount = document.getElementById("cartCount");
+  if(cartFabCount) cartFabCount.textContent = String(count);
+  const totalEl = document.getElementById("cartTotal");
+  if(totalEl) totalEl.textContent = money(total);
 
-  list.innerHTML = state.cart.map(it=>`
+  // ---------- Lista de ítems
+  items.innerHTML = state.cart.map(it=>`
     <div class="cart-item">
       <img src="${it.imagen}" alt="${it.nombre}"/>
       <div class="meta">
         <div class="name">${it.nombre}</div>
-        <div class="small">${money(it.precio)} x ${it.cant}</div>
+        <div class="small">${money(it.precio)} × ${it.cant}</div>
       </div>
       <div>
         <span class="qty-group">
@@ -251,18 +276,26 @@ function renderCart(){
     </div>
   `).join("");
 
-  list.querySelectorAll("[data-q]").forEach(b=>{
+  items.querySelectorAll("[data-q]").forEach(b=>{
     b.onclick = ()=> changeQty(b.dataset.id, parseInt(b.dataset.q));
   });
-  list.querySelectorAll("[data-del]").forEach(b=>{
+  items.querySelectorAll("[data-del]").forEach(b=>{
     b.onclick = ()=> removeFromCart(b.dataset.del);
   });
 
+  // ---------- Resumen compacto bajo el header
+  const lines = state.cart.map(it=>`${it.nombre} ×${it.cant}`);
+  const compact = lines.slice(0,3).join(" · ") + (lines.length>3 ? " …" : "");
+  summary.innerHTML = lines.length
+    ? `<div class="sum-title">Resumen</div><div class="sum-lines">${compact}</div>`
+    : `<div class="sum-empty">Tu carrito está vacío.</div>`;
+
+  // ---------- Desglose en el footer (subtotal/envío)
   const bd = document.getElementById("cartBreakdown");
   if(bd){
     bd.innerHTML = `
-      <div class="row"><span>Subtotal</span><span>${money(total)}</span></div>
-      <div class="row"><span>${state.shipping?.method==="envio" ? "Envío" : "Retiro en local"}</span><span>${state.shipping?.method==="envio" ? money(ship) : "$ 0"}</span></div>
+      <div class="row"><span>Subtotal</span><span>${money(subtotal)}</span></div>
+      <div class="row"><span>${state.shipping?.method==="envio" ? "Envío" : "Retiro en local"}</span><span>${state.shipping?.method==="envio" ? money(envio) : "$ 0"}</span></div>
     `;
   }
 }
@@ -299,7 +332,6 @@ function renderCart(){
   }
   renderProducts();
   renderCart();
-  placeShippingInFooter();
   applyShippingUI();
 })();
 
