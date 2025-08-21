@@ -1,5 +1,5 @@
 /* =========================================================
-   MGV – App JS
+   MGV – App JS (con mejoras en Forma de entrega y textos)
    ========================================================= */
 const $ = (sel, ctx=document) => ctx.querySelector(sel);
 const $$ = (sel, ctx=document) => [...ctx.querySelectorAll(sel)];
@@ -12,7 +12,10 @@ const state = {
 };
 state.shipping = { method: "retiro", price: 0 };
 
-function money(n){ try{ n = Number(n||0); }catch(e){ n=0; } return n.toLocaleString("es-AR", {style:"currency", currency:"ARS", maximumFractionDigits:0}); }
+function money(n){
+  try{ n = Number(n||0); }catch(e){ n=0; }
+  return n.toLocaleString("es-AR", {style:"currency", currency:"ARS", maximumFractionDigits:0});
+}
 function saveCart(){ localStorage.setItem("mgv_cart", JSON.stringify(state.cart)); }
 
 function applyConfig(){
@@ -25,35 +28,41 @@ function applyConfig(){
   const f = document.getElementById("footerInfo"); if(f){ f.innerHTML = `${desc}`; }
 }
 
-/* ==== MÉTODO DE ENTREGA – UI mejorada (SOLO esta parte) ==== */
+/* ==== FORMA DE ENTREGA – UI mejorada (copy + ayuda) ==== */
 function applyShippingUI(){
   const wrap = document.getElementById("shipMethod");
   const wPrice = document.getElementById("shipPriceWrap");
   if(!wrap) return;
 
-  // Etiquetas más claras con íconos (sin cambiar tu HTML)
+  // Título más claro
+  const label = wrap.parentElement?.querySelector('label[for="shipMethod"]');
+  if (label) label.textContent = "Forma de entrega";
+
+  // Texto del botón principal
+  const cta = document.getElementById("checkoutBtn");
+  if (cta) cta.textContent = "Confirmar por WhatsApp";
+
+  // Leyenda de ayuda (debajo del botón). Si existe la usamos; si no, no tocamos nada.
+  let help = document.getElementById("cartHelp");
+  if (!help) {
+    help = document.querySelector(".cart-footer p");
+    if (help) help.id = "cartHelp";
+  }
+  if (help) help.textContent = "Vas a WhatsApp para coordinar la entrega y el pago.";
+
+  // Botones con íconos (sin cambiar el HTML)
   wrap.querySelectorAll(".seg").forEach(b=>{
     if(b.dataset.method === "retiro") b.innerHTML = "🏬 <span>Retiro</span>";
     if(b.dataset.method === "envio")  b.innerHTML = "🚚 <span>Envío</span>";
   });
 
-  // Nota bajo el selector (solo de método de entrega)
-  let note = document.getElementById("shipNote");
-  if(!note){
-    note = document.createElement("div");
-    note.id = "shipNote";
-    note.className = "ship-note";
-    wrap.parentElement.appendChild(note);
-  }
-
   const inp = document.getElementById("shippingPrice");
 
   function updateUI(){
     const isEnvio = (state.shipping?.method === "envio");
-    // Mostrar/ocultar campo de costo de envío
-    if (wPrice) wPrice.style.display = isEnvio ? "" : "none";
 
-    // Precargar costo por defecto (si existe) y foco al pasar a "Envío"
+    // Mostrar/ocultar costo de envío y foco
+    if (wPrice) wPrice.style.display = isEnvio ? "" : "none";
     if (isEnvio && inp){
       if(!inp.value){
         const def = Number(state?.config?.shipping?.default || 0) || 0;
@@ -62,10 +71,24 @@ function applyShippingUI(){
       inp.focus();
     }
 
-    // Mensaje guía
+    // Nota bajo el selector (dinámica)
+    const note = document.getElementById("shipNote") || (() => {
+      const n = document.createElement("div");
+      n.id = "shipNote"; n.className = "ship-note";
+      wrap.parentElement.appendChild(n);
+      return n;
+    })();
     note.textContent = isEnvio
-      ? "Ingresá el costo de envío; se suma al total."
-      : "Retiro en local. Coordinamos por WhatsApp.";
+      ? "Ingresá el costo del envío; se suma al total."
+      : "Retiro por el local. Lo coordinamos por WhatsApp.";
+
+    // Leyenda bajo el botón (más corta)
+    const helpEl = document.getElementById("cartHelp");
+    if (helpEl) {
+      helpEl.textContent = isEnvio
+        ? "Abriremos WhatsApp para coordinar el envío y el pago."
+        : "Abriremos WhatsApp para coordinar el retiro y el pago.";
+    }
   }
 
   // Toggle Retiro/Envío
@@ -126,7 +149,8 @@ function renderBanners(){
     dots.forEach((d,i)=>d.classList.toggle("active", i===n));
     idx=n;
   }
-  setInterval(()=> showSlide((idx+1)%active.length), 5000);
+  if(active.length){ showSlide(0); }
+  setInterval(()=> active.length && showSlide((idx+1)%active.length), 5000);
 }
 
 /* ================== PRODUCTOS ================== */
