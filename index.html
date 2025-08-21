@@ -6,13 +6,14 @@
   <title>MGV Librería–Regalería</title>
   <meta name="description" content="Artículos de librería y regalería. Comprá por WhatsApp; coordinamos la entrega."/>
   <link rel="icon" href="assets/logo.png"/>
-  <link rel="stylesheet" href="styles.css?v=2025-08-20-3"/>
+  <link rel="stylesheet" href="styles.css"/>
   <script>
     window.ENV = { GH_OWNER: "ludmilasolutions", GH_REPO: "mgv", GH_BRANCH: "main" };
   </script>
   <script src="assets/js/fetch-raw-patch.js"></script>
 </head>
 <body>
+  <div id="announcement" class="announcement">ENVÍOS GRATIS A PARTIR DE $75.000 · 3 y 6 CUOTAS SIN INTERÉS · Coordinamos por WhatsApp</div>
   <!-- Topbar fija con búsqueda -->
   <div class="topbar">
     <header class="header container">
@@ -48,8 +49,13 @@
     </div>
     <div class="cart-items" id="cartItems"></div>
     <div class="cart-footer">
+  <div class="cart-form">
+    <label for="customerName">Tu nombre</label>
+    <input id="customerName" type="text" placeholder="Ej: Juan Pérez" />
+    <div class="small">Incluimos tu nombre en el mensaje para identificar el pedido.</div>
+  </div>
       <div class="cart-total"><span>Total</span><strong id="cartTotal">$ 0</strong></div>
-      <button class="btn" id="checkoutBtn">Finalizar por WhatsApp</button>
+      <div class="cart-actions"><button class="btn" id="checkoutBtn">Finalizar por WhatsApp</button><button class="btn secondary" id="clearCartBtn" type="button">Vaciar carrito</button></div>
       <div class="small">Te llevamos al chat con el resumen del pedido para coordinar entrega y pago.</div>
     </div>
   </div>
@@ -89,7 +95,7 @@
       </div>
       <div class="promo-actions">
         <!-- Link directo para evitar solapes; el CSS del parche reubica este botón -->
-        <a id="promoMail" class="btn promo-btn" href="https://wa.me/5493412272899?text=Hola,%20quiero%20presupuesto%20para%20una%20web" target="_blank" rel="noopener">Pedí tu presupuesto</a>
+        <a id="promoMail" class="btn promo-btn" href="mailto:angelmascali@gmail.com?subject=Presupuesto%20para%20mi%20web&body=Hola%2C%20me%20gustar%C3%ADa%20un%20presupuesto%20para%20mi%20web.">Pedí tu presupuesto</a>
         <div class="promo-small">Creado por <strong>Sebastián Mascali</strong></div>
       </div>
     </div>
@@ -99,6 +105,6 @@
   <footer class="container footer" id="footerInfo"></footer>
 
   <script src="assets/js/promo.js"></script>
-  <script src="app.js?v=2025-08-20-3"></script>
+  <script src="app.js"></script>
 </body>
 </html>

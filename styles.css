@@ -136,3 +136,51 @@ a{color:inherit;text-decoration:none}
 .cart-form input.error{border-color:#ef4444; box-shadow:0 0 0 3px rgba(239,68,68,.15)}
 .cart-fab{min-width:116px;height:56px;padding:0 16px;border-radius:9999px;background:#111!important;color:#fff!important;border:1px solid #111!important;font-weight:800}
 @media (max-width:480px){ .cart-fab{min-width:128px;height:60px;padding:0 18px} }
+
+/* ===== Patch v15_tomy ===== */
+/* Announcement strip */
+.announcement{
+  background:#0b5ed7; color:#fff; text-align:center; font-weight:800;
+  padding:8px 10px; font-size:.92rem; letter-spacing:.2px;
+}
+
+/* Header mobile: search below title+logo */
+@media (max-width:768px){
+  .header{flex-wrap:wrap}
+  .header img{order:0}
+  .header .title{order:1}
+  .header .search{order:2; flex:1 1 100%}
+}
+
+/* Catalog layout with sticky aside */
+.catalog{display:grid;grid-template-columns:260px 1fr;gap:18px;margin-top:12px}
+.cat-aside{position:sticky;top:86px;align-self:start;height:fit-content;background:#fff;border:1px solid var(--border);border-radius:14px;padding:12px;box-shadow:0 10px 24px rgba(0,0,0,.06)}
+.cat-title{margin:0 0 10px 2px;font-size:1rem;color:#0b376d}
+.pill-list{display:flex;flex-wrap:wrap;gap:8px}
+.pill-list .badge{border-color:var(--border);background:#fff}
+.pill-list .badge.active{border-color:#0b5ed7;color:#0b5ed7;box-shadow:0 0 0 3px rgba(11,94,215,.12)}
+
+/* Product cards */
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px}
+.card{background:#fff;border:1px solid var(--border);border-radius:14px;overflow:hidden;box-shadow:0 6px 16px rgba(0,0,0,.06);transition:transform .12s,box-shadow .12s}
+.card:hover{transform:translateY(-2px);box-shadow:0 12px 24px rgba(0,0,0,.10)}
+.card .media{position:relative;aspect-ratio:1/1;background:#f3f4f6;display:grid;place-items:center}
+.card .media img{width:100%;height:100%;object-fit:cover}
+.card .body{padding:10px 12px;display:grid;gap:6px}
+.card .name{font-weight:800;min-height:2.6em;line-height:1.2}
+.card .price{font-weight:900;color:#0b376d}
+.card .installments{font-size:.88rem;color:#475569}
+
+/* Cart footer buttons: blue primary, neutral secondary */
+.cart-footer .btn{background:#0b5ed7!important;border-color:#0b5ed7!important;color:#fff!important}
+.cart-footer .btn.secondary{background:#fff!important;color:var(--text)!important;border-color:var(--border)!important}
+
+/* Name input look */
+.cart-form input{background:#fff;border:1px solid var(--border);border-radius:12px;padding:10px 12px;color:var(--text)}
+.cart-form input.error{border-color:#ef4444; box-shadow:0 0 0 3px rgba(239,68,68,.15)}
+
+/* FAB stays black oval */
+.cart-fab{min-width:128px;height:60px;padding:0 18px;border-radius:9999px;background:#111!important;color:#fff!important;border:1px solid #111!important;font-weight:800;box-shadow:0 10px 24px rgba(0,0,0,.25)}
+
+/* Responsive: aside collapses on mobile */
+@media (max-width:1024px){ .catalog{grid-template-columns:1fr} .cat-aside{position:relative;top:auto} }
