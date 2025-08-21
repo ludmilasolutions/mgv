@@ -13,29 +13,34 @@
   <script src="assets/js/fetch-raw-patch.js"></script>
 </head>
 <body>
+  <!-- Topbar fija con búsqueda -->
   <div class="topbar">
     <header class="header container">
       <img src="assets/logo.png" alt="MGV" />
       <div class="title" id="storeTitle">MGV Librería–Regalería</div>
       <div class="search">
-        <input id="q" placeholder="Buscar..." />
+        <input id="q" placeholder="Buscar..." aria-label="Buscar productos"/>
       </div>
     </header>
   </div>
 
+  <!-- Carrusel de banners (usa data/banners.json) -->
   <section class="container">
-    <div id="bannerCarousel" class="carousel"></div>
+    <div id="bannerCarousel" class="carousel" aria-label="Promociones"></div>
   </section>
 
+  <!-- Píldoras de categorías (se llenan con data/productos.json) -->
   <section class="container">
-    <div id="categoryPills" class="badges"></div>
+    <div id="categoryPills" class="badges" aria-label="Categorías"></div>
   </section>
 
-  <main class="container">
+  <!-- Catálogo -->
+  <main class="container" role="main">
     <div id="productGrid" class="grid"></div>
   </main>
 
-  <button class="cart-fab" id="cartFab">🛒 <span id="cartCount">0</span></button>
+  <!-- FAB y panel de carrito -->
+  <button class="cart-fab" id="cartFab" aria-label="Abrir carrito">🛒 <span id="cartCount">0</span></button>
   <div class="cart-panel" id="cartPanel" aria-hidden="true">
     <div class="cart-header">
       <strong>Tu carrito</strong>
@@ -49,11 +54,12 @@
     </div>
   </div>
 
+  <!-- Modal de producto -->
   <div class="modal" id="productModal" aria-hidden="true">
     <div class="sheet">
-      <img id="mImg" src="" alt=""/>
+      <img id="mImg" src="" alt="Vista del producto"/>
       <div class="content">
-        <div class="close-x" id="mClose">✕</div>
+        <div class="close-x" id="mClose" aria-label="Cerrar">✕</div>
         <h3 id="mName"></h3>
         <p id="mDesc"></p>
         <div class="row"><strong id="mPrice"></strong></div>
@@ -65,7 +71,10 @@
     </div>
   </div>
 
-  <!-- Promo box -->
+  <!-- División suave para separar del bloque de promo -->
+  <hr class="soft-divider"/>
+
+  <!-- Promo inferior -->
   <section class="container">
     <div class="promo-card">
       <div class="promo-header">
@@ -79,12 +88,14 @@
         </div>
       </div>
       <div class="promo-actions">
-        <a id="promoMail" class="btn promo-btn">Pedí tu presupuesto</a>
+        <!-- Link directo para evitar solapes; el CSS del parche reubica este botón -->
+        <a id="promoMail" class="btn promo-btn" href="https://wa.me/5493412272899?text=Hola,%20quiero%20presupuesto%20para%20una%20web" target="_blank" rel="noopener">Pedí tu presupuesto</a>
         <div class="promo-small">Creado por <strong>Sebastián Mascali</strong></div>
       </div>
     </div>
   </section>
 
+  <!-- Footer (oculto por CSS del parche si no lo usás) -->
   <footer class="container footer" id="footerInfo"></footer>
 
   <script src="assets/js/promo.js"></script>
