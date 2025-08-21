@@ -261,3 +261,42 @@ body{background:var(--bg); color:var(--text);}
   flex:1; border:none; background:transparent; padding:8px 10px; border-radius:8px; cursor:pointer; color:var(--text);
 }
 .segmented .seg.active{background:#fff; border:1px solid var(--border)}
+
+
+/* === v3 carrito bonito + promo fix === */
+/* Cart panel fully solid, with subtle shadow */
+.cart-panel{background:#fff !important; opacity:1 !important; border:1px solid var(--border); border-radius:16px}
+@media (prefers-color-scheme: dark){
+  .cart-panel{background:#0f172a !important; opacity:1 !important; border-color:#1f2937}
+}
+
+/* Cart items layout */
+.cart-item{display:grid !important; grid-template-columns:56px 1fr auto; gap:10px; align-items:center}
+.cart-item img{width:56px; height:56px; border-radius:12px; object-fit:cover}
+.cart-item .meta .name{font-weight:600}
+.cart-item .meta .small{color:var(--muted)}
+
+/* Quantity group */
+.qty-group{display:inline-flex; align-items:center; gap:6px; background:var(--card); border:1px solid var(--border); border-radius:10px; padding:4px}
+.qty-group .btn{padding:6px 10px}
+.qty-group .btn.secondary{background:transparent}
+
+/* Breakdown + sticky checkout */
+.cart-breakdown{display:flex; flex-direction:column; gap:6px; margin:6px 0 2px}
+.cart-breakdown .row{display:flex; justify-content:space-between; color:var(--muted)}
+.cart-total{display:flex; justify-content:space-between; align-items:center; padding-top:8px; border-top:1px dashed var(--border); position:sticky; bottom:64px; background:inherit}
+
+/* FAB refine (both id and class) */
+#cartFab.cart-fab, .cart-fab{width:56px; height:56px; border-radius:16px; display:grid; place-items:center; gap:4px}
+.cart-fab span{font-weight:800}
+
+/* Promo card: prevent overlap on desktop */
+.promo-card{display:grid; gap:12px; background:var(--card); border:1px solid var(--border); border-radius:16px; padding:16px}
+.promo-header h3{margin:0 0 6px}
+.promo-badges{display:flex; flex-wrap:wrap; gap:8px}
+.promo-actions{display:flex; align-items:center; gap:12px; flex-wrap:wrap}
+.promo-btn{display:inline-flex; align-items:center; justify-content:center; min-height:40px}
+@media (min-width: 900px){
+  .promo-card{grid-template-columns:1.4fr .6fr; align-items:center}
+  .promo-actions{justify-content:flex-end}
+}
