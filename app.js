@@ -1,201 +1,149 @@
+// ==== Datos demo (si tu backend ya carga productos, podés quitar esto) ====
+const PRODUCTS = [
+  {id:"p1", name:"Set marcadores flúo x6", desc:"Alta visibilidad y durabilidad.", price:2800, img:"assets/placeholder.svg"},
+  {id:"p2", name:"Cuaderno A4", desc:"Rayado 80 hojas.", price:4957, img:"assets/placeholder.svg"},
+  {id:"p3", name:"Lápiz HB", desc:"Suave y preciso.", price:1200, img:"assets/placeholder.svg"},
+  {id:"p4", name:"Cartuchera", desc:"Colores surtidos.", price:6000, img:"assets/placeholder.svg"},
+  {id:"p5", name:"Mochila", desc:"Resistente y liviana.", price:7500, img:"assets/placeholder.svg"},
+];
 
-const state = {
-  products: [],
-  banners: [],
-  config: null,
-  category: "Todos",
-  cart: JSON.parse(localStorage.getItem("mgv_cart")||"[]"),
-  modal: { id: null }
-};
-const $ = (s)=>document.querySelector(s);
+// ==== Helpers ====
+const $ = (sel, ctx=document) => ctx.querySelector(sel);
+const $$ = (sel, ctx=document) => Array.from(ctx.querySelectorAll(sel));
+const money = n => `$ ${n.toLocaleString('es-AR')}`;
 
-function money(n){return "$ " + Number(n||0).toLocaleString("es-AR")}
-async function loadData(){
-  const [pr, br, cf] = await Promise.all([
-    fetch("data/productos.json?ts="+Date.now()),
-    fetch("data/banners.json?ts="+Date.now()),
-    fetch("data/config.json?ts="+Date.now())
-  ]);
-  state.products = await pr.json();
-  state.banners = await br.json();
-  state.config = await cf.json();
-  applyConfig();
-}
-function applyConfig(){
-  if(!state.config) return;
-  $("#storeTitle").textContent = state.config.storeName || "Tienda";
-  document.title = state.config.seo?.title || "Tienda";
-  const desc = state.config.seo?.description || "";
-  const meta = document.querySelector("meta[name='description']");
-  if(meta) meta.setAttribute("content", desc);
-  $("#footerInfo").innerHTML = `WhatsApp: ${state.config.whatsapp?.number||""} · ${state.config.seo?.description||""}`;
-  const t = state.config.theme || {};
-  const root = document.documentElement;
-  Object.entries({
-    "--bg": t.bg, "--card": t.card, "--text": t.text,
-    "--muted": t.muted, "--border": t.border,
-    "--brand": t.brand, "--accent": t.accent
-  }).forEach(([k,v])=> v && root.style.setProperty(k, v));
+// ==== Estado Carrito ====
+let cart = JSON.parse(localStorage.getItem('mgv_cart') || '[]');
+
+function saveCart(){
+  localStorage.setItem('mgv_cart', JSON.stringify(cart));
+  updateCartBadge();
 }
 
-function renderCategories(){
-  const cats = ["Todos", ...Array.from(new Set(state.products.map(p=>p.categoria)))];
-  const wrap = $("#categoryPills");
-  wrap.innerHTML = "";
-  cats.forEach(c=>{
-    const b = document.createElement("button");
-    b.className = "badge" + (state.category===c?" active":"");
-    b.textContent = c;
-    b.onclick = ()=>{state.category = c; renderProducts(); renderCategories();}
-    wrap.appendChild(b);
-  });
+function updateCartBadge(){
+  const qty = cart.reduce((a,b)=>a+b.qty,0);
+  $('#cartQty').textContent = qty;
 }
 
-function renderBanners(){
-  const wrap = $("#bannerCarousel");
-  const active = state.banners.filter(b=>b.activo!==false);
-  if(!active.length){wrap.innerHTML = ""; return;}
-  wrap.innerHTML = active.map((b,i)=>`
-    <article class="banner" style="display:${i===0?"block":"none"}">
-      <img src="${b.imagen}" alt="${b.titulo}"/>
-      <div class="content">
-        <div class="title" style="color:${b.color||'var(--brand)'}">${b.titulo}</div>
-        <div class="text">${b.texto||""}</div>
-      </div>
-      <div class="dots"></div>
-    </article>
-  `).join("");
-  const dotsWrap = document.createElement("div");
-  dotsWrap.className = "dots";
-  active.forEach((_,i)=>{
-    const d=document.createElement("div");
-    d.className="dot"+(i===0?" active":"");
-    d.onclick=()=>showSlide(i);
-    dotsWrap.appendChild(d);
-  });
-  wrap.appendChild(dotsWrap);
-  let idx=0;
-  function showSlide(n){
-    const cards = wrap.querySelectorAll(".banner");
-    const dots = wrap.querySelectorAll(".dot");
-    cards.forEach((c,i)=>c.style.display = i===n?"block":"none");
-    dots.forEach((d,i)=>d.classList.toggle("active", i===n));
-    idx=n;
-  }
-  setInterval(()=> showSlide((idx+1)%active.length), 5000);
-}
-
-function renderProducts(){
-  const grid = document.getElementById("productGrid");
-  const q = document.getElementById("q").value.toLowerCase();
-  const items = state.products
-    .filter(p=>state.category==="Todos" || p.categoria===state.category)
-    .filter(p=>p.nombre.toLowerCase().includes(q)|| (p.descripcion||"").toLowerCase().includes(q));
-  grid.innerHTML = items.map(p=>`
-    <article class="card" data-open="${p.id}">
-      <img src="${p.imagen}" alt="${p.nombre}"/>
-      <div class="body">
-        <div class="name">${p.nombre}</div>
-        <div class="desc">${p.descripcion||""}</div>
-        <div class="row">
-          <div class="price">${money(p.precio)}</div>
+// ==== Render catálogo ====
+function renderProducts(list){
+  const grid = $('#productGrid');
+  grid.innerHTML = '';
+  list.forEach(p => {
+    const card = document.createElement('article');
+    card.className = 'card';
+    card.innerHTML = `
+      <div class="card__img" style="background-image:url('${p.img}')"></div>
+      <div class="card__body">
+        <div class="card__title">${p.name}</div>
+        <div class="card__desc">${p.desc || ''}</div>
+        <div class="card__row">
+          <span class="price">${money(p.price)}</span>
           <button class="btn" data-add="${p.id}">Agregar</button>
         </div>
-      </div>
-    </article>
-  `).join("");
-  grid.querySelectorAll("[data-add]").forEach(btn=>{
-    btn.onclick = (e)=>{ e.stopPropagation(); addToCart(btn.dataset.add); };
-  });
-  grid.querySelectorAll("[data-open]").forEach(card=>{
-    card.onclick = ()=> openModal(card.dataset.open);
+      </div>`;
+    grid.appendChild(card);
   });
 }
 
-function openModal(id){
-  const p = state.products.find(x=>x.id===id);
-  if(!p) return;
-  state.modal.id = id;
-  document.getElementById("mImg").src = p.imagen;
-  document.getElementById("mName").textContent = p.nombre;
-  document.getElementById("mDesc").textContent = p.descripcion || "";
-  document.getElementById("mPrice").textContent = money(p.precio);
-  document.getElementById("productModal").style.display = "flex";
-}
-function closeModal(){ document.getElementById("productModal").style.display = "none"; }
-document.getElementById("mClose").onclick = closeModal;
-document.getElementById("mClose2").onclick = closeModal;
-document.getElementById("mAdd").onclick = ()=>{ if(state.modal.id){ addToCart(state.modal.id); closeModal(); } };
+// ==== Carrito UI ====
+function openDrawer(){ $('#cartDrawer').classList.add('open'); $('#cartDrawer').setAttribute('aria-hidden','false'); }
+function closeDrawer(){ $('#cartDrawer').classList.remove('open'); $('#cartDrawer').setAttribute('aria-hidden','true'); }
 
 function renderCart(){
-  const list = document.getElementById("cartItems");
-  const total = state.cart.reduce((acc,it)=>acc + it.precio*it.cant, 0);
-  document.getElementById("cartTotal").textContent = money(total);
-  document.getElementById("cartCount").textContent = state.cart.reduce((a,b)=>a+b.cant,0);
-  list.innerHTML = state.cart.map(it=>`
-    <div class="cart-item">
-      <img src="${it.imagen}" />
-      <div class="meta">
-        <div class="name">${it.nombre}</div>
-        <div class="small">${money(it.precio)} x ${it.cant}</div>
-      </div>
-      <div>
-        <button class="btn secondary" data-q="-1" data-id="${it.id}">-</button>
-        <button class="btn" data-q="+1" data-id="${it.id}">+</button>
-        <button class="btn secondary" data-del="${it.id}">x</button>
-      </div>
-    </div>
-  `).join("");
-  list.querySelectorAll("[data-q]").forEach(b=>{
-    b.onclick = ()=> changeQty(b.dataset.id, parseInt(b.dataset.q));
-  });
-  list.querySelectorAll("[data-del]").forEach(b=>{
-    b.onclick = ()=> removeFromCart(b.dataset.del);
-  })
+  const list = $('#cartItems');
+  list.innerHTML = '';
+  if(cart.length === 0){
+    list.innerHTML = `<p class="empty">Tu carrito está vacío.</p>`;
+  }else{
+    cart.forEach(item => {
+      const row = document.createElement('div');
+      row.className = 'cart-item';
+      row.innerHTML = `
+        <div class="cart-item__img"></div>
+        <div>
+          <div class="cart-item__title">${item.name}</div>
+          <div class="cart-item__meta">${item.qty} × ${money(item.price)}</div>
+        </div>
+        <div>
+          <button class="icon-btn" data-dec="${item.id}" aria-label="Quitar uno">−</button>
+          <button class="icon-btn" data-inc="${item.id}" aria-label="Agregar uno">+</button>
+          <button class="icon-btn" data-del="${item.id}" aria-label="Eliminar">🗑️</button>
+        </div>`;
+      list.appendChild(row);
+    });
+  }
+  const total = cart.reduce((a,b)=>a + b.qty*b.price, 0);
+  $('#cartTotal').textContent = money(total);
 }
 
-function addToCart(id){
-  const p = state.products.find(x=>x.id===id);
-  if(!p) return;
-  const found = state.cart.find(x=>x.id===id);
-  if(found) found.cant++; else state.cart.push({...p, cant:1});
-  localStorage.setItem("mgv_cart", JSON.stringify(state.cart));
-  renderCart();
-}
-function changeQty(id, delta){
-  const it = state.cart.find(x=>x.id===id);
-  if(!it) return;
-  it.cant += delta;
-  if(it.cant<=0) state.cart = state.cart.filter(x=>x.id!==id);
-  localStorage.setItem("mgv_cart", JSON.stringify(state.cart));
-  renderCart();
-}
-function removeFromCart(id){
-  state.cart = state.cart.filter(x=>x.id!==id);
-  localStorage.setItem("mgv_cart", JSON.stringify(state.cart));
+function clearCart(){
+  cart = [];
+  saveCart();
   renderCart();
 }
 
-document.getElementById("cartFab").onclick = ()=> document.getElementById("cartPanel").style.display = "flex";
-document.getElementById("closeCart").onclick = ()=> document.getElementById("cartPanel").style.display = "none";
-document.getElementById("q").oninput = ()=> renderProducts();
+// ==== Acciones ====
+document.addEventListener('click', (e)=>{
+  // add product
+  const addId = e.target.closest('[data-add]')?.getAttribute('data-add');
+  if(addId){
+    const product = PRODUCTS.find(p => p.id === addId);
+    const found = cart.find(i => i.id === addId);
+    if(found) found.qty += 1;
+    else cart.push({id: product.id, name: product.name, price: product.price, qty: 1});
+    saveCart();
+    renderCart();
+    return;
+  }
 
-document.getElementById("checkoutBtn").onclick = async ()=>{
-  if(!state.cart.length){ alert("Tu carrito está vacío."); return; }
-  const number = state.config?.whatsapp?.number || "";
-  if(!number){ alert("No hay número de WhatsApp configurado."); return; }
-  const items = state.cart.map(it=>`• ${it.nombre} x ${it.cant} — ${money(it.precio*it.cant)}`).join("%0A");
-  const total = state.cart.reduce((a,i)=>a+i.precio*i.cant,0);
-  const header = encodeURIComponent(state.config?.whatsapp?.preHeader || "Nuevo pedido");
-  const msg = `${header}%0A%0A${items}%0A%0ATotal: ${money(total)}%0A%0A`;
-  const url = `https://wa.me/${encodeURIComponent(number)}?text=${msg}`;
-  window.open(url, "_blank");
-};
+  // cart actions
+  const inc = e.target.closest('[data-inc]')?.getAttribute('data-inc');
+  if(inc){
+    const it = cart.find(i => i.id === inc); if(it){ it.qty += 1; saveCart(); renderCart(); }
+    return;
+  }
+  const dec = e.target.closest('[data-dec]')?.getAttribute('data-dec');
+  if(dec){
+    const it = cart.find(i => i.id === dec); if(it){ it.qty = Math.max(0, it.qty-1); if(it.qty===0) cart = cart.filter(i=>i.id!==dec); saveCart(); renderCart(); }
+    return;
+  }
+  const del = e.target.closest('[data-del]')?.getAttribute('data-del');
+  if(del){
+    cart = cart.filter(i => i.id !== del); saveCart(); renderCart(); return;
+  }
 
-(async function(){
-  await loadData();
-  renderCategories();
-  renderBanners();
-  renderProducts();
+  if(e.target.id === 'openCartBtn'){ openDrawer(); return; }
+  if(e.target.id === 'closeCartBtn'){ closeDrawer(); return; }
+  if(e.target.id === 'drawerBackdrop'){ closeDrawer(); return; }
+  if(e.target.id === 'clearCartBtn'){ clearCart(); return; }
+
+  if(e.target.id === 'sendOrderBtn'){
+    if(cart.length === 0){ alert('Agregá algún producto.'); return; }
+    const total = cart.reduce((a,b)=>a + b.qty*b.price, 0);
+    const items = cart.map(i => `• ${i.name} ×${i.qty} – ${money(i.price*i.qty)}`).join('%0A');
+    const msg = `Hola, quiero hacer un pedido:%0A${items}%0A%0ATotal: ${money(total)}%0A`;
+    const url = `https://wa.me/5493412272899?text=${msg}`;
+    window.open(url, '_blank');
+
+    // *** Vaciar inmediatamente después de enviar ***
+    clearCart();
+    closeDrawer();
+    return;
+  }
+});
+
+// ==== Búsqueda ====
+$('#searchInput').addEventListener('input', (e)=>{
+  const q = e.target.value.trim().toLowerCase();
+  const filtered = PRODUCTS.filter(p => (p.name + ' ' + (p.desc||'')).toLowerCase().includes(q));
+  renderProducts(filtered);
+});
+
+// ==== Inicio ====
+(function init(){
+  renderProducts(PRODUCTS);
   renderCart();
+  updateCartBadge();
+  $('#year').textContent = new Date().getFullYear();
 })();
