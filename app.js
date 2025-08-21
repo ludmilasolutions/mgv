@@ -1,5 +1,5 @@
 /* =========================================================
-   MGV – App JS (banners + carrito con resumen + layout fijo)
+   MGV – App JS (banners + carrito con resumen full)
    ========================================================= */
 const $ = (sel, ctx=document) => ctx.querySelector(sel);
 const $$ = (sel, ctx=document) => [...ctx.querySelectorAll(sel)];
@@ -44,7 +44,7 @@ function ensureCartLayout(){
   if(!panel) return {};
   const footer = panel.querySelector(".cart-footer");
 
-  // 1) Asegurar bloque de ítems
+  // Asegurar bloque de ítems
   let items = document.getElementById("cartItems");
   if(!items){
     items = document.createElement("div");
@@ -57,7 +57,7 @@ function ensureCartLayout(){
     panel.appendChild(items);
   }
 
-  // 2) Resumen compacto justo arriba de los ítems
+  // Resumen compacto justo arriba de los ítems
   let summary = document.getElementById("cartSummary");
   if(!summary){
     summary = document.createElement("div");
@@ -69,18 +69,21 @@ function ensureCartLayout(){
   return {panel, items, summary, footer};
 }
 
-/* ==== FORMA DE ENTREGA – UI (texto + ayuda) ==== */
+/* ==== FORMA DE ENTREGA – ocultar label y copy ==== */
 function applyShippingUI(){
   const wrap = document.getElementById("shipMethod");
   const wPrice = document.getElementById("shipPriceWrap");
   if(!wrap) return;
 
+  // >>> Quitar el texto "Forma de entrega"
   const label = wrap.parentElement?.querySelector('label[for="shipMethod"]');
-  if (label) label.textContent = "Forma de entrega";
+  if (label) label.style.display = "none";
 
+  // CTA
   const cta = document.getElementById("checkoutBtn");
   if (cta) cta.textContent = "Confirmar por WhatsApp";
 
+  // Leyenda de ayuda
   let help = document.getElementById("cartHelp");
   if (!help) {
     help = document.querySelector(".cart-footer p");
@@ -88,6 +91,7 @@ function applyShippingUI(){
   }
   if (help) help.textContent = "Coordinamos entrega y pago por WhatsApp.";
 
+  // Botones con íconos
   wrap.querySelectorAll(".seg").forEach(b=>{
     if(b.dataset.method === "retiro") b.innerHTML = "🏬 <span>Retiro</span>";
     if(b.dataset.method === "envio")  b.innerHTML = "🚚 <span>Envío</span>";
@@ -97,7 +101,6 @@ function applyShippingUI(){
 
   function updateUI(){
     const isEnvio = (state.shipping?.method === "envio");
-
     if (wPrice) wPrice.style.display = isEnvio ? "" : "none";
     if (isEnvio && inp){
       if(!inp.value){
@@ -283,14 +286,15 @@ function renderCart(){
     b.onclick = ()=> removeFromCart(b.dataset.del);
   });
 
-  // ---------- Resumen compacto bajo el header
-  const lines = state.cart.map(it=>`${it.nombre} ×${it.cant}`);
-  const compact = lines.slice(0,3).join(" · ") + (lines.length>3 ? " …" : "");
-  summary.innerHTML = lines.length
-    ? `<div class="sum-title">Resumen</div><div class="sum-lines">${compact}</div>`
-    : `<div class="sum-empty">Tu carrito está vacío.</div>`;
+  // ---------- Resumen FULL bajo el header (lista completa)
+  if(state.cart.length){
+    const list = state.cart.map(it=>`<li>${it.nombre} ×${it.cant}</li>`).join("");
+    summary.innerHTML = `<div class="sum-title">Resumen</div><ul class="sum-list">${list}</ul>`;
+  }else{
+    summary.innerHTML = `<div class="sum-empty">Tu carrito está vacío.</div>`;
+  }
 
-  // ---------- Desglose en el footer (subtotal/envío)
+  // ---------- Desglose en el footer
   const bd = document.getElementById("cartBreakdown");
   if(bd){
     bd.innerHTML = `
