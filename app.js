@@ -1,5 +1,5 @@
 /* =========================================================
-   MGV – App JS (carrito refinado + banners restaurados)
+   MGV – App JS (banners normalizados + carrito ordenado)
    ========================================================= */
 const $ = (sel, ctx=document) => ctx.querySelector(sel);
 const $$ = (sel, ctx=document) => [...ctx.querySelectorAll(sel)];
@@ -28,21 +28,28 @@ function applyConfig(){
   const f = document.getElementById("footerInfo"); if(f){ f.innerHTML = `${desc}`; }
 }
 
+/* === Normalizador de banners: acepta claves en ES/EN === */
+function normalizeBanners(arr){
+  return (arr||[]).map(b=>({
+    img:   b.img    || b.imagen,
+    title: b.title  || b.titulo || "",
+    text:  b.text   || b.texto  || "",
+    active: (typeof b.active !== "undefined" ? b.active : b.activo)
+  })).filter(b=> b.img && (b.active === undefined || b.active === true));
+}
+
 /* ==== FORMA DE ENTREGA – UI (texto + ayuda) ==== */
 function applyShippingUI(){
   const wrap = document.getElementById("shipMethod");
   const wPrice = document.getElementById("shipPriceWrap");
   if(!wrap) return;
 
-  // Título más claro
   const label = wrap.parentElement?.querySelector('label[for="shipMethod"]');
   if (label) label.textContent = "Forma de entrega";
 
-  // Texto del botón principal (CTA)
   const cta = document.getElementById("checkoutBtn");
   if (cta) cta.textContent = "Confirmar por WhatsApp";
 
-  // Leyenda de ayuda (debajo del botón)
   let help = document.getElementById("cartHelp");
   if (!help) {
     help = document.querySelector(".cart-footer p");
@@ -50,7 +57,6 @@ function applyShippingUI(){
   }
   if (help) help.textContent = "Coordinamos entrega y pago por WhatsApp.";
 
-  // Botones con íconos (sin cambiar el HTML)
   wrap.querySelectorAll(".seg").forEach(b=>{
     if(b.dataset.method === "retiro") b.innerHTML = "🏬 <span>Retiro</span>";
     if(b.dataset.method === "envio")  b.innerHTML = "🚚 <span>Envío</span>";
@@ -111,11 +117,22 @@ function applyShippingUI(){
   updateUI();
 }
 
+/* === Mover “Forma de entrega” dentro del footer del carrito === */
+function placeShippingInFooter(){
+  const panel = document.getElementById("cartPanel");
+  if(!panel) return;
+  const shipField = document.getElementById("shipMethod")?.parentElement || null;
+  const footer = panel.querySelector(".cart-footer");
+  if(shipField && footer && shipField.parentElement !== footer){
+    footer.insertBefore(shipField, footer.firstChild);
+  }
+}
+
 /* ================== BANNERS (restaurados) ================== */
 function renderBanners(){
   const wrap = document.getElementById("bannerCarousel");
   if(!wrap) return;
-  const active = (state.banners||[]).filter(b=>b && b.img);
+  const active = (state.banners||[]).filter(b=> b && b.img);
   if(!active.length){
     wrap.innerHTML = "";
     wrap.style.display = "none";
@@ -132,7 +149,6 @@ function renderBanners(){
     </article>
   `).join("");
 
-  // Dots
   const dotsWrap = document.createElement("div");
   dotsWrap.className = "dots";
   active.forEach((_,i)=>{
@@ -253,7 +269,6 @@ function renderCart(){
 
 /* ================== INIT ================== */
 (async function(){
-  // Eventos básicos
   const fab = document.getElementById("cartFab");
   const close = document.getElementById("closeCart");
   if(fab) fab.onclick = ()=> document.getElementById("cartPanel").style.display = "flex";
@@ -261,16 +276,14 @@ function renderCart(){
   const search = document.getElementById("q");
   if(search) search.oninput = ()=> renderProducts();
 
-  // Cargar data
   const [cfg, banners, prods] = await Promise.all([
     fetch("data/config.json").then(r=>r.json()).catch(()=>({})),
     fetch("data/banners.json").then(r=>r.json()).catch(()=>([])),
     fetch("data/productos.json").then(r=>r.json()).catch(()=>([]))
   ]);
-  state.config = cfg; state.banners = banners; state.products = prods;
+  state.config = cfg; state.banners = normalizeBanners(banners); state.products = prods;
   applyConfig();
 
-  // Render
   renderBanners();
   const cats = [...new Set(state.products.map(p=>p.categoria).filter(Boolean))];
   const pills = document.getElementById("categoryPills");
@@ -286,6 +299,7 @@ function renderCart(){
   }
   renderProducts();
   renderCart();
+  placeShippingInFooter();
   applyShippingUI();
 })();
 
