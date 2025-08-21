@@ -12,9 +12,7 @@
   </script>
   <script src="assets/js/fetch-raw-patch.js"></script>
 </head>
-<body>
-  <div id="announcement" class="announcement">ENVÍOS GRATIS A PARTIR DE $75.000 · 3 y 6 CUOTAS SIN INTERÉS · Coordinamos por WhatsApp</div>
-  <!-- Topbar fija con búsqueda -->
+<body><!-- Topbar fija con búsqueda -->
   <div class="topbar">
     <header class="header container">
       <img src="assets/logo.png" alt="MGV" />
@@ -49,6 +47,24 @@
     </div>
     <div class="cart-items" id="cartItems"></div>
     <div class="cart-footer">
+  <div class="cart-form">
+    <label for="customerName">Nombre</label>
+    <input id="customerName" type="text" placeholder="Tu nombre" />
+    <div class="error-msg" id="errName" aria-live="polite"></div>
+    <label for="customerPhone">Teléfono (WhatsApp)</label>
+    <input id="customerPhone" type="tel" inputmode="tel" placeholder="Ej: 3415123456" />
+    <div class="error-msg" id="errPhone" aria-live="polite"></div>
+    <div class="ship-opts">
+      <label class="radio"><input type="radio" name="ship" value="retiro" checked> Retiro</label>
+      <label class="radio"><input type="radio" name="ship" value="envio"> Envío</label>
+    </div>
+    <div id="addrWrap" class="addr-wrap" hidden>
+      <label for="customerAddr">Dirección para envío</label>
+      <input id="customerAddr" type="text" placeholder="Calle 123, piso, depto" />
+      <div class="error-msg" id="errAddr" aria-live="polite"></div>
+    </div>
+  </div>
+
   <div class="cart-form">
     <label for="customerName">Tu nombre</label>
     <input id="customerName" type="text" placeholder="Ej: Juan Pérez" />
@@ -95,7 +111,7 @@
       </div>
       <div class="promo-actions">
         <!-- Link directo para evitar solapes; el CSS del parche reubica este botón -->
-        <a id="promoMail" class="btn promo-btn" href="mailto:angelmascali@gmail.com?subject=Presupuesto%20para%20mi%20web&body=Hola%2C%20me%20gustar%C3%ADa%20un%20presupuesto%20para%20mi%20web.">Pedí tu presupuesto</a>
+        <a id="promoMail" class="btn promo-btn btn-primary" href="mailto:angelmascali@gmail.com?subject=Presupuesto%20para%20mi%20web&body=Hola%2C%20me%20gustar%C3%ADa%20un%20presupuesto%20para%20mi%20web.">Pedí tu presupuesto</a>
         <div class="promo-small">Creado por <strong>Sebastián Mascali</strong></div>
       </div>
     </div>
