@@ -15,7 +15,7 @@ button{font:inherit}
 .container{max-width:1100px;margin:0 auto;padding:16px}
 :focus-visible{outline:3px solid rgba(14,165,233,.45);outline-offset:2px;border-radius:8px}
 
-/* Header / Search */
+/* Header / Search / Logo */
 .header.container{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
 .header.container>img{width:auto;height:auto;max-height:44px;border-radius:12px;box-shadow:0 1px 0 #0000000a}
 @media (max-width:680px){.header.container>img{max-height:36px}}
@@ -95,7 +95,7 @@ button{font:inherit}
 .cart-footer .field{display:flex;flex-direction:column;gap:6px}
 .cart-footer .field input{padding:10px 12px;border:1px solid var(--border);border-radius:10px}
 
-/* Método de entrega – upgrade (solo esta sección) */
+/* Forma de entrega – (selector + nota + costo) */
 .segmented{display:flex;gap:6px;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:6px}
 .segmented .seg{flex:1;display:flex;align-items:center;justify-content:center;gap:8px;border:none;background:transparent;padding:10px 12px;border-radius:10px;cursor:pointer;color:var(--text);font-weight:600;transition:all .15s ease}
 .segmented .seg.active{background:#fff;border:1px solid var(--border);box-shadow:0 1px 0 rgba(0,0,0,.05)}
@@ -111,13 +111,14 @@ button{font:inherit}
 #cartTotal{font-size:1.25rem;font-weight:900}
 #checkoutBtn{width:100%;background:linear-gradient(180deg,#fbbf24,#f59e0b);border:none;color:#111;font-weight:800;padding:12px 16px;border-radius:12px;box-shadow:0 6px 16px rgba(245,158,11,.35)}
 
-/* Promo */
+/* Promo (y separador suave) */
 .promo-card{display:grid;gap:12px;background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px}
 .promo-header h3{margin:0 0 6px}
 .promo-badges{display:flex;flex-wrap:wrap;gap:8px}
 .promo-pill{background:#fff;border:1px solid var(--border);border-radius:999px;padding:6px 10px;color:var(--text)}
 .promo-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
 .promo-btn{display:inline-flex;align-items:center;justify-content:center;min-height:40px}
+.promo-card hr,.promo-sep,.promo-card .divider{border:0;height:1px;background:rgba(2,6,23,.08);margin:8px 0}
 @media (min-width:900px){.promo-card{grid-template-columns:1.4fr .6fr;align-items:center}.promo-actions{justify-content:flex-end}}
 
 .footer{color:var(--muted);font-size:.95rem;padding:24px 0}
