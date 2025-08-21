@@ -1,28 +1,14 @@
 {
   "storeName": "MGV Librería–Regalería",
-  "theme": {
-    "mode": "light",
-    "bg": "#ffffff",
-    "card": "#f7f7f8",
-    "text": "#111111",
-    "muted": "#555555",
-    "border": "#e5e7eb",
-    "brand": "#111111",
-    "accent": "#d4af37"
+  "seo": {
+    "title": "MGV",
+    "description": "Tienda MGV"
   },
   "whatsapp": {
-    "number": "5493417558966",
-    "preHeader": "Nuevo pedido",
-    "thanksMsg": "¡Gracias! Te escribimos por WhatsApp para coordinar la entrega."
+    "number": "5493412272899",
+    "preHeader": "Nuevo pedido"
   },
-  "seo": {
-    "title": "MGV Librería–Regalería",
-    "description": ""
-  },
-  "pages": {
-    "about": "Somos MGV, tu librería–regalería de confianza.",
-    "contact": "WhatsApp y redes sociales.",
-    "returns": "",
-    "privacy": ""
+  "shipping": {
+    "price": 0
   }
 }

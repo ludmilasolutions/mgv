@@ -1,6 +1,6 @@
 /* =============================================================================
    MGV – UI PRO (legibilidad + banners + carrito visible + resumen miniaturas)
-   ========================================================================== */
+   ============================================================================= */
 :root{
   --bg:#ffffff; --card:#f7f7f8; --text:#0b1220; --muted:#475569; --border:#e2e8f0;
   --brand:#0ea5e9; --accent:#f59e0b;
@@ -69,7 +69,7 @@ button{font:inherit}
 /* =============================================================================
    CARRITO – visible, legible y con resumen (miniaturas) – SIN input de envío
    ============================================================================= */
-#shipPriceWrap{display:none !important;}  /* por las dudas, oculto cualquier input heredado */
+#shipPriceWrap{display:none !important;}  /* ocultar cualquier input heredado */
 
 .cart-fab,#cartFab{position:fixed;right:16px;bottom:16px;width:56px;height:56px;border-radius:16px;border:none;cursor:pointer;z-index:60;display:grid;place-items:center;background:linear-gradient(180deg,#111,#0b1220);color:#fff;box-shadow:0 14px 30px rgba(2,6,23,.28),0 1px 0 rgba(255,255,255,.08) inset;font-size:22px;line-height:1;padding:0}
 .cart-fab:active{transform:translateY(1px)}
@@ -136,7 +136,7 @@ button{font:inherit}
 .promo-card{display:grid;gap:12px;background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px}
 .promo-header h3{margin:0 0 6px}
 .promo-badges{display:flex;flex-wrap:wrap;gap:8px}
-.promo-pill{background:#fff;border:1px solid var(--border);border-radius:999px;padding:6px 10px;color:var(--text)}
+.promo-pill{background:#fff;border:1px solid var(--border);border-radius:999px;padding:6px 10px;color:#var(--text)}
 .promo-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
 .promo-btn{display:inline-flex;align-items:center;justify-content:center;min-height:40px}
 .promo-card hr,.promo-sep,.promo-card .divider{border:0;height:1px;background:rgba(2,6,23,.08);margin:8px 0}

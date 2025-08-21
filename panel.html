@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Panel MGV</title>
+  <style>
+    :root{--b:#e5e7eb;--tx:#0b1220;--mut:#475569;--acc:#f59e0b}
+    *{box-sizing:border-box} body{margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,Arial;color:var(--tx);background:#fff}
+    .wrap{max-width:760px;margin:24px auto;padding:0 16px}
+    h1{font-size:28px;margin:8px 0 16px}
+    .card{border:1px solid var(--b);border-radius:14px;padding:16px}
+    .row{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
+    label{display:block;font-weight:700;margin:8px 0 6px}
+    input[type=number]{width:220px;padding:10px;border:1px solid var(--b);border-radius:10px}
+    button{border:0;border-radius:10px;padding:10px 14px;cursor:pointer}
+    #saveLocal{background:#111;color:#fff}
+    #download{background:linear-gradient(180deg,#fbbf24,#f59e0b);color:#111;font-weight:800}
+    .muted{color:var(--mut);margin-top:10px}
+    .small{font-size:.9rem}
+    code{background:#f5f5f5;padding:2px 6px;border-radius:6px}
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <h1>Panel</h1>
+
+    <section class="card">
+      <h2>Envío</h2>
+      <label for="shippingPrice">Precio de envío (ARS)</label>
+      <input id="shippingPrice" type="number" min="0" step="1" />
+
+      <div class="row">
+        <button id="saveLocal">Guardar (previsualizar)</button>
+        <button id="download">Descargar <code>config.json</code></button>
+      </div>
+
+      <p class="muted">El carrito toma este valor automáticamente. Para que quede online, reemplazá el archivo en <code>/data/config.json</code> con el descargado.</p>
+      <p id="status" class="muted small"></p>
+    </section>
+  </main>
+  <script src="panel.js"></script>
+</body>
+</html>
