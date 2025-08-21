@@ -1,5 +1,5 @@
 
-// ===== Patch v9: robust checkout (no NaN, includes names, safe handlers) =====
+// ===== Patch v12: checkout uses state OR localStorage; keeps cart when name missing =====
 (function(){
   function toNumber(x){
     try{
@@ -14,12 +14,32 @@
     }catch(_){ return 0; }
   }
   const money = n => `$ ${Number(n||0).toLocaleString('es-AR')}`;
+
+  function getCart(){
+    try{
+      if(window.state && Array.isArray(window.state.cart) && window.state.cart.length){
+        return window.state.cart;
+      }
+      const raw = localStorage.getItem('mgv_cart');
+      const arr = raw ? JSON.parse(raw) : [];
+      return Array.isArray(arr) ? arr : [];
+    }catch(_){ return []; }
+  }
+
+  function setCart(arr){
+    try{
+      if(window.state){ window.state.cart = Array.isArray(arr) ? arr : []; }
+      localStorage.setItem('mgv_cart', JSON.stringify(getCart()));
+    }catch(_){}
+  }
+
   function installCheckout(){
     const oldBtn = document.getElementById('checkoutBtn');
     if(!oldBtn) return;
     const btn = oldBtn.cloneNode(true);
     oldBtn.parentNode.replaceChild(btn, oldBtn);
-    btn.addEventListener('click', (e)=>{
+
+    btn.addEventListener('click', ()=>{
       try{
         const nameInput = document.getElementById('customerName');
         const name = (nameInput?.value || '').trim();
@@ -27,37 +47,38 @@
         if(!name){
           if(nameInput){ nameInput.classList.add('error'); nameInput.focus(); }
           alert('Por favor, ingresá tu nombre para enviar el pedido.');
-          return;
+          return; // do NOT clear cart
         }
-        if(!window.state || !Array.isArray(window.state.cart) || state.cart.length===0){
+        const cart = getCart();
+        if(!cart.length){
           alert('Agregá algún producto al carrito.');
           return;
         }
         const lines = [];
         lines.push(`Pedido de: ${name}`);
         lines.push('Hola, quiero hacer un pedido:');
-        const items = state.cart.map(it=>{
+        cart.forEach(it=>{
           const nm = it.name || it.title || it.nombre || 'Producto';
           const qty = Number(it.qty)||1;
           const unit = toNumber(it.price);
           const sub = unit * qty;
-          return `• ${nm} ×${qty} – ${money(sub)}`;
+          lines.push(`• ${nm} ×${qty} – ${money(sub)}`);
         });
-        items.forEach(l=>lines.push(l));
-        const total = state.cart.reduce((acc, it)=> acc + (toNumber(it.price) * (Number(it.qty)||1)), 0);
+        const total = cart.reduce((acc, it)=> acc + (toNumber(it.price) * (Number(it.qty)||1)), 0);
         lines.push('');
         lines.push(`Total: ${money(total)}`);
         const text = lines.join('\n');
         const url = 'https://wa.me/5493412272899?text=' + encodeURIComponent(text);
         window.open(url, '_blank');
-        // clear & close
-        state.cart = [];
-        localStorage.setItem('mgv_cart', JSON.stringify(state.cart));
+
+        // clear & close AFTER sending
+        setCart([]);
         if(typeof renderCart === 'function'){ renderCart(); }
         const p = document.getElementById('cartPanel'); if(p) p.style.display='none';
       }catch(err){ console.error(err); }
     });
   }
+
   if(document.readyState === 'loading'){
     document.addEventListener('DOMContentLoaded', installCheckout);
   }else{
