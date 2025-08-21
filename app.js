@@ -1,76 +1,28 @@
 
-// ===== Patch v9: robust checkout (no NaN, includes names, safe handlers) =====
+// Patch v10: FAB hides when reaching promo while scrolling down; reappears on scroll up
 (function(){
-  function toNumber(x){
-    try{
-      const s = String(x ?? '').replace(/[^\d,.\-]/g, '');
-      // Convert 1.234,56 -> 1234.56 ; 1,234.56 -> 1234.56 ; 1234 -> 1234
-      if(s.includes(',') && s.includes('.')){
-        // assume dot thousands, comma decimals
-        return parseFloat(s.replace(/\./g,'').replace(',', '.'));
-      }else if(s.includes(',')){
-        // assume comma decimals
-        return parseFloat(s.replace(/\./g,'').replace(',', '.'));
-      }else{
-        return parseFloat(s.replace(/,/g,''));
-      }
-    }catch(_){ return 0; }
+  const fab = document.getElementById('cartFab');
+  const promoEl = document.querySelector('.promo-card') || document.getElementById('promo');
+  if(!fab || !promoEl) return;
+
+  let lastY = window.scrollY || 0;
+  function onScroll(){
+    const y = window.scrollY || 0;
+    const dirDown = y > lastY;
+    lastY = y;
+    if(dirDown){
+      const r = promoEl.getBoundingClientRect();
+      const inView = r.top < window.innerHeight && r.bottom > 0;
+      if(inView){ fab.classList.add('fab-hidden'); }
+    }else{
+      // scrolling up -> show regardless
+      fab.classList.remove('fab-hidden');
+    }
   }
-  const money = n => `$ ${Number(n||0).toLocaleString('es-AR')}`;
-
-  function installCheckout(){
-    const oldBtn = document.getElementById('checkoutBtn');
-    if(!oldBtn) return;
-    // Drop old listeners by cloning
-    const btn = oldBtn.cloneNode(true);
-    oldBtn.parentNode.replaceChild(btn, oldBtn);
-
-    btn.addEventListener('click', (e)=>{
-      try{
-        const nameInput = document.getElementById('customerName');
-        const name = (nameInput?.value || '').trim();
-        if(nameInput){ nameInput.classList.remove('error'); }
-        if(!name){
-          if(nameInput){ nameInput.classList.add('error'); nameInput.focus(); }
-          alert('Por favor, ingresá tu nombre para enviar el pedido.');
-          return; // IMPORTANT: do NOT clear cart
-        }
-        if(!window.state || !Array.isArray(window.state.cart) || state.cart.length===0){
-          alert('Agregá algún producto al carrito.');
-          return;
-        }
-        const lines = [];
-        lines.push(`Pedido de: ${name}`);
-        lines.push('Hola, quiero hacer un pedido:');
-        const items = state.cart.map(it=>{
-          const nm = it.name || it.title || it.nombre || 'Producto';
-          const qty = Number(it.qty)||1;
-          const unit = toNumber(it.price);
-          const sub = unit * qty;
-          return `• ${nm} ×${qty} – ${money(sub)}`;
-        });
-        items.forEach(l=>lines.push(l));
-        const total = state.cart.reduce((acc, it)=> acc + (toNumber(it.price) * (Number(it.qty)||1)), 0);
-        lines.push('');
-        lines.push(`Total: ${money(total)}`);
-        const text = lines.join('\n');
-        const url = 'https://wa.me/5493412272899?text=' + encodeURIComponent(text);
-        window.open(url, '_blank');
-
-        // Now clear and close
-        state.cart = [];
-        localStorage.setItem('mgv_cart', JSON.stringify(state.cart));
-        if(typeof renderCart === 'function'){ renderCart(); }
-        const p = document.getElementById('cartPanel'); if(p) p.style.display='none';
-      }catch(err){ console.error(err); }
-    });
-  }
-
-  if(document.readyState === 'loading'){
-    document.addEventListener('DOMContentLoaded', installCheckout);
-  }else{
-    installCheckout();
-  }
+  window.addEventListener('scroll', onScroll, { passive:true });
+  window.addEventListener('resize', onScroll, { passive:true });
+  // initial check
+  onScroll();
 })();
 
 
@@ -263,6 +215,8 @@ document.getElementById("checkoutBtn").onclick = async ()=>{
   const total = state.cart.reduce((a,i)=>a+i.precio*i.cant,0);
   const header = encodeURIComponent(state.config?.whatsapp?.preHeader || "Nuevo pedido");
   const msg = `${header}%0A%0A${items}%0A%0ATotal: ${money(total)}%0A%0A`;
+  const url = `https://wa.me/${encodeURIComponent(number)}?text=${msg}`;
+  window.open(url, "_blank");
   // Vaciar carrito luego de enviar
   state.cart = [];
   localStorage.setItem("mgv_cart", JSON.stringify(state.cart));
