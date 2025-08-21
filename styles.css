@@ -1,5 +1,5 @@
 /* =============================================================================
-   MGV – UI PRO (legibilidad + banners + carrito visible + resumen)
+   MGV – UI PRO (legibilidad + banners + carrito visible + resumen full)
    ========================================================================== */
 :root{
   --bg:#ffffff; --card:#f7f7f8; --text:#0b1220; --muted:#475569; --border:#e2e8f0;
@@ -72,7 +72,7 @@ button{font:inherit}
 .close-x{position:absolute;top:12px;right:12px;background:#000;color:#fff;border:none;border-radius:999px;width:32px;height:32px}
 
 /* =============================================================================
-   CARRITO – visible, legible y con resumen
+   CARRITO – visible, legible y con resumen FULL
    ============================================================================= */
 .cart-fab,#cartFab{position:fixed;right:16px;bottom:16px;width:56px;height:56px;border-radius:16px;border:none;cursor:pointer;z-index:60;display:grid;place-items:center;background:linear-gradient(180deg,#111,#0b1220);color:#fff;box-shadow:0 14px 30px rgba(2,6,23,.28),0 1px 0 rgba(255,255,255,.08) inset;font-size:22px;line-height:1;padding:0}
 .cart-fab:active{transform:translateY(1px)}
@@ -92,10 +92,11 @@ button{font:inherit}
 .cart-header strong{font-size:1.05rem;letter-spacing:.2px;color:#0b1220}
 .cart-header .btn.secondary{padding:8px 10px;border-radius:10px}
 
-/* Resumen compacto bajo el header */
+/* Resumen FULL bajo el header */
 .cart-summary{padding:10px 14px 6px;border-bottom:1px solid var(--border);background:#fff}
-.cart-summary .sum-title{font-weight:700;font-size:.95rem;margin-bottom:2px;color:#0b1220}
-.cart-summary .sum-lines{color:#334155;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cart-summary .sum-title{font-weight:700;font-size:.95rem;margin-bottom:4px;color:#0b1220}
+.cart-summary .sum-list{margin:0;padding-left:18px;max-height:120px;overflow:auto;color:#334155}
+.cart-summary .sum-list li{margin:2px 0}
 .cart-summary .sum-empty{color:#64748b}
 
 /* Ítems (scrollable) */
@@ -119,7 +120,7 @@ button{font:inherit}
 .cart-footer .field input{padding:10px 12px;border:1px solid var(--border);border-radius:10px}
 .cart-footer .small,.ship-note{color:#475569;line-height:1.35}
 
-/* Forma de entrega */
+/* Forma de entrega (botonera) – SIN label */
 .segmented{display:flex;gap:6px;background:#fff;border:1px solid var(--border);border-radius:12px;padding:6px}
 .segmented .seg{flex:1;display:flex;align-items:center;justify-content:center;gap:8px;border:none;background:transparent;padding:10px 12px;border-radius:10px;cursor:pointer;color:#0b1220;font-weight:700;transition:all .15s ease}
 .segmented .seg.active{background:#f8fafc;border:1px solid var(--border);box-shadow:0 1px 0 rgba(0,0,0,.05)}
