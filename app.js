@@ -1,3 +1,31 @@
+// ===== Theme toggle (clean) =====
+(function(){
+  const root = document.documentElement;
+  function setTheme(t){
+    root.setAttribute('data-theme', t);
+    try{ localStorage.setItem('MGV_THEME', t); }catch(_){}
+    const btn = document.getElementById('themeToggle');
+    if(btn){ btn.textContent = (t==='dark' ? '☀️' : '🌙'); }
+  }
+  function initTheme(){
+    let t = 'light';
+    try{
+      const saved = localStorage.getItem('MGV_THEME');
+      if(saved){ t = saved; }
+      else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches){ t = 'dark'; }
+    }catch(_){}
+    setTheme(t);
+  }
+  if(document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', initTheme);
+  }else{ initTheme(); }
+  document.addEventListener('click', (e)=>{
+    if(e.target && e.target.id==='themeToggle'){
+      const cur = document.documentElement.getAttribute('data-theme') || 'light';
+      setTheme(cur==='dark' ? 'light' : 'dark');
+    }
+  });
+})();
 
 const state = {
   products: [],
@@ -190,6 +218,10 @@ document.getElementById("checkoutBtn").onclick = async ()=>{
   const msg = `${header}%0A%0A${items}%0A%0ATotal: ${money(total)}%0A%0A`;
   const url = `https://wa.me/${encodeURIComponent(number)}?text=${msg}`;
   window.open(url, "_blank");
+  state.cart = [];
+  localStorage.setItem("mgv_cart", JSON.stringify(state.cart));
+  renderCart();
+  document.getElementById("cartPanel").style.display = "none";
   // Vaciar carrito luego de enviar
   state.cart = [];
   localStorage.setItem("mgv_cart", JSON.stringify(state.cart));

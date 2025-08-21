@@ -120,3 +120,37 @@ a{color:inherit;text-decoration:none}
   background:linear-gradient(90deg, transparent, rgba(0,0,0,.18), transparent);
   margin:26px 0 0;
 }
+
+/* ===== Modern polish (clean) ===== */
+:root{
+  --bg:#ffffff; --surface:#ffffff; --card:#f8fafc; --text:#0b1220; --muted:#5b6777; --border:#e5e7eb;
+  --accent:#2563eb; --accent-2:#ffd84d; --shadow:0 10px 30px rgba(2,6,23,.10);
+}
+html,body{background:var(--bg);color:var(--text)}
+/* Prettier theme toggle */
+.theme-toggle{margin-left:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);padding:10px 12px;border-radius:999px;cursor:pointer;box-shadow:var(--shadow);transition:.15s;display:inline-flex;align-items:center;gap:8px}
+.theme-toggle:hover{transform:translateY(-1px)}
+.theme-toggle::after{content:"Modo";font-size:12px;color:var(--muted)}
+
+/* Product cards + grid */
+.grid{gap:18px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:18px;box-shadow:var(--shadow)}
+.card:hover{transform:translateY(-2px);box-shadow:0 16px 40px rgba(2,6,23,.14)}
+/* Buttons */
+.btn{background:var(--accent);border:1px solid var(--accent);color:#fff;border-radius:12px;padding:10px 14px;font-weight:800;box-shadow:var(--shadow)}
+.btn.secondary{background:var(--surface);color:var(--text)}
+/* Cart */
+.cart-panel{border:1px solid var(--border);border-radius:16px;box-shadow:0 18px 40px rgba(2,6,23,.16);overflow:hidden}
+.cart-item{background:var(--surface)}
+/* Promo */
+.soft-divider{border:0;height:1px;margin:28px 0 0;background:linear-gradient(90deg,transparent,rgba(2,6,23,.14),transparent)}
+.promo-card{position:relative;margin:28px auto 16px;max-width:960px;padding:24px;border:1px solid var(--border);border-radius:16px;background:var(--surface);box-shadow:var(--shadow)}
+.promo-actions .promo-btn,#promoMail{position:static !important;margin-top:10px;z-index:1}
+.promo-header,.promo-actions{text-align:center}
+.promo-badges{justify-content:center}
+/* Dark theme via data-theme */
+:root[data-theme="dark"]{
+  --bg:#0b0f18; --surface:#0f1520; --card:#101826; --text:#e8eef8; --muted:#9ba3ae; --border:#1f2937; --accent:#22a6f0;
+}
+:root[data-theme="dark"] .banner img{filter:brightness(.85)}
+:root[data-theme="dark"] .btn{color:#0b1220}
