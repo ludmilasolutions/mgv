@@ -1,3 +1,10 @@
+// Patch_v16_clearCart
+(function(){
+  const btn=document.getElementById('clearCartBtn'); if(!btn) return;
+  btn.addEventListener('click',()=>{
+    try{ if(window.state){ state.cart=[]; } localStorage.setItem('mgv_cart','[]'); if(typeof renderCart==='function'){ renderCart(); } }catch(e){}
+  });
+})();
 // Patch_v15_clearCart
 (function(){
   const btn=document.getElementById('clearCartBtn'); if(!btn) return;
