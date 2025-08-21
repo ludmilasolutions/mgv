@@ -237,34 +237,23 @@ document.getElementById("checkoutBtn").onclick = ()=>{
     }
     const number = state?.config?.whatsapp?.number || "5493412272899";
     const preHeader = state?.config?.whatsapp?.preHeader || "Nuevo pedido";
-    const toNumber = (x)=>{
-      try{
-        const s = String(x ?? "").replace(/[^\d,\.\-]/g, "");
-        if(s.includes(",") && s.includes(".")){
-          return parseFloat(s.replace(/\./g,"").replace(",", "."));
-        }else if(s.includes(",")){
-          return parseFloat(s.replace(/\./g,"").replace(",", "."));
-        }else{
-          return parseFloat(s.replace(/,/g,""));
-        }
-      }catch(_){ return 0; }
-    };
-    const money = (n)=> "$ " + Number(n||0).toLocaleString("es-AR");
-    const items = cart.map(it=>{
-      const nm = it.nombre || it.name || it.title || "Producto";
-      const qty = Number(it.cant ?? it.qty ?? 1);
-      const unit = toNumber(it.precio ?? it.price ?? 0);
-      const sub = unit * qty;
-      return `• ${nm} ×${qty} — ${money(sub)}`;
+    const toNumber = (x)=>{ try{ const s = String(x ?? "").replace(/[^\d,\.\-]/g, ""); return Number(s||0); }catch(e){ return 0; } };
+    const items = cart.map((it,ix)=>{
+      const precio = toNumber(it.precio ?? it.price ?? 0);
+      const cant = Number(it.cant ?? it.qty ?? 1);
+      return `• ${it.nombre} ×${cant} – ${money(precio)}`;
     });
-    const total = cart.reduce((acc, it)=> acc + (toNumber(it.precio ?? it.price ?? 0) * Number(it.cant ?? it.qty ?? 1)), 0);
+    const subtotal = cart.reduce((acc, it)=> acc + (toNumber(it.precio ?? it.price ?? 0) * Number(it.cant ?? it.qty ?? 1)), 0);
+    const envio = (state.shipping?.method==="envio") ? Number(state.shipping?.price||0) : 0;
+    const total = subtotal + envio;
     const lines = [
       `Pedido de: ${name}`,
       preHeader,
       "Hola, quiero hacer un pedido:",
       ...items,
       "",
-      `Envío: ${state.shipping?.method==="envio" ? money(Number(state.shipping?.price||0)) : money(0)}\nTotal: ${money(total + (state.shipping?.method==="envio" ? Number(state.shipping?.price||0) : 0))}`
+      `${state.shipping?.method==="envio" ? "Envío" : "Retiro en local"}: ${state.shipping?.method==="envio" ? money(envio) : "$ 0"}`,
+      `Total: ${money(total)}`
     ];
     const text = lines.join("\n");
     const url = "https://wa.me/" + encodeURIComponent(number) + "?text=" + encodeURIComponent(text);
@@ -274,7 +263,7 @@ document.getElementById("checkoutBtn").onclick = ()=>{
     if(typeof renderCart === "function"){ renderCart(); }
     const panel = document.getElementById("cartPanel"); if(panel) panel.style.display = "none";
   }catch(err){ console.error(err); }
-};
+};;
 
 (async function(){
   await loadData();
