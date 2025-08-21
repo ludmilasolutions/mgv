@@ -38,7 +38,7 @@
 </main>
 <!-- FAB y panel de carrito -->
 <button aria-label="Abrir carrito" class="cart-fab" id="cartFab">🛒 <span id="cartCount">0</span></button>
-<div aria-hidden="true" class="cart-panel" id="cartPanel">
+<div aria-hidden="true" class="cart-panel" id="cartPanel"><div class="field"><label for="shipMethod">Método de entrega</label><div class="segmented" id="shipMethod"><button class="seg active" data-method="retiro" type="button">Retiro</button><button class="seg" data-method="envio" type="button">Envío</button></div></div><div class="field" id="shipPriceWrap" style="display:none"><label for="shippingPrice">Costo de envío ($)</label><input id="shippingPrice" min="0" placeholder="Ej: 2500" step="1" type="number"/></div>
 <div class="cart-header">
 <strong>Tu carrito</strong>
 <button class="btn secondary" id="closeCart">Cerrar</button>

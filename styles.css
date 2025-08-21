@@ -241,3 +241,23 @@ body{background:var(--bg); color:var(--text);}
 /* Entradas suaves */
 .fade-in{animation:fade .4s ease both}
 @keyframes fade{from{opacity:0; transform:translateY(6px)} to{opacity:1; transform:none}}
+
+
+/* === v2 updates: cart solid, FAB shape, segmented control, no transparency === */
+#cartPanel{background:rgba(0,0,0,.45)}
+.cart{background:#fff !important; opacity:1 !important}
+@media (prefers-color-scheme: dark){
+  .cart{background:#0f172a !important; opacity:1 !important}
+}
+/* FAB refinement */
+#cartFab{
+  width:54px; height:54px; border-radius:16px;
+  display:grid; place-items:center; font-size:22px; line-height:1;
+  padding:0; aspect-ratio:auto;
+}
+/* Segmented control */
+.segmented{display:flex; gap:6px; background:var(--card); border:1px solid var(--border); border-radius:10px; padding:4px}
+.segmented .seg{
+  flex:1; border:none; background:transparent; padding:8px 10px; border-radius:8px; cursor:pointer; color:var(--text);
+}
+.segmented .seg.active{background:#fff; border:1px solid var(--border)}

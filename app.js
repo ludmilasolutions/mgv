@@ -127,10 +127,51 @@ document.getElementById("mClose").onclick = closeModal;
 document.getElementById("mClose2").onclick = closeModal;
 document.getElementById("mAdd").onclick = ()=>{ if(state.modal.id){ addToCart(state.modal.id); closeModal(); } };
 
+
+// === v2 shipping ===
+state.shipping = { method: "retiro", price: 0 };
+
+function applyShippingUI(){
+  const wrap = document.getElementById("shipMethod");
+  const wPrice = document.getElementById("shipPriceWrap");
+  if(!wrap) return;
+  const segs = wrap.querySelectorAll(".seg");
+  segs.forEach(b=>{
+    b.onclick = ()=>{
+      segs.forEach(x=>x.classList.remove("active"));
+      b.classList.add("active");
+      state.shipping.method = b.dataset.method;
+      if(state.shipping.method === "envio"){
+        wPrice.style.display = "";
+      }else{
+        wPrice.style.display = "none";
+        state.shipping.price = 0;
+        const inp = document.getElementById("shippingPrice");
+        if(inp) inp.value = "";
+      }
+      renderCart();
+    };
+  });
+  const inp = document.getElementById("shippingPrice");
+  if(inp){
+    // default from config if available
+    let def = 0;
+    try{ def = Number(state?.config?.shipping?.default||0) || 0; }catch(e){}
+    if(!inp.value){ inp.value = def ? String(def) : ""; }
+    inp.oninput = ()=>{
+      const n = Number(inp.value||0);
+      state.shipping.price = isNaN(n)?0:n;
+      renderCart();
+    };
+  }
+}
+
 function renderCart(){
   const list = document.getElementById("cartItems");
-  const total = state.cart.reduce((acc,it)=>acc + it.precio*it.cant, 0);
-  document.getElementById("cartTotal").textContent = money(total);
+  \1
+  const ship = (state.shipping?.method==="envio") ? Number(state.shipping?.price||0) : 0;
+  const grand = total + ship;
+  document.getElementById("cartTotal").textContent = money(grand);
   document.getElementById("cartCount").textContent = state.cart.reduce((a,b)=>a+b.cant,0);
   list.innerHTML = state.cart.map(it=>`
     <div class="cart-item">
@@ -223,7 +264,7 @@ document.getElementById("checkoutBtn").onclick = ()=>{
       "Hola, quiero hacer un pedido:",
       ...items,
       "",
-      `Total: ${money(total)}`
+      `Envío: ${state.shipping?.method==="envio" ? money(Number(state.shipping?.price||0)) : money(0)}\nTotal: ${money(total + (state.shipping?.method==="envio" ? Number(state.shipping?.price||0) : 0))}`
     ];
     const text = lines.join("\n");
     const url = "https://wa.me/" + encodeURIComponent(number) + "?text=" + encodeURIComponent(text);
@@ -241,4 +282,5 @@ document.getElementById("checkoutBtn").onclick = ()=>{
   renderBanners();
   renderProducts();
   renderCart();
+  applyShippingUI();
 })();
