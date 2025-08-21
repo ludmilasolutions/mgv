@@ -14,6 +14,7 @@
     });
   });
   obs.observe(fi,{childList:true,subtree:true});
+  } catch(e){ console.error('Init error', e); }
 })();
 // Patch_v16_clearCart
 (function(){
@@ -21,6 +22,7 @@
   btn.addEventListener('click',()=>{
     try{ if(window.state){ state.cart=[]; } localStorage.setItem('mgv_cart','[]'); if(typeof renderCart==='function'){ renderCart(); } }catch(e){}
   });
+  } catch(e){ console.error('Init error', e); }
 })();
 // Patch_v15_clearCart
 (function(){
@@ -28,6 +30,7 @@
   btn.addEventListener('click',()=>{
     try{ if(window.state){ state.cart=[]; } localStorage.setItem('mgv_cart','[]'); if(typeof renderCart==='function'){ renderCart(); } }catch(e){}
   });
+  } catch(e){ console.error('Init error', e); }
 })();
 
 const state = {
@@ -60,13 +63,7 @@ function applyConfig(){
   const meta = document.querySelector("meta[name='description']");
   if(meta) meta.setAttribute("content", desc);
   $("#footerInfo").innerHTML = `WhatsApp: ${state.config.whatsapp?.number||""} · ${state.config.seo?.description||""}`;
-  const t = state.config.theme || {};
-  const root = document.documentElement;
-  Object.entries({
-    "--bg": t.bg, "--card": t.card, "--text": t.text,
-    "--muted": t.muted, "--border": t.border,
-    "--brand": t.brand, "--accent": t.accent
-  }).forEach(([k,v])=> v && root.style.setProperty(k, v));
+  const t = {}; // theme ignored: fixed palette in CSS
 }
 
 function renderCategories(){
@@ -267,11 +264,14 @@ document.getElementById("checkoutBtn").onclick = ()=>{
 };
 
 (async function(){
+  /* SAFE_RENDER_GUARD */
+  try {
   await loadData();
   renderCategories();
   renderBanners();
   renderProducts();
   renderCart();
+  } catch(e){ console.error('Init error', e); }
 })();
 
 
@@ -354,6 +354,7 @@ document.getElementById("checkoutBtn").onclick = ()=>{
       if(typeof old === 'function') old();
     };
   }
+  } catch(e){ console.error('Init error', e); }
 })();
 // MGV_FAVS: simple favorites by product id/name
 (function(){
@@ -385,4 +386,5 @@ document.getElementById("checkoutBtn").onclick = ()=>{
     });
   });
   obs.observe(grid, {childList:true, subtree:true});
+  } catch(e){ console.error('Init error', e); }
 })();

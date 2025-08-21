@@ -61,7 +61,14 @@
         const rel = String(url).replace(/^https?:\/\/[^/]+\/?/,'').replace(/^\.?\/?/,''); // strip origin & leading ./
         const finalUrl = window.MGVData.dataUrl(rel) + (url.includes('?')?'&':'?') + 'ts=' + Date.now();
         const opts = Object.assign({}, init||{}, { cache:'no-store' });
-        return origFetch(finalUrl, opts);
+        // Try remote first; if it fails, fallback to original URL (local /data/*.json)
+return origFetch(finalUrl, opts).then(function(r){
+  if(r && r.ok) return r;
+  /* MGV FALLBACK LOCAL */
+  return origFetch(input, init);
+}).catch(function(){
+  return origFetch(input, init);
+});
       }
     }catch(_){}
     return origFetch(input, init);
