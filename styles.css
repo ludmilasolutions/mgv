@@ -1,4 +1,11 @@
 
+/* Theme variables */
+:root{ --surface:#ffffff; }
+html.dark, :root[data-theme="dark"]{
+  --bg:#0b0f18; --card:#0f1520; --surface:#101826; --text:#e8eef8; --muted:#9ba3ae; --border:#1f2937; --brand:#e8eef8; --accent:#22a6f0;
+}
+html.dark .banner img, :root[data-theme="dark"] .banner img{ filter:brightness(.85); }
+
 :root{
   --bg:#ffffff;
   --card:#f7f7f8;
@@ -29,8 +36,8 @@ a{color:inherit;text-decoration:none}
 .card .desc{color:var(--muted);font-size:14px;margin:4px 0 8px;min-height:32px}
 .card .row{display:flex;align-items:center;justify-content:space-between}
 .card .price{font-weight:800;color:var(--brand)}
-.btn{background:#111111;color:#fff;border:1px solid #111;border-radius:12px;padding:8px 12px;cursor:pointer}
-.btn.secondary{background:#fff;color:#111;border:1px solid var(--border)}
+.btn{ background: var(--accent); color: #fff; border:1px solid var(--accent); border-radius:12px; padding:8px 12px; cursor:pointer; box-shadow:0 8px 22px rgba(0,0,0,.10) }
+.btn.secondary{ background: var(--surface); color: var(--text); border:1px solid var(--border) }
 .topbar{position:sticky;top:0;background:linear-gradient(#ffffff 0%, #ffffffcc 60%, transparent 100%);backdrop-filter:blur(5px);z-index:5}
 
 /* Banner */
@@ -45,23 +52,23 @@ a{color:inherit;text-decoration:none}
 .dot.active{background:#0008}
 
 /* Cart & modal */
-.cart-fab{position:fixed;right:16px;bottom:16px;background:#111;color:#fff;border-radius:999px;padding:12px 14px;display:flex;align-items:center;gap:8px;cursor:pointer;z-index:10}
-.cart-panel{position:fixed;right:16px;bottom:68px;width:360px;max-height:70vh;overflow:auto;background:#fff;border:1px solid var(--border);border-radius:16px;display:none;flex-direction:column;z-index:10;box-shadow:0 8px 30px #0001}
+.cart-fab{ position:fixed; right:16px; bottom:16px; background:var(--accent); color:#fff; border:1px solid var(--accent); padding:10px 14px; border-radius:999px; display:flex; align-items:center; gap:8px; cursor:pointer; z-index:10; box-shadow:0 14px 34px rgba(2,6,23,.22) }
+.cart-panel{ position:fixed; right:16px; bottom:68px; width:360px; max-height:70vh; overflow:auto; background:var(--card); border:1px solid var(--border); border-radius:16px; display:none; flex-direction:column; z-index:10; box-shadow:0 18px 40px rgba(2,6,23,.16) }
 .cart-header{display:flex;justify-content:space-between;padding:12px;border-bottom:1px solid var(--border)}
 .cart-items{padding:8px;display:flex;flex-direction:column;gap:8px}
-.cart-item{display:flex;gap:8px;align-items:center;background:#fff;border:1px solid var(--border);border-radius:12px;padding:8px}
+.cart-item{ display:flex; gap:8px; align-items:center; background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:8px }
 .cart-item img{width:48px;height:48px;border-radius:12px;object-fit:cover}
 .cart-footer{padding:12px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:8px}
 .small{font-size:12px;color:var(--muted)}
 
 .modal{position:fixed;inset:0;background:#0006;display:none;align-items:center;justify-content:center;z-index:20}
-.modal .sheet{background:#fff;border:1px solid var(--border);border-radius:16px;max-width:820px;width:92vw;max-height:86vh;overflow:auto;display:grid;grid-template-columns:1fr 1fr}
+.modal .sheet{ background:var(--surface); border:1px solid var(--border); border-radius:16px; max-width:850px; max-height:86vh; overflow:auto; display:grid; grid-template-columns:1fr 1fr }
 .modal img{width:100%;height:100%;object-fit:cover;border-top-left-radius:16px;border-bottom-left-radius:16px}
 .modal .content{padding:16px}
 .modal .content h3{margin:0}
 .modal .content p{color:var(--muted)}
 .modal .content .row{display:flex;gap:8px;align-items:center;margin-top:8px}
-.close-x{position:absolute;top:12px;right:12px;background:#fff;border:1px solid var(--border);border-radius:999px;width:36px;height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.close-x{ position:absolute; top:12px; right:12px; background:var(--surface); border:1px solid var(--border); border-radius:10px; width:36px; height:36px; display:flex; align-items:center; justify-content:center; cursor:pointer }
 
 .footer{margin-top:40px;border-top:1px solid var(--border);padding:16px;color:var(--muted);font-size:14px}
 @media (max-width:800px){
@@ -121,36 +128,10 @@ a{color:inherit;text-decoration:none}
   margin:26px 0 0;
 }
 
-/* ===== Modern polish (clean) ===== */
-:root{
-  --bg:#ffffff; --surface:#ffffff; --card:#f8fafc; --text:#0b1220; --muted:#5b6777; --border:#e5e7eb;
-  --accent:#2563eb; --accent-2:#ffd84d; --shadow:0 10px 30px rgba(2,6,23,.10);
-}
-html,body{background:var(--bg);color:var(--text)}
-/* Prettier theme toggle */
-.theme-toggle{margin-left:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);padding:10px 12px;border-radius:999px;cursor:pointer;box-shadow:var(--shadow);transition:.15s;display:inline-flex;align-items:center;gap:8px}
-.theme-toggle:hover{transform:translateY(-1px)}
-.theme-toggle::after{content:"Modo";font-size:12px;color:var(--muted)}
-
-/* Product cards + grid */
-.grid{gap:18px}
-.card{background:var(--surface);border:1px solid var(--border);border-radius:18px;box-shadow:var(--shadow)}
-.card:hover{transform:translateY(-2px);box-shadow:0 16px 40px rgba(2,6,23,.14)}
-/* Buttons */
-.btn{background:var(--accent);border:1px solid var(--accent);color:#fff;border-radius:12px;padding:10px 14px;font-weight:800;box-shadow:var(--shadow)}
-.btn.secondary{background:var(--surface);color:var(--text)}
-/* Cart */
-.cart-panel{border:1px solid var(--border);border-radius:16px;box-shadow:0 18px 40px rgba(2,6,23,.16);overflow:hidden}
-.cart-item{background:var(--surface)}
-/* Promo */
-.soft-divider{border:0;height:1px;margin:28px 0 0;background:linear-gradient(90deg,transparent,rgba(2,6,23,.14),transparent)}
-.promo-card{position:relative;margin:28px auto 16px;max-width:960px;padding:24px;border:1px solid var(--border);border-radius:16px;background:var(--surface);box-shadow:var(--shadow)}
-.promo-actions .promo-btn,#promoMail{position:static !important;margin-top:10px;z-index:1}
-.promo-header,.promo-actions{text-align:center}
-.promo-badges{justify-content:center}
-/* Dark theme via data-theme */
-:root[data-theme="dark"]{
-  --bg:#0b0f18; --surface:#0f1520; --card:#101826; --text:#e8eef8; --muted:#9ba3ae; --border:#1f2937; --accent:#22a6f0;
-}
-:root[data-theme="dark"] .banner img{filter:brightness(.85)}
-:root[data-theme="dark"] .btn{color:#0b1220}
+/* Promo fixes strong */
+.promo-card{ position:relative; margin:28px auto 16px; max-width:960px; padding:24px; border:1px solid var(--border); border-radius:16px; background:var(--surface); box-shadow:0 10px 28px rgba(0,0,0,.06); }
+.promo-actions .promo-btn, #promoMail{ position:static !important; display:inline-block; margin-top:12px; z-index:1 !important; }
+.promo-header, .promo-actions{ text-align:center; }
+.promo-badges{ justify-content:center; }
+.floating-cta{ display:none !important; }
+.soft-divider{ border:0; height:1px; margin:26px 0 0; background:linear-gradient(90deg, transparent, rgba(2,6,23,.18), transparent); }
