@@ -1,7 +1,6 @@
-
 /* =============================================================================
-   MGV – UI PRO (cart + fab + promo + base) – 2025-08-21
-   Replacement of styles.css
+   MGV – UI PRO v4.1 (logo fix + carrito refinado + fab + promo)
+   Reemplazo completo de styles.css – 2025-08-21
    ========================================================================== */
 
 /* ---------- Tokens base ---------- */
@@ -35,10 +34,19 @@ button{font:inherit}
 /* Focus visible accesible */
 :focus-visible{outline:3px solid rgba(14,165,233,.45); outline-offset:2px; border-radius:8px}
 
-/* ---------- Header / Search ---------- */
-.header.container{display:flex;align-items:center;gap:16px}
+/* ---------- Header / Logo / Search ---------- */
+.header.container{
+  display:flex;align-items:center;gap:14px;flex-wrap:wrap
+}
+.header.container > img{
+  width:auto; height:auto; max-height:44px; border-radius:12px;
+  box-shadow:0 1px 0 #0000000a;
+}
+@media (max-width:680px){
+  .header.container > img{max-height:36px}
+}
 .header .title{font-weight:800;font-size:clamp(20px,3vw,28px)}
-.search{flex:1}
+.search{flex:1;min-width:240px}
 .search input#q{
   width:100%; padding:12px 14px; border:1px solid var(--border);
   border-radius:14px; outline:none; background:#fff; color:var(--text);
@@ -108,7 +116,7 @@ button{font:inherit}
    Dentro del panel: .cart-header, #cartItems, .cart-footer, #cartBreakdown, .cart-total, #checkoutBtn
    ============================================================================= */
 
-/* FAB (móvil y desktop) */
+/* FAB (móvil y desktop) – look pro */
 .cart-fab, #cartFab{
   position:fixed; right:16px; bottom:16px;
   width:56px; height:56px; border-radius:16px;
@@ -116,10 +124,9 @@ button{font:inherit}
   display:grid; place-items:center; gap:4px;
   background:linear-gradient(180deg, #111 0%, #0b1220 100%);
   color:#fff; box-shadow:0 14px 30px rgba(2,6,23,.28), 0 1px 0 rgba(255,255,255,.08) inset;
+  font-size:22px; line-height:1; padding:0;
 }
 .cart-fab:active{transform:translateY(1px)}
-.cart-fab{position:fixed}
-.cart-fab{font-size:22px; line-height:1; padding:0}
 .cart-fab span#cartCount{
   position:absolute; right:-6px; top:-6px; min-width:22px; height:22px; padding:0 6px;
   border-radius:999px; background:var(--accent); color:#111; font-weight:900; display:inline-grid; place-items:center; font-size:12px; box-shadow:0 2px 0 rgba(0,0,0,.15)
@@ -142,6 +149,7 @@ button{font:inherit}
 /* Cabezal y contenido */
 .cart-header{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 14px 12px;border-bottom:1px solid var(--border); background:linear-gradient(180deg, #fff, #fafafa)}
 .cart-header strong{font-size:1.05rem}
+.cart-header .btn.secondary{padding:8px 10px;border-radius:10px}
 .cart-items{padding:10px 12px;display:flex;flex-direction:column;gap:10px;overflow:auto}
 
 /* Ítem en grid */
@@ -154,10 +162,16 @@ button{font:inherit}
 .cart-item .meta .name{font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
 .cart-item .meta .small{color:var(--muted); font-size:.92rem}
 
-/* Grupo de cantidad (–  +) */
-.qty-group{display:inline-flex; align-items:center; gap:6px; background:var(--card); border:1px solid var(--border); border-radius:10px; padding:4px}
-.qty-group .btn{padding:6px 10px}
-.qty-group .btn.secondary{background:transparent}
+/* ---- Controles neutrales (–  +  ✕) dentro del carrito ---- */
+.qty-group{display:inline-flex; align-items:center; gap:6px; background:#ffffff; border:1px solid var(--border); border-radius:12px; padding:3px}
+.qty-group .btn,
+.cart-item .btn[data-del]{
+  background:#f1f5f9 !important; color:#0f172a; box-shadow:none; border:none;
+  padding:8px 10px; border-radius:10px;
+}
+.qty-group .btn:hover,
+.cart-item .btn[data-del]:hover{background:#e2e8f0}
+.qty-group .btn.secondary{background:#f1f5f9 !important}
 
 /* Pie del panel */
 .cart-footer{padding:12px 14px 14px; border-top:1px solid var(--border); display:flex; flex-direction:column; gap:10px; background:#fff}
@@ -213,6 +227,10 @@ button{font:inherit}
   .cart-panel{background:#0f172a; border-color:#1f2937}
   .cart-footer{background:#0f172a}
   .cart-total{background:#0f172a}
+  .qty-group .btn,
+  .cart-item .btn[data-del]{background:#1f2937 !important; color:#e5e7eb}
+  .qty-group .btn:hover,
+  .cart-item .btn[data-del]:hover{background:#283446 !important}
 }
 
 /* ---------- Entradas suaves ---------- */
