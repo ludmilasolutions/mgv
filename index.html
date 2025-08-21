@@ -13,7 +13,6 @@
   <script src="assets/js/fetch-raw-patch.js"></script>
 </head>
 <body>
-  <div id="patchRibbon" style="position:sticky;top:0;z-index:9999;background:#16a34a;color:#fff;text-align:center;padding:4px 8px;font-size:12px">Parche activo ✅</div>
   <!-- Topbar fija con búsqueda -->
   <div class="topbar">
     <header class="header container">
@@ -22,6 +21,7 @@
       <div class="search">
         <input id="q" placeholder="Buscar..." aria-label="Buscar productos"/>
       </div>
+          <button id="themeToggle" class="theme-toggle" aria-label="Cambiar tema" title="Cambiar tema">🌙</button>
     </header>
   </div>
 
@@ -50,6 +50,7 @@
     <div class="cart-items" id="cartItems"></div>
     <div class="cart-footer">
       <div class="cart-total"><span>Total</span><strong id="cartTotal">$ 0</strong></div>
+      <button class="btn secondary" id="clearCartBtn">Vaciar</button>
       <button class="btn" id="checkoutBtn">Finalizar por WhatsApp</button>
       <div class="small">Te llevamos al chat con el resumen del pedido para coordinar entrega y pago.</div>
     </div>
@@ -97,9 +98,7 @@
   </section>
 
   <!-- Footer (oculto por CSS del parche si no lo usás) -->
-  <footer class="container footer" id="footerInfo">
-  <div style="text-align:center;color:#94a3b8;font-size:12px;margin-top:8px">Versión MGV FORCE </div>
-</footer>
+  <footer class="container footer" id="footerInfo"></footer>
 
   <script src="assets/js/promo.js"></script>
   <script src="app.js?v=2025-08-20-3"></script>
