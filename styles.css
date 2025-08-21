@@ -121,25 +121,24 @@ a{color:inherit;text-decoration:none}
   margin:26px 0 0;
 }
 
-/* ===== Patch v5 (mobile + fab + theme) ===== */
+/* ===== Patch v6 ===== */
 :root{
   --bg:#ffffff; --surface:#ffffff; --card:#f6f7fb; --text:#0b1220; --muted:#5b6777; --border:#e5e7eb;
-  --accent:#2563eb; /* azul para acciones (carrito, promo) */
-  --gold:#d4af37;   /* dorado solo para "Agregar" en cards */
+  --accent:#2563eb; /* azul para carrito/promo */
+  --gold:#d4af37;   /* dorado SOLO para "Agregar" en cards */
   --shadow:0 10px 28px rgba(2,6,23,.10);
 }
 html,body{background:var(--bg);color:var(--text)}
 .container{max-width:1100px;margin:0 auto;padding:0 16px}
 
-/* Search + toggle */
+/* Inputs */
 .search input{background:var(--surface);border:1px solid var(--border);border-radius:999px;padding:10px 14px;color:var(--text)}
-.theme-toggle{margin-left:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);padding:10px 14px;border-radius:999px;cursor:pointer;box-shadow:var(--shadow);transition:.18s;display:inline-flex;align-items:center;gap:8px}
-.theme-toggle:hover{transform:translateY(-1px)}
 
-/* Grid responsive */
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px}
+/* Responsive grid */
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px}
+@media (max-width:520px){ .grid{grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px} }
 
-/* Product cards */
+/* Cards */
 .card{background:var(--surface);border:1px solid var(--border);border-radius:18px;box-shadow:var(--shadow);overflow:hidden}
 .card:hover{transform:translateY(-2px);box-shadow:0 16px 40px rgba(2,6,23,.16)}
 .card .btn{background:var(--gold)!important;border:1px solid var(--gold)!important;color:#111!important}
@@ -153,38 +152,29 @@ html,body{background:var(--bg);color:var(--text)}
 .cart-item{background:var(--surface);border:1px solid var(--border);border-radius:12px}
 .cart-footer .btn{background:var(--accent)!important;border-color:var(--accent)!important;color:#fff!important}
 
+/* Cart form */
+.cart-form{display:grid;gap:6px;margin-bottom:8px}
+.cart-form input{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 12px;color:var(--text)}
+
 /* FAB enlarged + animation */
 .cart-fab{
   position:fixed; right:16px; bottom:16px; z-index:20;
-  width:64px; height:64px; border-radius:999px;
+  width:72px; height:72px; border-radius:999px;
   display:flex; align-items:center; justify-content:center; gap:6px;
   background:var(--accent); color:#fff; border:1px solid var(--accent);
   font-size:18px; box-shadow:0 16px 40px rgba(2,6,23,.22); transition:opacity .25s ease, transform .25s ease;
 }
-.cart-fab.fab-hidden{opacity:0; transform:translateY(12px) scale(.92); pointer-events:none}
+.cart-fab.fab-hidden{opacity:0; transform:translateY(14px) scale(.92); pointer-events:none}
 
-/* Promo section fixes */
+/* Promo fixes */
 .soft-divider{border:0;height:1px;margin:28px 0 0;background:linear-gradient(90deg,transparent,rgba(2,6,23,.16),transparent)}
 .promo-card{position:relative;margin:28px auto 16px;max-width:960px;padding:24px;border:1px solid var(--border);border-radius:16px;background:var(--surface);box-shadow:var(--shadow)}
 #promoMail,.promo-actions .promo-btn{position:static!important;display:inline-block!important;margin-top:10px!important;z-index:1!important}
 .floating-cta{display:none!important}
 
-/* Dark theme (whole UI) */
-html.dark, :root[data-theme="dark"]{
-  --bg:#0b0f18; --surface:#0f1520; --card:#101826; --text:#e8eef8; --muted:#9ba3ae; --border:#1f2937; --accent:#22a6f0; --gold:#ffd35a;
-}
-html.dark body,:root[data-theme="dark"] body{background:var(--bg);color:var(--text)}
-html.dark .search input,:root[data-theme="dark"] .search input{background:var(--surface);border-color:var(--border);color:var(--text)}
-html.dark .card,:root[data-theme="dark"] .card{background:var(--surface);border-color:var(--border)}
-html.dark .cart-panel,:root[data-theme="dark"] .cart-panel{background:var(--surface);border-color:var(--border)}
-html.dark .cart-item,:root[data-theme="dark"] .cart-item{background:var(--surface);border-color:var(--border)}
-html.dark .promo-card,:root[data-theme="dark"] .promo-card{background:var(--surface);border-color:var(--border)}
-/* Keep gold only for grid add buttons even in dark */
-html.dark .card .btn,:root[data-theme="dark"] .card .btn{background:var(--gold)!important;border-color:var(--gold)!important;color:#111!important}
-
 /* Mobile tweaks */
 @media (max-width:480px){
   .banner{height:160px}
-  .cart-panel{right:8px;left:8px;bottom:84px;width:auto}
-  .cart-fab{right:12px;bottom:12px;width:68px;height:68px}
+  .cart-panel{right:8px;left:8px;bottom:88px;width:auto}
+  .cart-fab{right:12px;bottom:12px;width:76px;height:76px}
 }

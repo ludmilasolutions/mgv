@@ -1,44 +1,16 @@
 
-// === Patch v5: Theme + FAB observer ===
+// FAB hide/show using IntersectionObserver (promo in view -> hide)
 (function(){
-  const root = document.documentElement;
-  function setTheme(t){
-    root.setAttribute('data-theme', t);
-    root.classList.toggle('dark', t==='dark');
-    try{ localStorage.setItem('MGV_THEME', t); }catch(_){}
-    const btn = document.getElementById('themeToggle');
-    if(btn){ btn.textContent = (t==='dark' ? '☀️' : '🌙'); }
-  }
-  function initTheme(){
-    let t = 'light';
-    try{
-      const saved = localStorage.getItem('MGV_THEME');
-      if(saved){ t = saved; }
-      else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches){ t = 'dark'; }
-    }catch(_){}
-    setTheme(t);
-  }
-  if(document.readyState === 'loading'){ document.addEventListener('DOMContentLoaded', initTheme); } else { initTheme(); }
-
-  // Toggle click
-  document.addEventListener('click', (e)=>{
-    if(e.target && e.target.id==='themeToggle'){
-      const cur = root.getAttribute('data-theme') || 'light';
-      setTheme(cur==='dark' ? 'light' : 'dark');
-    }
-  });
-
-  // FAB hide/show when promo visible
   const fab = document.getElementById('cartFab');
-  const promo = document.getElementById('promo');
-  if(fab && promo && 'IntersectionObserver' in window){
+  const promoEl = document.querySelector('.promo-card');
+  if(fab && promoEl && 'IntersectionObserver' in window){
     const io = new IntersectionObserver((entries)=>{
       entries.forEach(entry=>{
         if(entry.isIntersecting){ fab.classList.add('fab-hidden'); }
         else{ fab.classList.remove('fab-hidden'); }
       });
-    }, { root: null, rootMargin: '0px 0px -20% 0px', threshold: 0.05 });
-    io.observe(promo);
+    }, { root:null, rootMargin:'0px 0px 0px 0px', threshold: 0.2 });
+    io.observe(promoEl);
   }
 })();
 
@@ -232,12 +204,10 @@ document.getElementById("checkoutBtn").onclick = async ()=>{
   const total = state.cart.reduce((a,i)=>a+i.precio*i.cant,0);
   const header = encodeURIComponent(state.config?.whatsapp?.preHeader || "Nuevo pedido");
   const msg = `${header}%0A%0A${items}%0A%0ATotal: ${money(total)}%0A%0A`;
-  const url = `https://wa.me/${encodeURIComponent(number)}?text=${msg}`;
+  const name = (document.getElementById("customerName")?.value||"").trim();
+if(!name){ alert("Por favor, ingresá tu nombre para enviar el pedido."); return; }
+const url = `https://wa.me/5493412272899?text=Pedido%20de:%20${encodeURIComponent(name)}%0A` + encodeURIComponent(msg);
   window.open(url, "_blank");
-  state.cart = [];
-  localStorage.setItem("mgv_cart", JSON.stringify(state.cart));
-  renderCart();
-  document.getElementById("cartPanel").style.display = "none";
   // Vaciar carrito luego de enviar
   state.cart = [];
   localStorage.setItem("mgv_cart", JSON.stringify(state.cart));
@@ -250,4 +220,25 @@ document.getElementById("checkoutBtn").onclick = async ()=>{
   renderBanners();
   renderProducts();
   renderCart();
+})();
+
+// Fallback: si no existe construcción previa, armamos mensaje con items y nombre
+(function(){
+  const btn = document.getElementById('checkoutBtn');
+  if(!btn) return;
+  btn.addEventListener('click', (e)=>{
+    try{
+      const name = (document.getElementById("customerName")?.value||"").trim();
+      if(!name){ alert("Por favor, ingresá tu nombre para enviar el pedido."); return; }
+      if(!state || !Array.isArray(state.cart) || state.cart.length===0){ alert("Agregá algún producto al carrito."); return; }
+      const money = n => `$ ${n.toLocaleString('es-AR')}`;
+      const items = state.cart.map(i => `• ${i.name} ×${i.qty} – ${money(i.price*i.qty)}`).join('%0A');
+      const total = state.cart.reduce((a,b)=>a + b.qty*b.price, 0);
+      const msg = `Hola, quiero hacer un pedido:%0A${items}%0A%0ATotal: ${money(total)}%0A`;
+      const url = `https://wa.me/5493412272899?text=Pedido%20de:%20${encodeURIComponent(name)}%0A` + encodeURIComponent(msg);
+      window.open(url, "_blank");
+      // Vaciar y cerrar
+      state.cart = []; localStorage.setItem("mgv_cart", JSON.stringify(state.cart)); renderCart(); document.getElementById("cartPanel").style.display = "none";
+    }catch(err){ console.error(err); }
+  });
 })();
