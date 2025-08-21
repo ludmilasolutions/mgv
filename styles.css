@@ -1,5 +1,5 @@
 /* =============================================================================
-   MGV – UI PRO (legibilidad + banners + carrito visible + resumen full)
+   MGV – UI PRO (legibilidad + banners + carrito visible + resumen miniaturas)
    ========================================================================== */
 :root{
   --bg:#ffffff; --card:#f7f7f8; --text:#0b1220; --muted:#475569; --border:#e2e8f0;
@@ -8,12 +8,7 @@
 *{box-sizing:border-box}
 html,body{height:100%}
 html{scroll-behavior:smooth}
-body{
-  margin:0;
-  font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",Arial,sans-serif;
-  color:var(--text); background:var(--bg);
-  -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
-}
+body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",Arial,sans-serif;color:var(--text);background:var(--bg);-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
 img{max-width:100%;display:block}
 a{text-decoration:none;color:inherit}
 button{font:inherit}
@@ -72,8 +67,10 @@ button{font:inherit}
 .close-x{position:absolute;top:12px;right:12px;background:#000;color:#fff;border:none;border-radius:999px;width:32px;height:32px}
 
 /* =============================================================================
-   CARRITO – visible, legible y con resumen FULL
+   CARRITO – visible, legible y con resumen (miniaturas) – SIN input de envío
    ============================================================================= */
+#shipPriceWrap{display:none !important;}  /* por las dudas, oculto cualquier input heredado */
+
 .cart-fab,#cartFab{position:fixed;right:16px;bottom:16px;width:56px;height:56px;border-radius:16px;border:none;cursor:pointer;z-index:60;display:grid;place-items:center;background:linear-gradient(180deg,#111,#0b1220);color:#fff;box-shadow:0 14px 30px rgba(2,6,23,.28),0 1px 0 rgba(255,255,255,.08) inset;font-size:22px;line-height:1;padding:0}
 .cart-fab:active{transform:translateY(1px)}
 .cart-fab span#cartCount{position:absolute;right:-6px;top:-6px;min-width:22px;height:22px;padding:0 6px;border-radius:999px;background:var(--accent);color:#111;font-weight:900;display:inline-grid;place-items:center;font-size:12px;box-shadow:0 2px 0 rgba(0,0,0,.15)}
@@ -92,11 +89,14 @@ button{font:inherit}
 .cart-header strong{font-size:1.05rem;letter-spacing:.2px;color:#0b1220}
 .cart-header .btn.secondary{padding:8px 10px;border-radius:10px}
 
-/* Resumen FULL bajo el header */
-.cart-summary{padding:10px 14px 6px;border-bottom:1px solid var(--border);background:#fff}
-.cart-summary .sum-title{font-weight:700;font-size:.95rem;margin-bottom:4px;color:#0b1220}
-.cart-summary .sum-list{margin:0;padding-left:18px;max-height:120px;overflow:auto;color:#334155}
-.cart-summary .sum-list li{margin:2px 0}
+/* Resumen con miniaturas bajo el header */
+.cart-summary{padding:10px 14px;border-bottom:1px solid var(--border);background:#fff}
+.cart-summary .sum-title{font-weight:700;font-size:.95rem;margin-bottom:6px;color:#0b1220}
+.cart-summary .sum-grid{list-style:none;margin:0;padding:0;display:grid;grid-auto-rows:minmax(40px,auto);row-gap:8px;max-height:160px;overflow:auto}
+.cart-summary .sum-item{display:grid;grid-template-columns:40px 1fr;align-items:center;gap:10px}
+.cart-summary .sum-item img{width:40px;height:40px;border-radius:8px;object-fit:cover;border:1px solid var(--border)}
+.cart-summary .sum-name{font-weight:700;color:#0b1220;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cart-summary .sum-qty{font-size:.9rem;color:#475569}
 .cart-summary .sum-empty{color:#64748b}
 
 /* Ítems (scrollable) */
@@ -120,15 +120,10 @@ button{font:inherit}
 .cart-footer .field input{padding:10px 12px;border:1px solid var(--border);border-radius:10px}
 .cart-footer .small,.ship-note{color:#475569;line-height:1.35}
 
-/* Forma de entrega (botonera) – SIN label */
+/* Forma de entrega (botonera) – SIN label ni input de precio */
 .segmented{display:flex;gap:6px;background:#fff;border:1px solid var(--border);border-radius:12px;padding:6px}
 .segmented .seg{flex:1;display:flex;align-items:center;justify-content:center;gap:8px;border:none;background:transparent;padding:10px 12px;border-radius:10px;cursor:pointer;color:#0b1220;font-weight:700;transition:all .15s ease}
 .segmented .seg.active{background:#f8fafc;border:1px solid var(--border);box-shadow:0 1px 0 rgba(0,0,0,.05)}
-.ship-note{font-size:.92rem;margin-top:6px}
-#shipPriceWrap{margin-top:8px}
-#shipPriceWrap label{font-weight:700}
-#shippingPrice{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;appearance:textfield}
-#shippingPrice::-webkit-outer-spin-button,#shippingPrice::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
 
 /* Desglose + total */
 .cart-breakdown{display:flex;flex-direction:column;gap:6px;margin:4px 0 0}
