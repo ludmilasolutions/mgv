@@ -1,5 +1,5 @@
 
-// Strong theme toggle v3
+// === Patch v5: Theme + FAB observer ===
 (function(){
   const root = document.documentElement;
   function setTheme(t){
@@ -19,12 +19,27 @@
     setTheme(t);
   }
   if(document.readyState === 'loading'){ document.addEventListener('DOMContentLoaded', initTheme); } else { initTheme(); }
+
+  // Toggle click
   document.addEventListener('click', (e)=>{
-    if(e.target && e.target.id === 'themeToggle'){
+    if(e.target && e.target.id==='themeToggle'){
       const cur = root.getAttribute('data-theme') || 'light';
-      setTheme(cur === 'dark' ? 'light' : 'dark');
+      setTheme(cur==='dark' ? 'light' : 'dark');
     }
   });
+
+  // FAB hide/show when promo visible
+  const fab = document.getElementById('cartFab');
+  const promo = document.getElementById('promo');
+  if(fab && promo && 'IntersectionObserver' in window){
+    const io = new IntersectionObserver((entries)=>{
+      entries.forEach(entry=>{
+        if(entry.isIntersecting){ fab.classList.add('fab-hidden'); }
+        else{ fab.classList.remove('fab-hidden'); }
+      });
+    }, { root: null, rootMargin: '0px 0px -20% 0px', threshold: 0.05 });
+    io.observe(promo);
+  }
 })();
 
 
@@ -236,8 +251,3 @@ document.getElementById("checkoutBtn").onclick = async ()=>{
   renderProducts();
   renderCart();
 })();
-
-// Clear cart button
-document.getElementById('clearCartBtn')?.addEventListener('click', ()=>{
-  state.cart = []; localStorage.setItem('mgv_cart', JSON.stringify(state.cart)); renderCart();
-});
