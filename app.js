@@ -28,8 +28,14 @@ function applyConfig(){
   const desc = state.config.seo?.description || "";
   const meta = document.querySelector("meta[name='description']");
   if(meta) meta.setAttribute("content", desc);
-  $("#footerInfo").innerHTML = `WhatsApp: ${state.config.whatsapp?.number||""} · ${state.config.seo?.description||""}`;
-  const t = {}; // theme ignored: fixed palette in CSS
+  $("#footerInfo").innerHTML = `${state.config?.seo?.description||""}`;
+  const t = state.config.theme || {};
+  const root = document.documentElement;
+  Object.entries({
+    "--bg": t.bg, "--card": t.card, "--text": t.text,
+    "--muted": t.muted, "--border": t.border,
+    "--brand": t.brand, "--accent": t.accent
+  }).forEach(([k,v])=> v && root.style.setProperty(k, v));
 }
 
 function renderCategories(){
@@ -56,7 +62,7 @@ function renderBanners(){
         <div class="title" style="color:${b.color||'var(--brand)'}">${b.titulo}</div>
         <div class="text">${b.texto||""}</div>
       </div>
-      <div class="dots"></div>
+      
     </article>
   `).join("");
   const dotsWrap = document.createElement("div");
@@ -230,12 +236,9 @@ document.getElementById("checkoutBtn").onclick = ()=>{
 };
 
 (async function(){
-  /* SAFE_RENDER_GUARD */
-  try {
   await loadData();
   renderCategories();
   renderBanners();
   renderProducts();
   renderCart();
-  } catch(e){ console.error('Init error', e); }
 })();

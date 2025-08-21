@@ -1,104 +1,96 @@
 <!DOCTYPE html>
+
 <html lang="es-AR">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>MGV Librería–Regalería</title>
-  <meta name="description" content="Artículos de librería y regalería. Comprá por WhatsApp; coordinamos la entrega."/>
-  <link rel="icon" href="assets/logo.png"/>
-  <link rel="stylesheet" href="styles.css?v=2025-08-20-3"/>
-  <script>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>MGV Librería–Regalería</title>
+<meta content="Artículos de librería y regalería. Comprá por WhatsApp; coordinamos la entrega." name="description"/>
+<link href="assets/logo.png" rel="icon"/>
+<link href="styles.css?v=2025-08-20-3" rel="stylesheet"/>
+<script>
     window.ENV = { GH_OWNER: "ludmilasolutions", GH_REPO: "mgv", GH_BRANCH: "main" };
   </script>
-  <script src="assets/js/fetch-raw-patch.js"></script>
-</head>
+<script src="assets/js/fetch-raw-patch.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/></head>
 <body>
-  <!-- Topbar fija con búsqueda -->
-  <div class="topbar">
-    <header class="header container">
-      <img src="assets/logo.png" alt="MGV" />
-      <div class="title" id="storeTitle">MGV Librería–Regalería</div>
-      <div class="search">
-        <input id="q" placeholder="Buscar..." aria-label="Buscar productos"/>
-      </div>
-    </header>
-  </div>
-
-  <!-- Carrusel de banners (usa data/banners.json) -->
-  <section class="container">
-    <div id="bannerCarousel" class="carousel" aria-label="Promociones"></div>
-  </section>
-
-  <!-- Píldoras de categorías (se llenan con data/productos.json) -->
-  <section class="container">
-    <div id="categoryPills" class="badges" aria-label="Categorías"></div>
-  </section>
-
-  <!-- Catálogo -->
-  <main class="container" role="main">
-    <div id="productGrid" class="grid"></div>
-  </main>
-
-  <!-- FAB y panel de carrito -->
-  <button class="cart-fab" id="cartFab" aria-label="Abrir carrito">🛒 <span id="cartCount">0</span></button>
-  <div class="cart-panel" id="cartPanel" aria-hidden="true">
-    <div class="cart-header">
-      <strong>Tu carrito</strong>
-      <button class="btn secondary" id="closeCart">Cerrar</button>
-    </div>
-    <div class="cart-items" id="cartItems"></div>
-    <div class="cart-footer">
-      <div class="cart-total"><span>Total</span><strong id="cartTotal">$ 0</strong></div>
-      <button class="btn" id="checkoutBtn">Finalizar por WhatsApp</button>
-      <div class="small">Te llevamos al chat con el resumen del pedido para coordinar entrega y pago.</div>
-    </div>
-  </div>
-
-  <!-- Modal de producto -->
-  <div class="modal" id="productModal" aria-hidden="true">
-    <div class="sheet">
-      <img id="mImg" src="" alt="Vista del producto"/>
-      <div class="content">
-        <div class="close-x" id="mClose" aria-label="Cerrar">✕</div>
-        <h3 id="mName"></h3>
-        <p id="mDesc"></p>
-        <div class="row"><strong id="mPrice"></strong></div>
-        <div class="row">
-          <button class="btn" id="mAdd">Agregar al carrito</button>
-          <button class="btn secondary" id="mClose2">Cerrar</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- División suave para separar del bloque de promo -->
-  <hr class="soft-divider"/>
-
-  <!-- Promo inferior -->
-  <section class="container">
-    <div class="promo-card">
-      <div class="promo-header">
-        <h3>¿Querés una web como esta para tu negocio?</h3>
-        <div class="promo-badges">
-          <span class="promo-pill">⚡ Entrega rápida</span>
-          <span class="promo-pill">📱 100% responsive</span>
-          <span class="promo-pill">🧩 Panel para productos</span>
-          <span class="promo-pill">🔒 Hosting & dominio opcional</span>
-          <span class="promo-pill">✉️ Soporte por email</span>
-        </div>
-      </div>
-      <div class="promo-actions">
-        <!-- Link directo para evitar solapes; el CSS del parche reubica este botón -->
-        <a id="promoMail" class="btn promo-btn" href="https://wa.me/5493412272899?text=Hola,%20quiero%20presupuesto%20para%20una%20web" target="_blank" rel="noopener">Pedí tu presupuesto</a>
-        <div class="promo-small">Creado por <strong>Sebastián Mascali</strong></div>
-      </div>
-    </div>
-  </section>
-
-  <!-- Footer (oculto por CSS del parche si no lo usás) -->
-  <footer class="container footer" id="footerInfo"></footer>
-
-  <script src="assets/js/promo.js"></script>
-  <script src="app.js?v=2025-08-20-3"></script>
+<!-- Topbar fija con búsqueda -->
+<div class="topbar">
+<header class="header container">
+<img alt="MGV" src="assets/logo.png"/>
+<div class="title" id="storeTitle">MGV Librería–Regalería</div>
+<div class="search">
+<input aria-label="Buscar productos" id="q" placeholder="Buscar..."/>
+</div>
+</header>
+</div>
+<!-- Carrusel de banners (usa data/banners.json) -->
+<section class="container">
+<div aria-label="Promociones" class="carousel" id="bannerCarousel"></div>
+</section>
+<!-- Píldoras de categorías (se llenan con data/productos.json) -->
+<section class="container">
+<div aria-label="Categorías" class="badges" id="categoryPills"></div>
+</section>
+<!-- Catálogo -->
+<main class="container" role="main">
+<div class="grid" id="productGrid"></div>
+</main>
+<!-- FAB y panel de carrito -->
+<button aria-label="Abrir carrito" class="cart-fab" id="cartFab">🛒 <span id="cartCount">0</span></button>
+<div aria-hidden="true" class="cart-panel" id="cartPanel">
+<div class="cart-header">
+<strong>Tu carrito</strong>
+<button class="btn secondary" id="closeCart">Cerrar</button>
+</div>
+<div class="cart-items" id="cartItems"></div>
+<div class="cart-footer"><div class="field"><label for="customerName">Tu nombre</label><input id="customerName" placeholder="Ej: Sebastián" type="text"/></div>
+<div class="cart-total"><span>Total</span><strong id="cartTotal">$ 0</strong></div>
+<button class="btn" id="checkoutBtn">Finalizar por WhatsApp</button>
+<div class="small">Te llevamos al chat con el resumen del pedido para coordinar entrega y pago.</div>
+</div>
+</div>
+<!-- Modal de producto -->
+<div aria-hidden="true" class="modal" id="productModal">
+<div class="sheet">
+<img alt="Vista del producto" id="mImg" src=""/>
+<div class="content">
+<div aria-label="Cerrar" class="close-x" id="mClose">✕</div>
+<h3 id="mName"></h3>
+<p id="mDesc"></p>
+<div class="row"><strong id="mPrice"></strong></div>
+<div class="row">
+<button class="btn" id="mAdd">Agregar al carrito</button>
+<button class="btn secondary" id="mClose2">Cerrar</button>
+</div>
+</div>
+</div>
+</div>
+<!-- División suave para separar del bloque de promo -->
+<hr class="soft-divider"/>
+<!-- Promo inferior -->
+<section class="container">
+<div class="promo-card">
+<div class="promo-header">
+<h3>¿Querés una web como esta para tu negocio?</h3>
+<div class="promo-badges">
+<span class="promo-pill">⚡ Entrega rápida</span>
+<span class="promo-pill">📱 100% responsive</span>
+<span class="promo-pill">🧩 Panel para productos</span>
+<span class="promo-pill">🔒 Hosting &amp; dominio opcional</span>
+<span class="promo-pill">✉️ Soporte por email</span>
+</div>
+</div>
+<div class="promo-actions">
+<!-- Link directo para evitar solapes; el CSS del parche reubica este botón -->
+<a class="btn promo-btn" href="https://wa.me/5493412272899?text=Hola,%20quiero%20presupuesto%20para%20una%20web" id="promoMail" rel="noopener" target="_blank">Pedí tu presupuesto</a>
+<div class="promo-small">Creado por <strong>Sebastián Mascali</strong></div>
+</div>
+</div>
+</section>
+<!-- Footer (oculto por CSS del parche si no lo usás) -->
+<footer class="container footer" id="footerInfo"></footer>
+<script src="assets/js/promo.js"></script>
+<script src="app.js?v=2025-08-20-3"></script>
 </body>
 </html>
