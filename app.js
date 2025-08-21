@@ -1,17 +1,33 @@
 
-// FAB hide/show using IntersectionObserver (promo in view -> hide)
+// ===== Patch v7: robust WhatsApp message (single encode) =====
 (function(){
-  const fab = document.getElementById('cartFab');
-  const promoEl = document.querySelector('.promo-card');
-  if(fab && promoEl && 'IntersectionObserver' in window){
-    const io = new IntersectionObserver((entries)=>{
-      entries.forEach(entry=>{
-        if(entry.isIntersecting){ fab.classList.add('fab-hidden'); }
-        else{ fab.classList.remove('fab-hidden'); }
-      });
-    }, { root:null, rootMargin:'0px 0px 0px 0px', threshold: 0.2 });
-    io.observe(promoEl);
-  }
+  const btn = document.getElementById('checkoutBtn');
+  if(!btn) return;
+  btn.addEventListener('click', (e)=>{
+    try{
+      const name = (document.getElementById('customerName')?.value||'').trim();
+      if(!name){ alert('Por favor, ingresá tu nombre para enviar el pedido.'); return; }
+      if(!state || !Array.isArray(state.cart) || state.cart.length===0){ alert('Agregá algún producto al carrito.'); return; }
+      const money = n => `$ ${n.toLocaleString('es-AR')}`;
+      const items = state.cart.map(i => `• ${i.name} ×${i.qty} – ${money(i.price*i.qty)}`).join('\\n');
+      const total = state.cart.reduce((a,b)=>a + b.qty*b.price, 0);
+      const lines = [
+        `Pedido de: ${name}`,
+        'Hola, quiero hacer un pedido:',
+        items,
+        '',
+        `Total: ${money(total)}`
+      ];
+      const text = lines.join('\\n');
+      const url = 'https://wa.me/5493412272899?text=' + encodeURIComponent(text);
+      window.open(url, '_blank');
+      // limpiar carrito y cerrar
+      state.cart = [];
+      localStorage.setItem('mgv_cart', JSON.stringify(state.cart));
+      renderCart();
+      const p = document.getElementById('cartPanel'); if(p) p.style.display='none';
+    }catch(err){ console.error(err); }
+  }, { once: false });
 })();
 
 
@@ -204,10 +220,6 @@ document.getElementById("checkoutBtn").onclick = async ()=>{
   const total = state.cart.reduce((a,i)=>a+i.precio*i.cant,0);
   const header = encodeURIComponent(state.config?.whatsapp?.preHeader || "Nuevo pedido");
   const msg = `${header}%0A%0A${items}%0A%0ATotal: ${money(total)}%0A%0A`;
-  const name = (document.getElementById("customerName")?.value||"").trim();
-if(!name){ alert("Por favor, ingresá tu nombre para enviar el pedido."); return; }
-const url = `https://wa.me/5493412272899?text=Pedido%20de:%20${encodeURIComponent(name)}%0A` + encodeURIComponent(msg);
-  window.open(url, "_blank");
   // Vaciar carrito luego de enviar
   state.cart = [];
   localStorage.setItem("mgv_cart", JSON.stringify(state.cart));
@@ -220,25 +232,4 @@ const url = `https://wa.me/5493412272899?text=Pedido%20de:%20${encodeURIComponen
   renderBanners();
   renderProducts();
   renderCart();
-})();
-
-// Fallback: si no existe construcción previa, armamos mensaje con items y nombre
-(function(){
-  const btn = document.getElementById('checkoutBtn');
-  if(!btn) return;
-  btn.addEventListener('click', (e)=>{
-    try{
-      const name = (document.getElementById("customerName")?.value||"").trim();
-      if(!name){ alert("Por favor, ingresá tu nombre para enviar el pedido."); return; }
-      if(!state || !Array.isArray(state.cart) || state.cart.length===0){ alert("Agregá algún producto al carrito."); return; }
-      const money = n => `$ ${n.toLocaleString('es-AR')}`;
-      const items = state.cart.map(i => `• ${i.name} ×${i.qty} – ${money(i.price*i.qty)}`).join('%0A');
-      const total = state.cart.reduce((a,b)=>a + b.qty*b.price, 0);
-      const msg = `Hola, quiero hacer un pedido:%0A${items}%0A%0ATotal: ${money(total)}%0A`;
-      const url = `https://wa.me/5493412272899?text=Pedido%20de:%20${encodeURIComponent(name)}%0A` + encodeURIComponent(msg);
-      window.open(url, "_blank");
-      // Vaciar y cerrar
-      state.cart = []; localStorage.setItem("mgv_cart", JSON.stringify(state.cart)); renderCart(); document.getElementById("cartPanel").style.display = "none";
-    }catch(err){ console.error(err); }
-  });
 })();
