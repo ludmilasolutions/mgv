@@ -46,10 +46,10 @@ button{font:inherit}
 .btn:active{transform:translateY(1px)}
 .btn.secondary{background:#eef2f7;color:#111}
 
-/* Banners */
+/* Banners (restaurados con .active) */
 .carousel{position:relative;border-radius:16px;overflow:hidden;margin:12px 0}
-.banner{position:relative;display:none}           /* oculto por defecto */
-.banner.active{display:block}                    /* visible al estar activa */
+.banner{position:relative;display:none}
+.banner.active{display:block}
 .banner img{width:100%;height:260px;object-fit:cover;display:block;filter:saturate(1.05)}
 .banner .content{position:absolute;inset:auto 0 0 0;padding:18px;color:#fff;background:linear-gradient(180deg,rgba(0,0,0,0) 0%,rgba(0,0,0,.55) 85%);text-shadow:0 1px 1px rgba(0,0,0,.3)}
 .banner .title{font-weight:900;font-size:clamp(18px,3.2vw,26px);letter-spacing:.2px}
@@ -95,8 +95,10 @@ button{font:inherit}
 .cart-footer{padding:12px 14px 14px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:10px;background:#fff}
 .cart-footer .field{display:flex;flex-direction:column;gap:6px}
 .cart-footer .field input{padding:10px 12px;border:1px solid var(--border);border-radius:10px}
+/* >>> NUEVO: texto chico del footer más prolijo <<< */
+.cart-footer .small{ color: var(--muted); line-height:1.3; margin-top:2px; }
 
-/* Forma de entrega – (selector + nota + costo) */
+/* Forma de entrega (selector + nota + costo) */
 .segmented{display:flex;gap:6px;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:6px}
 .segmented .seg{flex:1;display:flex;align-items:center;justify-content:center;gap:8px;border:none;background:transparent;padding:10px 12px;border-radius:10px;cursor:pointer;color:var(--text);font-weight:600;transition:all .15s ease}
 .segmented .seg.active{background:#fff;border:1px solid var(--border);box-shadow:0 1px 0 rgba(0,0,0,.05)}
