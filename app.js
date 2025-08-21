@@ -1,16 +1,16 @@
 /* =========================================================
-   MGV – App JS (banners + carrito con resumen full)
+   MGV – App JS (banners + carrito con miniaturas, SIN input de envío)
    ========================================================= */
-const $ = (sel, ctx=document) => ctx.querySelector(sel);
+const $  = (sel, ctx=document) => ctx.querySelector(sel);
 const $$ = (sel, ctx=document) => [...ctx.querySelectorAll(sel)];
 
 const state = {
   config: null,
   banners: [],
   products: [],
-  cart: JSON.parse(localStorage.getItem("mgv_cart")||"[]")||[]
+  cart: JSON.parse(localStorage.getItem("mgv_cart")||"[]")||[],
+  shipping: { method: "retiro", price: 0 }   // price viene del panel (config)
 };
-state.shipping = { method: "retiro", price: 0 };
 
 function money(n){
   try{ n = Number(n||0); }catch(e){ n=0; }
@@ -18,17 +18,27 @@ function money(n){
 }
 function saveCart(){ localStorage.setItem("mgv_cart", JSON.stringify(state.cart)); }
 
-function applyConfig(){
-  if(!state.config) return;
-  $("#storeTitle").textContent = state.config.storeName || "Tienda";
-  document.title = state.config.seo?.title || "Tienda";
-  const desc = state.config.seo?.description || "";
-  const meta = document.querySelector("meta[name='description']");
-  if(meta) meta.setAttribute("content", desc);
-  const f = document.getElementById("footerInfo"); if(f){ f.innerHTML = `${desc}`; }
+/* --- helpers --- */
+function getConfiguredShippingPrice(){
+  // lee precio desde el panel (config.json)
+  const cfg = state?.config?.shipping || {};
+  // admite "price" o "default"
+  const val = (typeof cfg.price !== "undefined") ? cfg.price : cfg.default;
+  const n = Number(val||0);
+  return isNaN(n) ? 0 : n;
 }
 
-/* === Normalizador de banners: acepta claves en ES/EN === */
+function applyConfig(){
+  if(!state.config) return;
+  const t = $("#storeTitle"); if(t) t.textContent = state.config.storeName || "Tienda";
+  document.title = state.config.seo?.title || "Tienda";
+  const desc = state.config.seo?.description || "";
+  const meta = document.querySelector('meta[name="description"]');
+  if(meta) meta.setAttribute("content", desc);
+  const f = $("#footerInfo"); if(f){ f.innerHTML = `${desc}`; }
+}
+
+/* --- Normalizador de banners: acepta claves ES/EN --- */
 function normalizeBanners(arr){
   return (arr||[]).map(b=>({
     img:   b.img    || b.imagen,
@@ -40,12 +50,12 @@ function normalizeBanners(arr){
 
 /* ================== Estructura del panel ================== */
 function ensureCartLayout(){
-  const panel = document.getElementById("cartPanel");
+  const panel  = $("#cartPanel");
   if(!panel) return {};
   const footer = panel.querySelector(".cart-footer");
 
-  // Asegurar bloque de ítems
-  let items = document.getElementById("cartItems");
+  // Bloque de ítems
+  let items = $("#cartItems");
   if(!items){
     items = document.createElement("div");
     items.id = "cartItems";
@@ -57,8 +67,8 @@ function ensureCartLayout(){
     panel.appendChild(items);
   }
 
-  // Resumen compacto justo arriba de los ítems
-  let summary = document.getElementById("cartSummary");
+  // Resumen arriba de los ítems
+  let summary = $("#cartSummary");
   if(!summary){
     summary = document.createElement("div");
     summary.id = "cartSummary";
@@ -69,26 +79,23 @@ function ensureCartLayout(){
   return {panel, items, summary, footer};
 }
 
-/* ==== FORMA DE ENTREGA – ocultar label y copy ==== */
+/* ================== FORMA DE ENTREGA (sin input de envío) ================== */
 function applyShippingUI(){
-  const wrap = document.getElementById("shipMethod");
-  const wPrice = document.getElementById("shipPriceWrap");
+  const wrap   = $("#shipMethod");
   if(!wrap) return;
 
-  // >>> Quitar el texto "Forma de entrega"
+  // Ocultar texto "Forma de entrega"
   const label = wrap.parentElement?.querySelector('label[for="shipMethod"]');
   if (label) label.style.display = "none";
 
-  // CTA
-  const cta = document.getElementById("checkoutBtn");
-  if (cta) cta.textContent = "Confirmar por WhatsApp";
+  // Forzar oculto cualquier input viejo de envío si existiera en el HTML
+  const wPrice = $("#shipPriceWrap");
+  if (wPrice) wPrice.style.display = "none";
 
-  // Leyenda de ayuda
-  let help = document.getElementById("cartHelp");
-  if (!help) {
-    help = document.querySelector(".cart-footer p");
-    if (help) help.id = "cartHelp";
-  }
+  // CTA y ayuda
+  const cta = $("#checkoutBtn"); if (cta) cta.textContent = "Confirmar por WhatsApp";
+  let help = $("#cartHelp");
+  if (!help) { help = document.querySelector(".cart-footer p"); if (help) help.id = "cartHelp"; }
   if (help) help.textContent = "Coordinamos entrega y pago por WhatsApp.";
 
   // Botones con íconos
@@ -97,63 +104,43 @@ function applyShippingUI(){
     if(b.dataset.method === "envio")  b.innerHTML = "🚚 <span>Envío</span>";
   });
 
-  const inp = document.getElementById("shippingPrice");
-
   function updateUI(){
     const isEnvio = (state.shipping?.method === "envio");
-    if (wPrice) wPrice.style.display = isEnvio ? "" : "none";
-    if (isEnvio && inp){
-      if(!inp.value){
-        const def = Number(state?.config?.shipping?.default || 0) || 0;
-        if(def) inp.value = def;
-      }
-      inp.focus();
-    }
+    // precio viene del panel; no hay input en el carrito
+    state.shipping.price = isEnvio ? getConfiguredShippingPrice() : 0;
 
-    const note = document.getElementById("shipNote") || (() => {
+    const note = $("#shipNote") || (() => {
       const n = document.createElement("div");
       n.id = "shipNote"; n.className = "ship-note";
       wrap.parentElement.appendChild(n);
       return n;
     })();
     note.textContent = isEnvio
-      ? "Ingresá el costo del envío; se suma al total."
+      ? "Envío seleccionado. El costo se calcula desde el panel."
       : "Retiro por el local. Lo coordinamos por WhatsApp.";
 
-    const helpEl = document.getElementById("cartHelp");
-    if (helpEl) {
-      helpEl.textContent = isEnvio
-        ? "Coordinamos envío y pago por WhatsApp."
-        : "Coordinamos retiro y pago por WhatsApp.";
-    }
+    const helpEl = $("#cartHelp");
+    if (helpEl) helpEl.textContent = "Coordinamos entrega y pago por WhatsApp.";
+
+    renderCart();
   }
 
   wrap.querySelectorAll(".seg").forEach(b=>{
     b.onclick = ()=>{
       wrap.querySelectorAll(".seg").forEach(x=>x.classList.remove("active"));
       b.classList.add("active");
-      state.shipping = state.shipping || {};
       state.shipping.method = b.dataset.method;
-      if(state.shipping.method !== "envio") state.shipping.price = 0;
       updateUI();
-      if(typeof renderCart === "function") renderCart();
     };
   });
 
-  if(inp){
-    inp.addEventListener("input", ()=>{
-      const n = Math.max(0, Number(inp.value||0));
-      state.shipping.price = isNaN(n) ? 0 : n;
-      if(typeof renderCart === "function") renderCart();
-    });
-  }
-
+  // set inicial
   updateUI();
 }
 
 /* ================== BANNERS ================== */
 function renderBanners(){
-  const wrap = document.getElementById("bannerCarousel");
+  const wrap = $("#bannerCarousel");
   if(!wrap) return;
   const active = (state.banners||[]).filter(b=> b && b.img);
   if(!active.length){
@@ -197,7 +184,7 @@ function renderBanners(){
 
 /* ================== PRODUCTOS ================== */
 function renderProducts(){
-  const grid = document.getElementById("productGrid");
+  const grid = $("#productGrid");
   const q = ($("#q")?.value||"").toLowerCase();
   const cat = $(".badge.active")?.dataset?.cat||"";
   const items = state.products
@@ -256,12 +243,10 @@ function renderCart(){
   const total = subtotal + envio;
 
   const count = state.cart.reduce((a,b)=> a + Number(b.cant||1), 0);
-  const cartFabCount = document.getElementById("cartCount");
-  if(cartFabCount) cartFabCount.textContent = String(count);
-  const totalEl = document.getElementById("cartTotal");
-  if(totalEl) totalEl.textContent = money(total);
+  const cartFabCount = $("#cartCount"); if(cartFabCount) cartFabCount.textContent = String(count);
+  const totalEl = $("#cartTotal"); if(totalEl) totalEl.textContent = money(total);
 
-  // ---------- Lista de ítems
+  // Lista de ítems
   items.innerHTML = state.cart.map(it=>`
     <div class="cart-item">
       <img src="${it.imagen}" alt="${it.nombre}"/>
@@ -286,16 +271,24 @@ function renderCart(){
     b.onclick = ()=> removeFromCart(b.dataset.del);
   });
 
-  // ---------- Resumen FULL bajo el header (lista completa)
-  if(state.cart.length){
-    const list = state.cart.map(it=>`<li>${it.nombre} ×${it.cant}</li>`).join("");
-    summary.innerHTML = `<div class="sum-title">Resumen</div><ul class="sum-list">${list}</ul>`;
-  }else{
+  // Resumen con miniaturas bajo el header
+  if (state.cart.length){
+    const list = state.cart.map(it=>`
+      <li class="sum-item">
+        <img src="${it.imagen}" alt="${it.nombre}">
+        <div class="sum-meta">
+          <div class="sum-name">${it.nombre}</div>
+          <div class="sum-qty">×${it.cant} · ${money(Number(it.precio)*Number(it.cant))}</div>
+        </div>
+      </li>
+    `).join("");
+    summary.innerHTML = `<div class="sum-title">Resumen</div><ul class="sum-grid">${list}</ul>`;
+  } else {
     summary.innerHTML = `<div class="sum-empty">Tu carrito está vacío.</div>`;
   }
 
-  // ---------- Desglose en el footer
-  const bd = document.getElementById("cartBreakdown");
+  // Desglose en el footer
+  const bd = $("#cartBreakdown");
   if(bd){
     bd.innerHTML = `
       <div class="row"><span>Subtotal</span><span>${money(subtotal)}</span></div>
@@ -306,24 +299,26 @@ function renderCart(){
 
 /* ================== INIT ================== */
 (async function(){
-  const fab = document.getElementById("cartFab");
-  const close = document.getElementById("closeCart");
-  if(fab) fab.onclick = ()=> document.getElementById("cartPanel").style.display = "flex";
-  if(close) close.onclick = ()=> document.getElementById("cartPanel").style.display = "none";
-  const search = document.getElementById("q");
-  if(search) search.oninput = ()=> renderProducts();
+  const fab = $("#cartFab");
+  const close = $("#closeCart");
+  if(fab)  fab.onclick  = ()=> $("#cartPanel").style.display = "flex";
+  if(close) close.onclick= ()=> $("#cartPanel").style.display = "none";
+  const search = $("#q"); if(search) search.oninput = ()=> renderProducts();
 
   const [cfg, banners, prods] = await Promise.all([
     fetch("data/config.json").then(r=>r.json()).catch(()=>({})),
     fetch("data/banners.json").then(r=>r.json()).catch(()=>([])),
     fetch("data/productos.json").then(r=>r.json()).catch(()=>([]))
   ]);
-  state.config = cfg; state.banners = normalizeBanners(banners); state.products = prods;
+  state.config   = cfg;
+  state.banners  = normalizeBanners(banners);
+  state.products = prods;
+  state.shipping.price = getConfiguredShippingPrice(); // set inicial desde panel
   applyConfig();
 
   renderBanners();
   const cats = [...new Set(state.products.map(p=>p.categoria).filter(Boolean))];
-  const pills = document.getElementById("categoryPills");
+  const pills = $("#categoryPills");
   if(pills){
     pills.innerHTML = `<span class="badge active" data-cat="">Todo</span>` + cats.map(c=>`<span class="badge" data-cat="${c}">${c}</span>`).join("");
     pills.querySelectorAll(".badge").forEach(b=>{
@@ -376,6 +371,6 @@ document.getElementById("checkoutBtn").onclick = ()=>{
     state.cart = [];
     localStorage.setItem("mgv_cart", JSON.stringify(state.cart));
     renderCart();
-    const panel = document.getElementById("cartPanel"); if(panel) panel.style.display = "none";
+    const panel = $("#cartPanel"); if(panel) panel.style.display = "none";
   }catch(err){ console.error(err); }
 };
