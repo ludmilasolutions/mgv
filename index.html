@@ -4,126 +4,90 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>MGV Librería–Regalería</title>
+  <meta name="description" content="Artículos de librería y regalería. Comprá por WhatsApp; coordinamos la entrega."/>
   <link rel="icon" href="assets/logo.png"/>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="styles.css"/>
+  <script>
+    window.ENV = { GH_OWNER: "ludmilasolutions", GH_REPO: "mgv", GH_BRANCH: "main" };
+  </script>
+  <script src="assets/js/fetch-raw-patch.js"></script>
 </head>
 <body>
-  <header class="site-header">
-    <div class="wrap">
-      <div class="brand">
-        <img src="assets/logo.png" alt="MGV" class="brand__logo" onerror="this.style.display='none'">
-        <div class="brand__text">
-          <h1>MGV <span>Librería–Regalería</span></h1>
-          <small>Todo para la escuela y más</small>
-        </div>
+  <div class="topbar">
+    <header class="header container">
+      <img src="assets/logo.png" alt="MGV" />
+      <div class="title" id="storeTitle">MGV Librería–Regalería</div>
+      <div class="search">
+        <input id="q" placeholder="Buscar..." />
       </div>
+    </header>
+  </div>
 
-      <div class="header-actions">
-        <label class="search">
-          <input id="searchInput" type="search" placeholder="Buscar..." autocomplete="off"/>
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 1 0-.71.71l.27.28v.79L20 21.5 21.5 20l-6-6zM5 10.5a5.5 5.5 0 1 1 11 0 5.5 5.5 0 0 1-11 0z"></path></svg>
-        </label>
-        <button id="openCartBtn" class="btn btn--cart" aria-label="Abrir carrito">
-          🛒 <span id="cartQty" class="badge">0</span>
-        </button>
-      </div>
-    </div>
-  </header>
-
-  <!-- Banner/Hero -->
-  <section class="hero">
-    <div class="wrap hero__content">
-      <div class="hero__copy">
-        <h2>Vuelta al cole sin estrés</h2>
-        <p>Pedidos rápidos por WhatsApp. Armamos tu lista y la retirás o te la enviamos.</p>
-        <a href="#catalogo" class="btn">Ver catálogo</a>
-      </div>
-      <div class="hero__img" aria-hidden="true"></div>
-    </div>
+  <section class="container">
+    <div id="bannerCarousel" class="carousel"></div>
   </section>
 
-  <!-- Banners secundarios -->
-  <section class="promo-banners wrap" id="banners">
-    <article class="banner">
-      <h3>🎒 Kits escolares</h3>
-      <p>Paquetes por grado y nivel. Pedilo armado.</p>
-    </article>
-    <article class="banner">
-      <h3>🎁 Regalos</h3>
-      <p>Seleccionados para sorprender sin gastar de más.</p>
-    </article>
-    <article class="banner">
-      <h3>🖊️ Arte & escritura</h3>
-      <p>Marcas que duran y rinden.</p>
-    </article>
+  <section class="container">
+    <div id="categoryPills" class="badges"></div>
   </section>
 
-  <!-- Catálogo -->
-  <main id="catalogo" class="wrap">
-    <h2 class="section-title">Productos</h2>
+  <main class="container">
     <div id="productGrid" class="grid"></div>
   </main>
 
-  <!-- División suave antes de la promo inferior -->
-  <hr class="soft-divider" />
+  <button class="cart-fab" id="cartFab">🛒 <span id="cartCount">0</span></button>
+  <div class="cart-panel" id="cartPanel" aria-hidden="true">
+    <div class="cart-header">
+      <strong>Tu carrito</strong>
+      <button class="btn secondary" id="closeCart">Cerrar</button>
+    </div>
+    <div class="cart-items" id="cartItems"></div>
+    <div class="cart-footer">
+      <div class="cart-total"><span>Total</span><strong id="cartTotal">$ 0</strong></div>
+      <button class="btn" id="checkoutBtn">Finalizar por WhatsApp</button>
+      <div class="small">Te llevamos al chat con el resumen del pedido para coordinar entrega y pago.</div>
+    </div>
+  </div>
 
-  <!-- Promo inferior -->
-  <section class="bottom-promo">
-    <div class="wrap promo__grid">
-      <div class="promo__copy">
-        <h3>¿Querés una web como esta para tu negocio?</h3>
-        <ul class="promo__list">
-          <li>Entrega rápida</li>
-          <li>100% responsive</li>
-          <li>Panel para productos</li>
-          <li>Hosting & dominio opcional</li>
-          <li>Soporte por email</li>
-        </ul>
-        <p class="promo__credit">Creado por <strong>Sebastián Mascali</strong> — contacto <a href="mailto:angelmascali@gmail.com">angelmascali@gmail.com</a></p>
+  <div class="modal" id="productModal" aria-hidden="true">
+    <div class="sheet">
+      <img id="mImg" src="" alt=""/>
+      <div class="content">
+        <div class="close-x" id="mClose">✕</div>
+        <h3 id="mName"></h3>
+        <p id="mDesc"></p>
+        <div class="row"><strong id="mPrice"></strong></div>
+        <div class="row">
+          <button class="btn" id="mAdd">Agregar al carrito</button>
+          <button class="btn secondary" id="mClose2">Cerrar</button>
+        </div>
       </div>
-      <div class="promo__cta">
-        <a id="ctaPresupuesto" class="btn btn--outline" href="https://wa.me/5493412272899?text=Hola,%20quiero%20presupuesto%20para%20una%20web" target="_blank" rel="noopener">
-          Pedí tu presupuesto
-        </a>
+    </div>
+  </div>
+
+  <!-- Promo box -->
+  <section class="container">
+    <div class="promo-card">
+      <div class="promo-header">
+        <h3>¿Querés una web como esta para tu negocio?</h3>
+        <div class="promo-badges">
+          <span class="promo-pill">⚡ Entrega rápida</span>
+          <span class="promo-pill">📱 100% responsive</span>
+          <span class="promo-pill">🧩 Panel para productos</span>
+          <span class="promo-pill">🔒 Hosting & dominio opcional</span>
+          <span class="promo-pill">✉️ Soporte por email</span>
+        </div>
+      </div>
+      <div class="promo-actions">
+        <a id="promoMail" class="btn promo-btn">Pedí tu presupuesto</a>
+        <div class="promo-small">Creado por <strong>Sebastián Mascali</strong></div>
       </div>
     </div>
   </section>
 
-  <!-- Carrito Drawer -->
-  <aside id="cartDrawer" class="drawer" aria-hidden="true">
-    <div class="drawer__panel">
-      <header class="drawer__header">
-        <h3>Tu carrito</h3>
-        <button id="closeCartBtn" class="icon-btn" aria-label="Cerrar">✕</button>
-      </header>
-      <div id="cartItems" class="drawer__body"></div>
-      <footer class="drawer__footer">
-        <div class="totals">
-          <span>Total</span>
-          <strong id="cartTotal">$ 0</strong>
-        </div>
-        <div class="drawer__actions">
-          <button id="clearCartBtn" class="btn btn--ghost">Vaciar</button>
-          <button id="sendOrderBtn" class="btn">Enviar pedido</button>
-        </div>
-      </footer>
-    </div>
-    <button id="drawerBackdrop" class="drawer__backdrop" aria-hidden="true"></button>
-  </aside>
+  <footer class="container footer" id="footerInfo"></footer>
 
-  <footer class="site-footer">
-    <div class="wrap">
-      <small>WhatsApp: 5493412272899</small>
-      <small>© <span id="year"></span> MGV</small>
-    </div>
-  </footer>
-
-  <!-- Floating CTA (separado de la promo, con z-index bajo) -->
-  <a class="floating-cta" href="https://wa.me/5493412272899" target="_blank" rel="noopener" aria-label="Chatear por WhatsApp">
-    💬
-  </a>
-
+  <script src="assets/js/promo.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
