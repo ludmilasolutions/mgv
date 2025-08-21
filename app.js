@@ -1,5 +1,5 @@
 /* =========================================================
-   MGV – App JS (con mejoras en Forma de entrega y textos)
+   MGV – App JS (carrito refinado + banners restaurados)
    ========================================================= */
 const $ = (sel, ctx=document) => ctx.querySelector(sel);
 const $$ = (sel, ctx=document) => [...ctx.querySelectorAll(sel)];
@@ -28,7 +28,7 @@ function applyConfig(){
   const f = document.getElementById("footerInfo"); if(f){ f.innerHTML = `${desc}`; }
 }
 
-/* ==== FORMA DE ENTREGA – UI mejorada (copy + ayuda) ==== */
+/* ==== FORMA DE ENTREGA – UI (texto + ayuda) ==== */
 function applyShippingUI(){
   const wrap = document.getElementById("shipMethod");
   const wPrice = document.getElementById("shipPriceWrap");
@@ -38,17 +38,17 @@ function applyShippingUI(){
   const label = wrap.parentElement?.querySelector('label[for="shipMethod"]');
   if (label) label.textContent = "Forma de entrega";
 
-  // Texto del botón principal
+  // Texto del botón principal (CTA)
   const cta = document.getElementById("checkoutBtn");
   if (cta) cta.textContent = "Confirmar por WhatsApp";
 
-  // Leyenda de ayuda (debajo del botón). Si existe la usamos; si no, no tocamos nada.
+  // Leyenda de ayuda (debajo del botón)
   let help = document.getElementById("cartHelp");
   if (!help) {
     help = document.querySelector(".cart-footer p");
     if (help) help.id = "cartHelp";
   }
-  if (help) help.textContent = "Vas a WhatsApp para coordinar la entrega y el pago.";
+  if (help) help.textContent = "Coordinamos entrega y pago por WhatsApp.";
 
   // Botones con íconos (sin cambiar el HTML)
   wrap.querySelectorAll(".seg").forEach(b=>{
@@ -61,7 +61,6 @@ function applyShippingUI(){
   function updateUI(){
     const isEnvio = (state.shipping?.method === "envio");
 
-    // Mostrar/ocultar costo de envío y foco
     if (wPrice) wPrice.style.display = isEnvio ? "" : "none";
     if (isEnvio && inp){
       if(!inp.value){
@@ -71,7 +70,6 @@ function applyShippingUI(){
       inp.focus();
     }
 
-    // Nota bajo el selector (dinámica)
     const note = document.getElementById("shipNote") || (() => {
       const n = document.createElement("div");
       n.id = "shipNote"; n.className = "ship-note";
@@ -82,16 +80,14 @@ function applyShippingUI(){
       ? "Ingresá el costo del envío; se suma al total."
       : "Retiro por el local. Lo coordinamos por WhatsApp.";
 
-    // Leyenda bajo el botón (más corta)
     const helpEl = document.getElementById("cartHelp");
     if (helpEl) {
       helpEl.textContent = isEnvio
-        ? "Abriremos WhatsApp para coordinar el envío y el pago."
-        : "Abriremos WhatsApp para coordinar el retiro y el pago.";
+        ? "Coordinamos envío y pago por WhatsApp."
+        : "Coordinamos retiro y pago por WhatsApp.";
     }
   }
 
-  // Toggle Retiro/Envío
   wrap.querySelectorAll(".seg").forEach(b=>{
     b.onclick = ()=>{
       wrap.querySelectorAll(".seg").forEach(x=>x.classList.remove("active"));
@@ -104,7 +100,6 @@ function applyShippingUI(){
     };
   });
 
-  // Validación/actualización del costo
   if(inp){
     inp.addEventListener("input", ()=>{
       const n = Math.max(0, Number(inp.value||0));
@@ -113,24 +108,30 @@ function applyShippingUI(){
     });
   }
 
-  // Estado inicial
   updateUI();
 }
 
-/* ================== BANNERS ================== */
+/* ================== BANNERS (restaurados) ================== */
 function renderBanners(){
   const wrap = document.getElementById("bannerCarousel");
   if(!wrap) return;
-  const active = (state.banners||[]).filter(b=>b?.img);
-  wrap.innerHTML = active.map(b=>`
-    <article class="banner">
-      <img src="${b.img}" alt="${b.title||""}">
+  const active = (state.banners||[]).filter(b=>b && b.img);
+  if(!active.length){
+    wrap.innerHTML = "";
+    wrap.style.display = "none";
+    return;
+  }
+  wrap.style.display = "";
+  wrap.innerHTML = active.map((b,i)=>`
+    <article class="banner${i===0?' active':''}">
+      <img src="${b.img}" alt="${b.title||''}">
       <div class="content">
-        <div class="title">${b.title||""}</div>
-        <div class="text">${b.text||""}</div>
+        <div class="title">${b.title||''}</div>
+        <div class="text">${b.text||''}</div>
       </div>
     </article>
   `).join("");
+
   // Dots
   const dotsWrap = document.createElement("div");
   dotsWrap.className = "dots";
@@ -141,16 +142,18 @@ function renderBanners(){
     dotsWrap.appendChild(d);
   });
   wrap.appendChild(dotsWrap);
+
   let idx=0;
   function showSlide(n){
     const cards = wrap.querySelectorAll(".banner");
     const dots = wrap.querySelectorAll(".dot");
-    cards.forEach((c,i)=>c.style.display = i===n?"block":"none");
-    dots.forEach((d,i)=>d.classList.toggle("active", i===n));
-    idx=n;
+    cards.forEach((c,i)=> c.classList.toggle("active", i===n));
+    dots.forEach((d,i)=> d.classList.toggle("active", i===n));
+    idx = n;
   }
-  if(active.length){ showSlide(0); }
-  setInterval(()=> active.length && showSlide((idx+1)%active.length), 5000);
+  if(active.length>1){
+    setInterval(()=> showSlide((idx+1)%active.length), 5000);
+  }
 }
 
 /* ================== PRODUCTOS ================== */
@@ -250,7 +253,7 @@ function renderCart(){
 
 /* ================== INIT ================== */
 (async function(){
-  // Eventos básicos (por si no estaban)
+  // Eventos básicos
   const fab = document.getElementById("cartFab");
   const close = document.getElementById("closeCart");
   if(fab) fab.onclick = ()=> document.getElementById("cartPanel").style.display = "flex";
@@ -267,9 +270,8 @@ function renderCart(){
   state.config = cfg; state.banners = banners; state.products = prods;
   applyConfig();
 
-  // Render inicial
+  // Render
   renderBanners();
-  // Categorías
   const cats = [...new Set(state.products.map(p=>p.categoria).filter(Boolean))];
   const pills = document.getElementById("categoryPills");
   if(pills){
