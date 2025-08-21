@@ -168,7 +168,7 @@ function applyShippingUI(){
 
 function renderCart(){
   const list = document.getElementById("cartItems");
-  \1
+  const total = state.cart.reduce((acc,it)=>acc + it.precio*it.cant, 0);
   const ship = (state.shipping?.method==="envio") ? Number(state.shipping?.price||0) : 0;
   const grand = total + ship;
   document.getElementById("cartTotal").textContent = money(grand);
