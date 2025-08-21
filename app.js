@@ -1,5 +1,5 @@
 
-// ===== Patch v7: robust WhatsApp message (single encode) =====
+// Robust WhatsApp sender (single encode; includes customer name)
 (function(){
   const btn = document.getElementById('checkoutBtn');
   if(!btn) return;
@@ -9,25 +9,38 @@
       if(!name){ alert('Por favor, ingresá tu nombre para enviar el pedido.'); return; }
       if(!state || !Array.isArray(state.cart) || state.cart.length===0){ alert('Agregá algún producto al carrito.'); return; }
       const money = n => `$ ${n.toLocaleString('es-AR')}`;
-      const items = state.cart.map(i => `• ${i.name} ×${i.qty} – ${money(i.price*i.qty)}`).join('\\n');
+      const items = state.cart.map(i => `• ${i.name} ×${i.qty} – ${money(i.price*i.qty)}`).join('\n');
       const total = state.cart.reduce((a,b)=>a + b.qty*b.price, 0);
-      const lines = [
+      const text = [
         `Pedido de: ${name}`,
         'Hola, quiero hacer un pedido:',
         items,
         '',
         `Total: ${money(total)}`
-      ];
-      const text = lines.join('\\n');
+      ].join('\n');
       const url = 'https://wa.me/5493412272899?text=' + encodeURIComponent(text);
       window.open(url, '_blank');
-      // limpiar carrito y cerrar
-      state.cart = [];
-      localStorage.setItem('mgv_cart', JSON.stringify(state.cart));
-      renderCart();
+      // Vaciar y cerrar
+      state.cart = []; localStorage.setItem('mgv_cart', JSON.stringify(state.cart)); renderCart();
       const p = document.getElementById('cartPanel'); if(p) p.style.display='none';
     }catch(err){ console.error(err); }
-  }, { once: false });
+  }, { once:false });
+})();
+
+
+// FAB hide/show using IntersectionObserver (promo in view -> hide)
+(function(){
+  const fab = document.getElementById('cartFab');
+  const promoEl = document.querySelector('.promo-card');
+  if(fab && promoEl && 'IntersectionObserver' in window){
+    const io = new IntersectionObserver((entries)=>{
+      entries.forEach(entry=>{
+        if(entry.isIntersecting){ fab.classList.add('fab-hidden'); }
+        else{ fab.classList.remove('fab-hidden'); }
+      });
+    }, { root:null, rootMargin:'0px 0px 0px 0px', threshold: 0.15 });
+    io.observe(promoEl);
+  }
 })();
 
 
