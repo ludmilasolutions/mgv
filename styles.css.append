@@ -1,0 +1,26 @@
+/* === Promo Card === */
+.promo-card{
+  background:#0b3361; /* deep navy */
+  color:#fff;
+  border-radius:20px;
+  padding:24px;
+  display:flex;
+  flex-direction:column;
+  gap:16px;
+  box-shadow: 0 6px 24px rgba(0,0,0,.12);
+}
+.promo-header h3{ margin:0 0 8px 0; }
+.promo-badges{ display:flex; flex-wrap:wrap; gap:8px; }
+.promo-pill{
+  background:rgba(255,255,255,.08);
+  border:1px solid rgba(255,255,255,.18);
+  padding:6px 10px;
+  border-radius:999px;
+  font-size:14px;
+}
+.promo-actions{ display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+.promo-btn{ background:#ffcc00; color:#111 !important; border-color:#ffcc00; }
+.promo-small{ opacity:.9; font-size:14px; }
+@media (max-width:700px){
+  .promo-card{ padding:18px; }
+}

@@ -1,15 +1,12 @@
-MGV – Bundle de índices + assets (RAW instantáneo)
-====================================================
-Incluye:
-- index.html                  (tienda pública) – usa assets/js/fetch-raw-patch.js
-- mgv-control-842/index.html  (panel admin)    – lee directo de RAW y refresca tras guardar
-- assets/js/fetch-raw-patch.js
-- assets/js/panel-raw-refresh.js
+MGV Promo Patch
+---------------
+Archivos incluidos en este parche:
+- index.html (fragmento para insertar): 'index.html.append-fragment.html'
+- assets/js/promo.js  (nuevo archivo)
+- styles.css (añadir el bloque "Promo Card" al final del archivo)
 
-Cómo usar:
-1) Subí todo el contenido conservando las rutas.
-2) La tienda leerá /data/*.json desde RAW (sin esperar deploy).
-3) El panel guarda en GitHub y vuelve a cargar los datos automáticamente.
-
-Config editable (ambos):
-- Owner/Repo/Branch: window.ENV en la tienda (o editar panel index: GH_OWNER/REPO/BRANCH).
+Cómo aplicar:
+1) Abrí tu index.html y pegá el contenido de 'index.html.append-fragment.html'
+   justo antes de <footer class="container footer" ...> o al final del <body>.
+2) Copiá assets/js/promo.js a tu proyecto.
+3) Abrí styles.css y pegá el bloque CSS del archivo 'styles.css.append' al final.
