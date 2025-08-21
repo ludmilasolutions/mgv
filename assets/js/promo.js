@@ -12,7 +12,6 @@
   var mailEl = document.getElementById('promoMail');
   if(mailEl){
     mailEl.href = 'mailto:angelmascali@gmail.com?subject=' + subj + '&body=' + body;
-    // Si usas analytics, podrías loguear el click acá
     try{ mailEl.addEventListener('click', function(){ if(window.logEvent) logEvent('promo_mail_click'); }); }catch(_){}
   }
 })();

@@ -1,6 +1,8 @@
+
+
 /* === Promo Card === */
 .promo-card{
-  background:#0b3361; /* deep navy */
+  background:#0b3361;
   color:#fff;
   border-radius:20px;
   padding:24px;
@@ -8,6 +10,7 @@
   flex-direction:column;
   gap:16px;
   box-shadow: 0 6px 24px rgba(0,0,0,.12);
+  border:1px solid rgba(255,255,255,.12);
 }
 .promo-header h3{ margin:0 0 8px 0; }
 .promo-badges{ display:flex; flex-wrap:wrap; gap:8px; }
