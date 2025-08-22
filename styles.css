@@ -1,5 +1,5 @@
 /* =============================================================================
-   MGV – UI PRO (legibilidad + banners + carrito visible + resumen único)
+   MGV – UI (legibilidad + banners + carrito con resumen único)
    ============================================================================= */
 :root{
   --bg:#ffffff; --card:#f7f7f8; --text:#0b1220; --muted:#475569; --border:#e2e8f0;
@@ -67,7 +67,7 @@ button{font:inherit}
 .close-x{position:absolute;top:12px;right:12px;background:#000;color:#fff;border:none;border-radius:999px;width:32px;height:32px;display:grid;place-items:center;cursor:pointer}
 
 /* =============================================================================
-   CARRITO – visible, legible y con resumen (único)
+   CARRITO – con un solo resumen (scrollable) y footer siempre visible
    ============================================================================= */
 #shipPriceWrap{display:none !important;}
 .cart-fab,#cartFab{position:fixed;right:16px;bottom:16px;width:56px;height:56px;border-radius:16px;border:none;cursor:pointer;z-index:60;display:grid;place-items:center;background:linear-gradient(180deg,#111,#0b1220);color:#fff;box-shadow:0 14px 30px rgba(2,6,23,.28),0 1px 0 rgba(255,255,255,.08) inset;font-size:22px;line-height:1;padding:0}
@@ -102,36 +102,28 @@ button{font:inherit}
 .segmented .seg{flex:1;display:flex;align-items:center;justify-content:center;gap:8px;border:none;background:transparent;padding:12px;border-radius:10px;cursor:pointer;color:#0b1220;font-weight:700;transition:all .15s ease;min-height:44px}
 .segmented .seg.active{background:#f8fafc;border:1px solid var(--border);box-shadow:0 1px 0 rgba(0,0,0,.05)}
 
-/* Resumen con miniaturas (único) */
-.cart-summary{padding:12px 14px;border-top:1px solid var(--border);border-bottom:1px solid var(--border);background:#fff}
+/* Resumen con miniaturas (único y scrollable) */
+.cart-summary{
+  padding:12px 14px;border-top:1px solid var(--border);border-bottom:1px solid var(--border);
+  background:#fff;flex:1;min-height:80px;max-height:100%;overflow:auto;
+}
 .cart-summary .sum-title{font-weight:800;font-size:1.05rem;margin-bottom:8px;color:#0b1220}
-.cart-summary .sum-grid{list-style:none;margin:0;padding:0;display:grid;grid-auto-rows:minmax(48px,auto);row-gap:12px;max-height:220px;overflow:auto}
-.cart-summary .sum-item{display:grid;grid-template-columns:60px 1fr;align-items:center;gap:12px}
+.cart-summary .sum-grid{list-style:none;margin:0;padding:0;display:grid;grid-auto-rows:minmax(56px,auto);row-gap:12px}
+.cart-summary .sum-item{display:grid;grid-template-columns:60px 1fr auto;align-items:center;gap:12px}
 .cart-summary .sum-item img{width:60px;height:60px;border-radius:10px;object-fit:cover;border:1px solid var(--border)}
 .cart-summary .sum-name{font-weight:800;color:#0b1220;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .cart-summary .sum-qty{font-size:1rem;color:#475569}
+.sum-actions{display:flex;align-items:center;gap:8px}
+.qty-group{display:inline-flex;align-items:center;gap:6px;background:#ffffff;border:1px solid var(--border);border-radius:12px;padding:3px}
+.qty-group .btn,.sum-actions .btn[data-del]{background:#f1f5f9 !important;color:#0f172a;box-shadow:none;border:none;padding:8px 10px;border-radius:10px}
+.qty-group .btn:hover,.sum-actions .btn[data-del]:hover{background:#e2e8f0}
 .cart-summary .sum-empty{color:#64748b}
 
-/* Ítems scrollables */
-.cart-items{padding:10px 12px;display:flex;flex-direction:column;gap:10px;overflow:auto;-webkit-overflow-scrolling:touch;flex:1;min-height:0}
-.cart-item{display:grid;grid-template-columns:56px 1fr auto;gap:10px;align-items:center;background:#fff;border:1px solid var(--border);border-radius:12px;padding:8px}
-.cart-item img{width:56px;height:56px;border-radius:12px;object-fit:cover}
-.cart-item .meta{min-width:0}
-.cart-item .meta .name{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#0b1220}
-.cart-item .meta .small{color:#475569;font-size:.92rem}
-
-/* Controles – / + y eliminar */
-.qty-group{display:inline-flex;align-items:center;gap:6px;background:#ffffff;border:1px solid var(--border);border-radius:12px;padding:3px}
-.qty-group .btn,.cart-item .btn[data-del]{background:#f1f5f9 !important;color:#0f172a;box-shadow:none;border:none;padding:8px 10px;border-radius:10px}
-.qty-group .btn:hover,.cart-item .btn[data-del]:hover{background:#e2e8f0}
-.qty-group .btn.secondary{background:#f1f5f9 !important}
-
-/* Footer / total / checkout */
+/* Footer / total / checkout (siempre visible) */
 .cart-footer{padding:12px 14px 18px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:10px;background:#fff;color:#0b1220;flex-shrink:0}
-.cart-footer .small{color:#475569;line-height:1.35}
 .cart-breakdown{display:flex;flex-direction:column;gap:6px;margin:4px 0 0}
 .cart-breakdown .row{display:flex;justify-content:space-between;color:#334155}
-.cart-total{display:flex;justify-content:space-between;align-items:center;padding-top:8px;border-top:1px dashed var(--border);position:sticky;bottom:64px;background:#fff;z-index:1}
+.cart-total{display:flex;justify-content:space-between;align-items:center;padding-top:8px;border-top:1px dashed var(--border)}
 #cartTotal{font-size:1.25rem;font-weight:900;color:#0b1220}
 #checkoutBtn{width:100%;background:linear-gradient(180deg,#fbbf24,#f59e0b);border:none;color:#111;font-weight:800;padding:12px 16px;border-radius:12px;box-shadow:0 6px 16px rgba(245,158,11,.35)}
 
@@ -146,14 +138,4 @@ button{font:inherit}
 /* Footer */
 .footer{color:var(--muted);font-size:.95rem;padding:24px 0}
 
-/* Dark mode */
-@media (prefers-color-scheme: dark){
-  :root{--bg:#0b1220;--card:#0f172a;--text:#f8fafc;--muted:#cbd5e1;--border:#1f2937;--brand:#38bdf8;--accent:#fbbf24}
-  .search input#q{background:#0b1220;color:var(--text)}
-  .btn.secondary{background:#111827;color:#e5e7eb}
-  .cart-panel{background:#0f172a;border-color:#1f2937}
-  .cart-footer{background:#0f172a}
-  .cart-total{background:#0f172a}
-  .qty-group .btn,.cart-item .btn[data-del]{background:#1f2937 !important;color:#e5e7eb}
-  .qty-group .btn:hover,.cart-item .btn[data-del]:hover{background:#283446 !important}
-}
+/* (Sin modo oscuro) */
