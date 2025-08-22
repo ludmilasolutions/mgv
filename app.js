@@ -250,7 +250,14 @@ async function initStore(){
     });
   }
 
-  $('#cartFab') && ($('#cartFab').onclick = ()=> $('#cartPanel').style.display='flex');
+  // Abrir y cerrar carrito
+  $('#cartFab') && ($('#cartFab').onclick = ()=>{
+    const p = $('#cartPanel');
+    p.style.display='flex';
+    // asegurar que se vea la parte superior (X + título) en móvil
+    p.scrollTop = 0;
+    try{ p.focus({preventScroll:true}); }catch(_){}
+  });
   $('#closeCart') && ($('#closeCart').onclick = ()=> $('#cartPanel').style.display='none');
 
   renderBanners();
@@ -259,6 +266,7 @@ async function initStore(){
   renderCart();
   setupCheckout();
 
+  // si cambia el envío desde el panel en otra pestaña
   window.addEventListener('storage',(e)=>{
     if(e.key==='mgv_config_override'){
       const ov = JSON.parse(e.newValue||'null')||{};
