@@ -7,44 +7,82 @@
   <link rel="icon" href="../assets/logo.png"/>
   <link rel="stylesheet" href="../styles.css"/>
   <style>
-    :root{ --border:#e5e7eb; --muted:#6b7280; }
-    .wrap{max-width:1100px;margin:0 auto;padding:16px}
+    :root{ --border:#e5e7eb; --muted:#6b7280; --brand:#0ea5e9; --accent:#f59e0b; }
+    body{background:#f8fafc;color:#0b1220}
+    .wrap{max-width:1200px;margin:0 auto;padding:16px}
+    header{position:sticky;top:0;background:#fff;border-bottom:1px solid var(--border);padding:10px 12px;margin:-16px -16px 12px;border-bottom-left-radius:0;border-bottom-right-radius:0;z-index:5}
     .cardx{background:#fff;border:1px solid var(--border);border-radius:16px;padding:16px;margin:12px 0}
     .row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
     .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
     input,select,textarea{width:100%;padding:10px;border-radius:12px;border:1px solid var(--border);background:#fff;color:#111}
     label{font-size:12px;color:var(--muted)}
-    table{width:100%;border-collapse:separate;border-spacing:0}
-    th,td{padding:10px;border-bottom:1px solid var(--border);vertical-align:top}
-    th{background:#f9fafb;text-align:left;font-weight:600;color:#111;position:sticky;top:0;z-index:1}
-    tbody tr:hover{background:#fbfbfd}
-    .flex{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+    table{width:100%;border-collapse:collapse}
+    th,td{text-align:left;padding:8px;border-bottom:1px solid var(--border);vertical-align:middle}
+    .flex{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
     .right{margin-left:auto}
+    .danger{background:#ffe9e9;border-color:#f3b3b3;color:#a00}
+    .success{background:#e9ffed;border-color:#b3f3c5;color:#064}
     .muted{color:var(--muted);font-size:12px}
-    .hidden{display:none}
-    .btn{background:#111;color:#fff;border:1px solid #111;border-radius:12px;padding:10px 14px;font-weight:600;cursor:pointer}
+    .pill{border:1px solid var(--border);border-radius:999px;padding:6px 10px}
+    .btn{background:#111;color:#fff;border:1px solid #111;border-radius:12px;padding:8px 12px;cursor:pointer}
     .btn.secondary{background:#fff;color:#111;border:1px solid var(--border)}
-    .btn.danger{background:#a00;border-color:#a00}
-    .img-upload{display:inline-flex;align-items:center;gap:.5rem;font-size:14px;padding:8px 10px;border-radius:12px;border:1px solid var(--border);cursor:pointer;font-weight:600}
-    .img-upload input[type=file]{display:none}
-    .preview-thumb{width:64px;height:64px;object-fit:cover;border-radius:.5rem;border:1px solid rgba(0,0,0,.08);background:#fafafa}
-    .td-img{display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;max-width:360px}
-    .td-img .url{min-width:220px;flex:1}
+    .btn.ghost{background:transparent;border:1px dashed var(--border);color:#111}
+    .btn.small{padding:6px 10px;font-size:12px;border-radius:10px}
+    .btn.warn{background:#f59e0b;border-color:#f59e0b;color:#111}
+    .btn.brand{background:#0ea5e9;border-color:#0ea5e9}
+    .toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
+    .toolbar .grow{flex:1}
+    .divider{height:1px;background:var(--border);margin:8px 0}
+    .badge{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--border);padding:6px 10px;border-radius:999px;background:#fff}
+    .chip{display:inline-flex;align-items:center;gap:6px;border:1px dashed var(--border);padding:6px 10px;border-radius:999px;background:#fff}
+    .hidden{display:none}
+    .td-img{display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;max-width:420px}
+    .preview-thumb{width:56px;height:56px;object-fit:cover;border-radius:.5rem;border:1px solid rgba(0,0,0,.08);background:#fafafa}
     .td-actions{white-space:nowrap}
-    @media (max-width:900px){ .row{grid-template-columns:1fr} .row3{grid-template-columns:1fr} th:nth-child(1), td:nth-child(1){position:sticky;left:0;background:#fff}}
+    .drag-handle{cursor:grab;color:#475569}
+    .dragging{opacity:.6}
+    .sticky-head{position:sticky;top:0;background:#fff}
+    .table-wrap{max-width:100%;overflow:auto;border:1px solid var(--border);border-radius:12px}
+    .table-foot{display:flex;gap:8px;align-items:center;justify-content:space-between;padding:10px 0}
+    .pagination{display:flex;gap:8px;align-items:center}
+    .select-all{margin-left:6px}
+    .searchbar input{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:12px}
+    .filter-row{display:flex;gap:8px;flex-wrap:wrap}
+    .kpi{display:flex;gap:8px;align-items:center}
+    .kpi .dot{width:8px;height:8px;border-radius:50%;background:#10b981}
+    .toast{position:fixed;right:16px;bottom:16px;background:#111;color:#fff;padding:10px 12px;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.2);z-index:99}
+    .mono{font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace}
+    /* Import modal */
+    dialog{border:1px solid var(--border);border-radius:12px;padding:0;max-width:780px;width:calc(100% - 24px)}
+    dialog::backdrop{background:rgba(2,6,23,.35)}
+    .dlg-head{padding:12px 14px;border-bottom:1px solid var(--border);font-weight:700}
+    .dlg-body{padding:12px 14px;max-height:60vh;overflow:auto}
+    .dlg-foot{padding:12px 14px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end}
+    .diff-add{color:#065f46;background:#ecfdf5;border:1px solid #a7f3d0;border-radius:8px;padding:6px 8px}
+    .diff-del{color:#991b1b;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:6px 8px}
+    .diff-chg{color:#1f2937;background:#f3f4f6;border:1px solid #e5e7eb;border-radius:8px;padding:6px 8px}
+    /* Uploader */
+    .img-upload{display:inline-flex;align-items:center;gap:.5rem;padding:.5rem .75rem;border-radius:.75rem;border:1px solid var(--border);cursor:pointer;font-weight:600}
+    .img-upload input[type=file]{display:none}
+    .status-ok{color:#16a34a}.status-err{color:#b91c1c}
+
+    @media (max-width:900px){
+      .row,.row3{grid-template-columns:1fr}
+      .table-wrap{overflow:auto}
+    }
   </style>
 </head>
-<body style="background:#f6f7fb">
+<body>
   <div class="wrap">
     <header class="flex">
-      <img src="../assets/logo.png" style="height:40px;border-radius:10px" alt="MGV">
-      <h2>Panel oculto MGV</h2>
+      <img src="../assets/logo.png" style="height:44px;border-radius:10px" alt="MGV">
+      <h2>Panel oculto MGV <span id="dirtyDot" class="muted" style="display:none">● Cambios sin guardar</span></h2>
       <div class="right flex muted">
-        <span id="apiStatus" class="btn secondary" style="pointer-events:none">API: sin configurar</span>
+        <span id="apiStatus" class="pill">API: sin configurar</span>
       </div>
     </header>
 
-    <!-- LOGIN -->
+    <!-- Login -->
     <section id="loginSec" class="cardx">
       <h3>Acceso</h3>
       <div class="row">
@@ -63,7 +101,7 @@
       </div>
     </section>
 
-    <!-- APP (TABS) -->
+    <!-- App -->
     <section id="appSec" class="hidden">
       <div class="flex cardx">
         <button class="btn" id="tabProductos">Productos</button>
@@ -76,45 +114,80 @@
 
       <!-- Productos -->
       <section id="productosSec" class="cardx">
-        <div class="flex">
-          <h3>Productos</h3>
-          <button class="btn right" id="addProd">+ Agregar producto</button>
-          <button class="btn secondary" id="reloadProd">Recargar de GitHub</button>
-          <button class="btn" id="saveNow">Guardar ahora</button>
+        <div class="toolbar">
+          <div class="searchbar grow">
+            <input id="prodSearch" placeholder="Buscar por nombre o descripción…">
+          </div>
+          <select id="prodCatFilter">
+            <option value="">Categoría: todas</option>
+          </select>
+          <label class="badge"><input type="checkbox" id="fNoImg"> sin imagen</label>
+          <label class="badge"><input type="checkbox" id="fNoDesc"> sin descripción</label>
+          <label class="badge"><input type="checkbox" id="fNoPrice"> sin precio</label>
+          <button class="btn secondary" id="clearFilters">Limpiar</button>
+          <div class="right kpi"><span class="dot"></span><span class="muted">Listo para editar</span></div>
         </div>
-        <div style="overflow:auto;max-height:420px;border:1px solid var(--border);border-radius:12px;margin-top:8px">
+
+        <div class="toolbar">
+          <div class="flex">
+            <label class="badge"><input type="checkbox" id="selectAll" class="select-all"> Seleccionar todo (página)</label>
+            <button class="btn small danger" id="bulkDelete" disabled>🗑 Borrar seleccionados</button>
+            <button class="btn small warn" id="bulkUp10" disabled>+10% precio</button>
+            <button class="btn small secondary" id="bulkRound" disabled>Redondear a 100</button>
+          </div>
+          <div class="right flex">
+            <input type="file" id="importFile" accept="application/json" class="hidden">
+            <button class="btn secondary small" id="importBtn">Importar JSON</button>
+            <button class="btn secondary small" id="exportBtn">Exportar JSON</button>
+            <button class="btn brand small" id="saveNow">Guardar ahora</button>
+          </div>
+        </div>
+
+        <div class="table-wrap">
           <table id="tablaProductos">
-            <thead>
+            <thead class="sticky-head">
               <tr>
-                <th style="min-width:160px">Producto</th>
-                <th style="min-width:120px">Precio</th>
-                <th style="min-width:320px">Imagen</th>
-                <th>Categoría</th>
-                <th>Acciones</th>
+                <th style="width:28px"></th>
+                <th style="width:28px"><input type="checkbox" id="hdrChk"></th>
+                <th>Nombre</th>
+                <th style="width:120px">Precio</th>
+                <th style="width:180px">Categoría</th>
+                <th>Imagen</th>
+                <th style="width:120px"></th>
               </tr>
             </thead>
             <tbody></tbody>
           </table>
         </div>
+
+        <div class="table-foot">
+          <div class="muted" id="rowsInfo">0 items</div>
+          <div class="pagination">
+            <label class="muted">Por página</label>
+            <select id="pageSize">
+              <option>25</option><option selected>50</option><option>100</option><option>200</option>
+            </select>
+            <button class="btn secondary small" id="pagePrev">‹</button>
+            <span class="muted" id="pageLabel">1 / 1</span>
+            <button class="btn secondary small" id="pageNext">›</button>
+          </div>
+          <div class="right">
+            <button class="btn secondary small" id="nuevoProd">Nuevo producto</button>
+          </div>
+        </div>
       </section>
 
-      <!-- Banners (usa estructura actual: activo/imagen/url) -->
+      <!-- Banners -->
       <section id="bannersSec" class="cardx hidden">
         <div class="flex">
           <h3>Banners</h3>
-          <button class="btn right" id="addBan">+ Agregar banner</button>
-          <button class="btn secondary" id="reloadBan">Recargar de GitHub</button>
-          <button class="btn" id="saveNow2">Guardar ahora</button>
+          <button class="btn right" id="nuevoBanner">Nuevo banner</button>
+          <button class="btn secondary" id="saveNow2">Guardar ahora</button>
         </div>
-        <div style="overflow:auto;max-height:360px;border:1px solid var(--border);border-radius:12px;margin-top:8px">
+        <div class="table-wrap">
           <table id="tablaBanners">
-            <thead>
-              <tr>
-                <th>Activo</th>
-                <th style="min-width:320px">Imagen</th>
-                <th style="min-width:320px">URL</th>
-                <th class="td-actions">Acciones</th>
-              </tr>
+            <thead class="sticky-head">
+              <tr><th>Título</th><th>Texto</th><th>Color</th><th>Activo</th><th></th></tr>
             </thead>
             <tbody></tbody>
           </table>
@@ -124,44 +197,45 @@
       <!-- Config -->
       <section id="configSec" class="cardx hidden">
         <h3>Configuración</h3>
-
         <div class="row">
           <div>
             <label>Nombre de la tienda</label>
-            <input id="sName" placeholder="MGV Librería–Regalería">
+            <input id="sName">
           </div>
           <div>
             <label>Número WhatsApp (sin +)</label>
-            <input id="waNum" placeholder="549341...">
+            <input id="waNum" placeholder="549351...">
           </div>
         </div>
 
-        <!-- NUEVO: Precio de envío -->
         <div class="row">
           <div>
             <label>Precio de envío (ARS)</label>
             <input id="shipPrice" type="number" min="0" step="1" placeholder="Ej: 2500"/>
-            <div class="muted" style="font-size:12px;margin-top:6px">Se aplica al carrito automáticamente. No editable desde el carrito.</div>
+            <div class="muted" style="font-size:12px;margin-top:6px">Se aplica al carrito automáticamente (no editable desde el carrito).</div>
+          </div>
+          <div>
+            <label>Texto previo WhatsApp (preHeader)</label>
+            <input id="waPreHeader" placeholder="Ej: Nuevo pedido"/>
+            <div class="muted" style="font-size:12px;margin-top:6px">Encabezado que se incluye en el mensaje del pedido por WhatsApp.</div>
           </div>
         </div>
 
         <div class="row3" style="margin-top:8px">
-          <div><label>Color texto</label><input id="cText" type="color" value="#111111"></div>
-          <div><label>Color tarjeta</label><input id="cCard" type="color" value="#f7f7f8"></div>
-          <div><label>Color borde</label><input id="cBorder" type="color" value="#e5e7eb"></div>
+          <div><label>Color texto</label><input id="cText" type="color"></div>
+          <div><label>Color tarjeta</label><input id="cCard" type="color"></div>
+          <div><label>Color borde</label><input id="cBorder" type="color"></div>
         </div>
         <div class="row3" style="margin-top:8px">
-          <div><label>Brand</label><input id="cBrand" type="color" value="#111111"></div>
-          <div><label>Accent</label><input id="cAccent" type="color" value="#d4af37"></div>
-          <div><label>BG</label><input id="cBg" type="color" value="#ffffff"></div>
+          <div><label>Brand</label><input id="cBrand" type="color"></div>
+          <div><label>Accent</label><input id="cAccent" type="color"></div>
+          <div><label>BG</label><input id="cBg" type="color"></div>
         </div>
-
         <h4 style="margin-top:12px">SEO</h4>
         <div class="row">
           <div><label>Título</label><input id="seoTitle"></div>
           <div><label>Descripción</label><input id="seoDesc"></div>
         </div>
-
         <h4 style="margin-top:12px">Páginas</h4>
         <div class="row">
           <div><label>Quiénes somos</label><textarea id="pgAbout" rows="4"></textarea></div>
@@ -172,51 +246,65 @@
           <div><label>Privacidad</label><textarea id="pgPrivacy" rows="4"></textarea></div>
         </div>
 
-        <h3 style="margin-top:12px">Guardar en GitHub</h3>
-        <div class="muted">Configurar una vez y queda listo:</div>
-        <div class="row">
-          <div>
-            <label>API Base (ej: /api)</label>
-            <input id="apiBase" placeholder="/api">
-          </div>
+        <hr/>
+        <h3>Guardar en GitHub</h3>
+        <div class="row3">
+          <div><label>API Base (ej: /api)</label><input id="apiBase" placeholder="/api"></div>
           <div>
             <label>Save Token</label>
-            <input id="saveToken" placeholder="Bearer token">
+            <div class="flex">
+              <input id="saveToken" type="password" placeholder="(no se guarda en repo)" style="flex:1">
+              <button class="btn secondary small" id="toggleTok" type="button">👁</button>
+            </div>
+          </div>
+          <div>
+            <label>Probar conexión</label>
+            <button class="btn" id="testApi">Test</button>
+            <div id="testInfo" class="muted" style="margin-top:6px"></div>
           </div>
         </div>
+
         <div class="flex" style="margin-top:8px">
-          <button class="btn" id="testApiBtn">Probar conexión</button>
-          <span id="apiStatus2" class="muted">Test</span>
-          <div class="right"></div>
-          <button class="btn secondary" id="dlAllBtn">Descargar JSON</button>
-          <button class="btn" id="saveAllBtn">Guardar todo</button>
+          <button class="btn success" id="saveAll">Guardar todo</button>
+          <button class="btn secondary" id="dlAll">Descargar JSON</button>
+          <label class="badge" style="margin-left:auto">
+            <input type="checkbox" id="autoSaveToggle"> Autoguardar cada 60s
+          </label>
         </div>
 
-        <h3 style="margin-top:12px">Seguridad</h3>
+        <hr/>
+        <h3>Seguridad</h3>
         <div class="row">
           <div>
             <label>Nueva contraseña</label>
-            <input id="newPass" type="password" placeholder="••••••••">
+            <input id="newPass" type="password" placeholder="Nueva contraseña">
           </div>
           <div>
             <label>Confirmar</label>
-            <input id="newPass2" type="password" placeholder="••••••••">
+            <input id="newPass2" type="password" placeholder="Repetir contraseña">
           </div>
         </div>
-        <div class="flex" style="margin-top:8px">
-          <button class="btn" id="setPassBtn">Actualizar contraseña</button>
-          <span class="muted">Al cambiarla, te damos el hash para reemplazá <code>HASHED</code> por el nuevo valor.</span>
-        </div>
+        <div class="muted">Al cambiarla, te damos el hash para reemplazá HASHED por el nuevo valor.</div>
       </section>
     </section>
   </div>
 
+  <!-- Modal de Importación -->
+  <dialog id="importDlg">
+    <div class="dlg-head">Importar productos.json — Vista previa de cambios</div>
+    <div class="dlg-body" id="importPreview"></div>
+    <div class="dlg-foot">
+      <button class="btn secondary" id="importCancel" type="button">Cancelar</button>
+      <button class="btn brand" id="importApply" type="button">Aplicar</button>
+    </div>
+  </dialog>
+
   <script>
-    // --- Config RAW / helper para base según SHA ---
+    /* =================== Setup base/RAW GH =================== */
     const GH_OWNER  = "ludmilasolutions";
     const GH_REPO   = "mgv";
     const GH_BRANCH = "main";
-    function rawBase(sha){ return `https://raw.githubusercontent.com/${GH_OWNER}/${GH_REPO}/${sha||GH_BRANCH}/data`; }
+    function rawBase(sha){ return \`https://raw.githubusercontent.com/\${GH_OWNER}/\${GH_REPO}/\${sha||GH_BRANCH}/data\`; }
 
     function setLastSHA(sha){
       try{ if(!sha) return; localStorage.setItem('mgv_last_sha', sha);
@@ -226,58 +314,48 @@
     function getLastSHA(){
       try{ const u=new URL(location.href); const qs=u.searchParams.get('sha'); if(qs){ setLastSHA(qs); return qs; } }catch(_){}
       try{ const ls=localStorage.getItem('mgv_last_sha'); if(ls) return ls; }catch(_){}
-      try{ const c = (document.cookie||'').split(';').map(s=>s.trim()).find(s=>s.startsWith('mgvsha=')); if(c) return c.split('=')[1]; }catch(_){}
-      return GH_BRANCH;
+      try{ const m=document.cookie.match(/(?:^|;)\\s*mgvsha=([^;]+)/); if(m) return m[1]; }catch(_){}
+      return null;
     }
 
-    // Login simple (hash local, con SALT)
+    /* =================== Auth mínima (cliente) =================== */
     const SALT = "mgv~panel#2025";
-    const PASS_HASH = "HASHED"; // reemplazar cuando actualices
-    async function sha(s){ return crypto.subtle.digest("SHA-256", new TextEncoder().encode(s)).then(b=>Array.from(new Uint8Array(b)).map(x=>x.toString(16).padStart(2,"0")).join("")); }
-    function show(id, yes){ document.getElementById(id).classList.toggle('hidden', !yes); }
+    const HASHED = "b950ddfbf98b1a566a9445e569d2e31e894a8026cbf0eb447846b254c820ce23";
+    async function sha256(str){const buf=new TextEncoder().encode(str); const hash=await crypto.subtle.digest('SHA-256',buf); return [...new Uint8Array(hash)].map(b=>b.toString(16).padStart(2,'0')).join('');}
+    function show(id, yes){ document.getElementById(id).classList.toggle('hidden', !yes) }
 
     const sess = {
-      get logged(){ return localStorage.getItem("mgv_logged")==="1"; },
+      get logged(){ return localStorage.getItem("mgv_logged")==="1" },
       login(){ localStorage.setItem("mgv_logged","1"); },
       logout(){ localStorage.removeItem("mgv_logged"); }
     };
 
     async function doLogin(){
-      const u = (document.getElementById("user").value||"").trim();
-      const p = (document.getElementById("pass").value||"").trim();
-      if(u!=="admin") return alert("Usuario inválido (usa admin).");
-      const h = await sha(SALT+p);
-      if(PASS_HASH!=="HASHED" && h!==PASS_HASH) return alert("Contraseña incorrecta.");
-      sess.login();
-      boot(); // oculta login y muestra tabs
+      const u=document.getElementById("user").value.trim();
+      const p=document.getElementById("pass").value;
+      if(u!=="admin"){ alert("Usuario inválido"); return; }
+      const h=await sha256(SALT+p);
+      if(h!==HASHED){ alert("Contraseña incorrecta"); return; }
+      sess.login(); boot();
     }
 
-    function boot(){
-      // estado inicial
-      show("loginSec", !sess.logged);
-      show("appSec",  sess.logged);
-      if(!sess.logged) return;
-
-      // cargar data
-      loadTables(getLastSHA()).then(()=>{
-        hydrateConfigUI();
-        updateApiStatus();
-      });
-    }
-
-    // Tabs
-    const tabs={productosSec:"tabProductos",bannersSec:"tabBanners",configSec:"tabConfig"};
-    Object.entries(tabs).forEach(([sec,btn])=>{
-      document.getElementById(btn).onclick=()=>{
-        Object.keys(tabs).forEach(id=>show(id,id===sec));
-      };
+    /* =================== Estado/dirty/autosave =================== */
+    let DIRTY=false;
+    let AUTOSAVE=false;
+    let autosaveTimer=null;
+    const markDirty=()=>{ DIRTY=true; document.getElementById('dirtyDot').style.display=''; };
+    const clearDirty=()=>{ DIRTY=false; document.getElementById('dirtyDot').style.display='none'; };
+    window.addEventListener('beforeunload', e=>{ if(DIRTY){ e.preventDefault(); e.returnValue=''; }});
+    document.addEventListener('keydown', e=>{
+      if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='s'){ e.preventDefault(); saveAll(); }
     });
+    function startAutosave(){
+      if(autosaveTimer) clearInterval(autosaveTimer);
+      if(!AUTOSAVE) return;
+      autosaveTimer = setInterval(()=>{ if(DIRTY) saveAll(); }, 60000);
+    }
 
-    // Logout
-    document.getElementById("loginBtn").onclick=doLogin;
-    document.getElementById("logoutBtn").onclick=()=>{ sess.logout(); boot(); };
-
-    // Data
+    /* =================== Datos =================== */
     let productos=[], banners=[], config=null;
 
     async function fetchJsonWithRetry(url, tries=6, wait=700){
@@ -293,154 +371,382 @@
     async function loadTables(sha){
       const BASE = rawBase(sha || window.__MGV_PENDING_SHA);
       const ts = Date.now();
-      productos = await fetchJsonWithRetry(`${BASE}/productos.json?ts=${ts}`);
-      banners   = await fetchJsonWithRetry(`${BASE}/banners.json?ts=${ts}`);
-      config    = await fetchJsonWithRetry(`${BASE}/config.json?ts=${ts}`);
+      productos = await fetchJsonWithRetry(\`\${BASE}/productos.json?ts=\${ts}\`);
+      banners   = await fetchJsonWithRetry(\`\${BASE}/banners.json?ts=\${ts}\`);
+      config    = await fetchJsonWithRetry(\`\${BASE}/config.json?ts=\${ts}\`);
       window.__MGV_PENDING_SHA = null;
+      computeCats();
       renderProductos();
       renderBanners();
+      hydrateConfigUI();
+      updateApiStatus();
+      clearDirty();
     }
 
-    // === Enviar Authorization: Bearer <SAVE_TOKEN> a upload-image ===
+    /* =================== Upload imagen =================== */
     async function uploadImageFile(file){
       if(!file) return { ok:false, error:"No file" };
+      // validación rápida
+      if(file.size > 2*1024*1024) return { ok:false, error:"Archivo > 2MB" };
       const fd=new FormData();
       fd.append("file",file,file.name);
       const api=(localStorage.getItem("mgv_apiBase")||"/api")+"/upload-image";
       const tok=(localStorage.getItem("mgv_saveToken")||"").trim();
       const headers = tok ? { "Authorization":"Bearer "+tok } : {};
+      const t0=performance.now();
       const resp=await fetch(api,{ method:"POST", headers, body:fd });
-      try{ return await resp.json(); }catch(_){ return {ok:false,error:"Respuesta inválida de la API"}; }
+      const ms=Math.round(performance.now()-t0);
+      let out; try{ out=await resp.json(); }catch(_){ out={ok:false,error:"Respuesta inválida de la API"}; }
+      if(out && ms) out.latency=ms;
+      return out;
     }
 
-    // Helpers
-    const toInt = v => { const n = parseInt(String(v||"").replace(/[^\d-]/g,""), 10); return isNaN(n) ? 0 : Math.max(0, n); };
+    /* =================== Helpers =================== */
+    const toInt = v => { const n = parseInt(String(v??"").replace(/[^\d-]/g,""), 10); return isNaN(n) ? 0 : Math.max(0, n); };
+    const money = n => { try{ n=Number(n||0);}catch(_){n=0} return n.toLocaleString('es-AR',{style:'currency',currency:'ARS',maximumFractionDigits:0}); };
+    const round100 = n => Math.round(Number(n||0)/100)*100;
+
+    /* =================== Tabs/Login =================== */
+    function boot(){
+      if(!localStorage.getItem("mgv_apiBase")) localStorage.setItem("mgv_apiBase","/api");
+      show("loginSec", !sess.logged);
+      show("appSec",  sess.logged);
+      if(sess.logged){
+        const _sha=getLastSHA();
+        loadTables(_sha);
+        updateApiStatus();
+        AUTOSAVE = localStorage.getItem('mgv_autosave')==='1';
+        document.getElementById('autoSaveToggle').checked = AUTOSAVE;
+        startAutosave();
+      }
+    }
+    document.getElementById("loginBtn").onclick=doLogin;
+    document.getElementById("logoutBtn").onclick=()=>{ sess.logout(); boot(); };
+
+    const tabs={productosSec:"tabProductos",bannersSec:"tabBanners",configSec:"tabConfig"};
+    Object.entries(tabs).forEach(([sec,btn])=>{
+      document.getElementById(btn).onclick=()=>{ Object.keys(tabs).forEach(id=>show(id,id===sec)); };
+    });
+
+    /* =================== Productos: estado de UI =================== */
+    const ui = {
+      q:'', cat:'', noImg:false, noDesc:false, noPrice:false,
+      page:1, pageSize:50,
+      selected:new Set(),
+      dragging:null,
+    };
+
+    function computeCats(){
+      const sel=document.getElementById('prodCatFilter');
+      const cats=[...new Set((productos||[]).map(p=>p.categoria).filter(Boolean))].sort();
+      sel.innerHTML='<option value="">Categoría: todas</option>'+cats.map(c=>\`<option>\${c}</option>\`).join('');
+    }
+
+    function applyFilters(){
+      let arr=[...productos];
+      if(ui.q){
+        const q=ui.q.toLowerCase();
+        arr=arr.filter(p=>(p.nombre||'').toLowerCase().includes(q)||(p.descripcion||'').toLowerCase().includes(q));
+      }
+      if(ui.cat) arr=arr.filter(p=>p.categoria===ui.cat);
+      if(ui.noImg)  arr=arr.filter(p=>!p.imagen);
+      if(ui.noDesc) arr=arr.filter(p=>!p.descripcion);
+      if(ui.noPrice)arr=arr.filter(p=>!p.precio || Number(p.precio)<=0);
+      return arr;
+    }
+
+    function paginated(arr){
+      const ps = ui.pageSize;
+      const totalPages = Math.max(1, Math.ceil(arr.length/ps));
+      ui.page = Math.min(ui.page, totalPages);
+      const start = (ui.page-1)*ps;
+      return { slice: arr.slice(start, start+ps), total: arr.length, totalPages };
+    }
+
+    function updateBulkButtons(){
+      const hasSel = ui.selected.size>0;
+      document.getElementById('bulkDelete').disabled = !hasSel;
+      document.getElementById('bulkUp10').disabled  = !hasSel;
+      document.getElementById('bulkRound').disabled = !hasSel;
+    }
 
     function renderProductos(){
       const tbody=document.querySelector("#tablaProductos tbody");
       tbody.innerHTML="";
-      (productos||[]).forEach(p=>{
+
+      // filtros + paginación
+      const filtered = applyFilters();
+      const {slice, total, totalPages} = paginated(filtered);
+      document.getElementById('rowsInfo').textContent = \`\${total} ítems (mostrando \${slice.length})\`;
+      document.getElementById('pageLabel').textContent = \`\${ui.page} / \${totalPages}\`;
+
+      // header check
+      const hdrChk=document.getElementById('hdrChk');
+      hdrChk.checked = slice.length && slice.every(p=>ui.selected.has(String(p.id)));
+      hdrChk.onchange = ()=>{ slice.forEach(p=>{ const id=String(p.id); if(hdrChk.checked) ui.selected.add(id); else ui.selected.delete(id); }); renderProductos(); };
+
+      // filas
+      slice.forEach(p=>{
         const tr=document.createElement("tr");
+        tr.draggable=true;
+        tr.dataset.id = String(p.id);
+        tr.classList.toggle('dragging', ui.dragging===String(p.id));
         tr.innerHTML=`
-          <td><input data-id="${p.id}" data-f="nombre" value="${p.nombre||''}" placeholder="Nombre"></td>
-          <td><input data-id="${p.id}" data-f="precio" value="${toInt(p.precio)||0}" type="number" step="1" min="0"></td>
-          <td class="td-img">
-            <img alt="prev" class="preview-thumb" src="${p.imagen||''}"/>
-            <input class="url" data-id="${p.id}" data-f="imagen" value="${p.imagen||''}" placeholder="https://...">
-            <label class="img-upload">Subir<input type="file" accept="image/*" data-up="${p.id}"></label>
+          <td class="drag-handle" title="Arrastrar">☰</td>
+          <td><input type="checkbox" class="rowChk" data-id="${p.id}" ${ui.selected.has(String(p.id))?'checked':''}></td>
+          <td><input value="${p.nombre ?? ''}" data-f="nombre" data-id="${p.id}"/></td>
+          <td>
+            <input value="${toInt(p.precio)}" type="number" step="1" min="0" inputmode="numeric" pattern="[0-9]*"
+                   data-f="precio" data-id="${p.id}" />
           </td>
-          <td><input data-id="${p.id}" data-f="categoria" value="${p.categoria||''}" placeholder="Categoría"></td>
+          <td><input value="${p.categoria ?? ''}" data-f="categoria" data-id="${p.id}"/></td>
+          <td>
+            <div class="td-img">
+              <input class="url" value="${p.imagen ?? ''}" placeholder="https://…/img.jpg" data-f="imagen" data-id="${p.id}"/>
+              <label class="img-upload">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 16v-8m0 0l-3 3m3-3l3 3M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <span>Subir…</span>
+                <input type="file" accept="image/*" data-file="${p.id}"/>
+              </label>
+              <img class="preview-thumb" src="${p.imagen || ''}" alt="Vista previa"/>
+              <span class="muted" data-status="${p.id}"></span>
+            </div>
+          </td>
           <td class="td-actions">
-            <button class="btn secondary" data-ed="${p.id}">Editar descripción</button>
-            <button class="btn danger" data-del="${p.id}">Borrar</button>
+            <button class="btn secondary small" data-ed="${p.id}">Desc</button>
+            <button class="btn danger small" data-del="${p.id}">Borrar</button>
           </td>`;
         tbody.appendChild(tr);
       });
 
-      // listeners
-      document.querySelectorAll("#tablaProductos tbody input").forEach(inp=>{
-        const id=inp.dataset.id, f=inp.dataset.f; if(!id||!f) return;
-        const p=productos.find(x=>x.id===id); if(!p) return;
-        const handler = ()=>{
-          if(f==="precio"){
-            p.precio = toInt(inp.value);
-            inp.value = p.precio;
-          }else{
-            p[f]=inp.value;
-            if(f==="imagen"){
-              const row=inp.closest("tr"); const img=row?.querySelector("img.preview-thumb");
-              if(img) img.src=inp.value.trim();
-            }
-          }
+      // drag & drop
+      tbody.querySelectorAll("tr").forEach(tr=>{
+        tr.addEventListener('dragstart', (e)=>{
+          ui.dragging = tr.dataset.id; tr.classList.add('dragging'); e.dataTransfer.effectAllowed='move';
+        });
+        tr.addEventListener('dragover', e=>{ e.preventDefault(); const over = e.currentTarget; if(over===tr) return; });
+        tr.addEventListener('drop', e=>{
+          e.preventDefault();
+          const fromId = ui.dragging;
+          const toId   = tr.dataset.id;
+          ui.dragging=null;
+          // reordenar en el array completo según el orden actual filtrado
+          const filtered = applyFilters();
+          const fromIdxGlobal = productos.findIndex(x=>String(x.id)===String(fromId));
+          const toIdxGlobal   = productos.findIndex(x=>String(x.id)===String(toId));
+          if(fromIdxGlobal<0 || toIdxGlobal<0) return;
+          const [moved] = productos.splice(fromIdxGlobal,1);
+          productos.splice(toIdxGlobal,0,moved);
+          markDirty(); renderProductos();
+        });
+        tr.addEventListener('dragend', ()=>{ ui.dragging=null; tr.classList.remove('dragging'); });
+      });
+
+      // selección por fila
+      tbody.querySelectorAll('.rowChk').forEach(chk=>{
+        chk.onchange = ()=>{ const id=String(chk.dataset.id); if(chk.checked) ui.selected.add(id); else ui.selected.delete(id); updateBulkButtons(); };
+      });
+
+      // bloqueo scroll wheel en inputs numeric
+      tbody.querySelectorAll("input[type='number'][data-f='precio']").forEach(n=>{
+        n.addEventListener('wheel', e=> e.preventDefault(), {passive:false});
+      });
+
+      // listeners de campos
+      tbody.querySelectorAll("input.url, td input[type='text'], td input[type='number']").forEach(inp=>{
+        const handler=()=>{
+          const id=inp.dataset.id, f=inp.dataset.f; if(!id||!f) return;
+          const p=productos.find(x=>String(x.id)===String(id)); if(!p) return;
+          if(f==="precio"){ p[f] = toInt(inp.value); inp.value = p[f]; }
+          else{ p[f]=inp.value; if(f==="imagen"){ const row=inp.closest("tr"); const img=row?.querySelector("img.preview-thumb"); if(img) img.src=inp.value.trim(); } }
+          markDirty();
         };
         inp.addEventListener("input",handler);
         inp.addEventListener("change",handler);
       });
 
+      // subir imagen
+      tbody.querySelectorAll("input[type=file][data-file]").forEach(fi=>{
+        fi.addEventListener("change", async ()=>{
+          const id=fi.dataset.file;
+          const row=fi.closest("tr");
+          const urlInp=row.querySelector("input.url[data-id='"+id+"']");
+          const prev=row.querySelector("img.preview-thumb");
+          const st=row.querySelector("[data-status='"+id+"']");
+          const file=fi.files?.[0];
+          fi.value="";
+          if(!file) return;
+          st.textContent="Subiendo imagen…";
+          try{
+            const res=await uploadImageFile(file);
+            if(res.ok){
+              urlInp.value=res.url; if(prev) prev.src=res.url;
+              const p=productos.find(x=>String(x.id)===String(id)); if(p) p.imagen=res.url;
+              st.innerHTML = `Listo ✔ <span class="muted">(${res.latency||'?'} ms)</span>`;
+              if(res.commitSha){ setLastSHA(res.commitSha); window.__MGV_PENDING_SHA=res.commitSha; }
+              markDirty();
+            }else{ st.innerHTML=`<span class="status-err">Error: ${(res.error||"no se pudo subir")}</span>`; }
+          }catch(e){ st.innerHTML=`<span class="status-err">Error: ${e.message}</span>`; }
+        });
+      });
+
+      // botones por fila
       tbody.querySelectorAll("[data-ed]").forEach(b=>{
-        b.onclick=()=>{ const id=b.dataset.ed; const p=productos.find(x=>x.id===id); const d=prompt("Descripción", p.descripcion||""); if(p){ p.descripcion=d||""; } };
+        b.onclick=()=>{ const id=b.dataset.ed; const p=productos.find(x=>String(x.id)===String(id)); const d=prompt("Descripción",p.descripcion||""); if(d!==null){ p.descripcion=d; markDirty(); renderProductos(); } };
       });
       tbody.querySelectorAll("[data-del]").forEach(b=>{
-        b.onclick=()=>{ const id=b.dataset.del; if(confirm("¿Borrar producto?")){ productos = productos.filter(x=>x.id!==id); renderProductos(); } };
+        b.onclick=()=>{ const id=b.dataset.del; if(confirm("¿Eliminar producto?")){ productos=productos.filter(x=>String(x.id)!==String(id)); ui.selected.delete(String(id)); markDirty(); renderProductos(); } };
       });
-      document.getElementById("addProd").onclick=()=>{
-        const id = "p"+(Date.now());
-        productos.unshift({id, nombre:"Nuevo producto", precio:0, categoria:"", imagen:"", descripcion:""});
-        renderProductos();
-      };
-      document.getElementById("reloadProd").onclick=()=> loadTables(getLastSHA());
 
-      // guardar rápido
-      document.getElementById("saveNow").onclick=saveAll;
+      updateBulkButtons();
     }
 
+    /* =================== Productos: UI wiring =================== */
+    document.getElementById('prodSearch').oninput = (e)=>{ ui.q=e.target.value; ui.page=1; renderProductos(); };
+    document.getElementById('prodCatFilter').onchange = (e)=>{ ui.cat=e.target.value; ui.page=1; renderProductos(); };
+    document.getElementById('fNoImg').onchange  = (e)=>{ ui.noImg=e.target.checked; ui.page=1; renderProductos(); };
+    document.getElementById('fNoDesc').onchange = (e)=>{ ui.noDesc=e.target.checked; ui.page=1; renderProductos(); };
+    document.getElementById('fNoPrice').onchange= (e)=>{ ui.noPrice=e.target.checked; ui.page=1; renderProductos(); };
+    document.getElementById('clearFilters').onclick = ()=>{ ui.q=''; ui.cat=''; ui.noImg=ui.noDesc=ui.noPrice=false; ui.page=1; document.getElementById('prodSearch').value=''; document.getElementById('prodCatFilter').value=''; ['fNoImg','fNoDesc','fNoPrice'].forEach(id=>document.getElementById(id).checked=false); renderProductos(); };
+
+    document.getElementById('pageSize').onchange = (e)=>{ ui.pageSize=parseInt(e.target.value,10)||50; ui.page=1; renderProductos(); };
+    document.getElementById('pagePrev').onclick = ()=>{ if(ui.page>1){ ui.page--; renderProductos(); } };
+    document.getElementById('pageNext').onclick = ()=>{ ui.page++; renderProductos(); }; // corregido por renderProductos con totalPages
+
+    document.getElementById('selectAll').onchange = (e)=>{
+      const filtered = applyFilters(); const {slice} = paginated(filtered);
+      slice.forEach(p=>{ const id=String(p.id); if(e.target.checked) ui.selected.add(id); else ui.selected.delete(id); });
+      renderProductos();
+    };
+
+    // Bulk actions
+    document.getElementById('bulkDelete').onclick = ()=>{
+      if(!ui.selected.size) return;
+      if(!confirm('¿Borrar los productos seleccionados?')) return;
+      productos = productos.filter(p=>!ui.selected.has(String(p.id)));
+      ui.selected.clear(); markDirty(); renderProductos();
+    };
+    document.getElementById('bulkUp10').onclick = ()=>{
+      if(!ui.selected.size) return;
+      productos.forEach(p=>{ if(ui.selected.has(String(p.id))){ p.precio = Math.round(Number(p.precio||0)*1.10); }});
+      markDirty(); renderProductos();
+    };
+    document.getElementById('bulkRound').onclick = ()=>{
+      if(!ui.selected.size) return;
+      productos.forEach(p=>{ if(ui.selected.has(String(p.id))){ p.precio = round100(p.precio); }});
+      markDirty(); renderProductos();
+    };
+
+    // Import/Export productos.json
+    const importDlg = document.getElementById('importDlg');
+    const importPreview = document.getElementById('importPreview');
+    document.getElementById('importBtn').onclick = ()=> document.getElementById('importFile').click();
+    document.getElementById('importFile').onchange = async (e)=>{
+      const f=e.target.files?.[0]; if(!f) return;
+      try{
+        const txt=await f.text();
+        const arr=JSON.parse(txt);
+        if(!Array.isArray(arr)) throw new Error("El JSON debe ser un array de productos");
+        // Validación mínima
+        const ids=new Set(); for(const it of arr){
+          if(!it.id) throw new Error("Falta id en algún producto");
+          if(ids.has(String(it.id))) throw new Error("IDs repetidos en archivo");
+          ids.add(String(it.id));
+        }
+        // Diff simple
+        const curById=new Map(productos.map(p=>[String(p.id),p]));
+        const newById=new Map(arr.map(p=>[String(p.id),p]));
+        const adds=[], dels=[], chgs=[];
+        // agregados y cambios
+        for(const [id, np] of newById){
+          if(!curById.has(id)) adds.push(np);
+          else{
+            const cp=curById.get(id);
+            const changed = ['nombre','precio','categoria','imagen','descripcion'].some(k=>(cp?.[k]??'')!== (np?.[k]??''));
+            if(changed) chgs.push({id, before:cp, after:np});
+          }
+        }
+        // eliminados
+        for(const [id, cp] of curById){ if(!newById.has(id)) dels.push(cp); }
+
+        // Render diff
+        importPreview.innerHTML = `
+          <div class="flex" style="flex-wrap:wrap;gap:8px;margin-bottom:8px">
+            <span class="diff-add">+ ${adds.length} nuevos</span>
+            <span class="diff-chg">~ ${chgs.length} modificados</span>
+            <span class="diff-del">− ${dels.length} eliminados</span>
+          </div>
+          <div class="divider"></div>
+          <div class="muted">Ejemplos:</div>
+          <div style="display:grid;gap:8px;margin-top:6px">
+            ${adds.slice(0,3).map(p=>`<div class="diff-add"><strong>${p.nombre||p.id}</strong> (nuevo)</div>`).join('')}
+            ${chgs.slice(0,3).map(x=>`<div class="diff-chg"><strong>${x.before.nombre||x.id}</strong> → ${x.after.nombre||x.id} (precio: ${x.before.precio}→${x.after.precio})</div>`).join('')}
+            ${dels.slice(0,3).map(p=>`<div class="diff-del"><strong>${p.nombre||p.id}</strong> (se eliminaría)</div>`).join('')}
+          </div>
+        `;
+        importDlg.showModal();
+        document.getElementById('importApply').onclick = ()=>{ productos = arr; ui.selected.clear(); markDirty(); computeCats(); renderProductos(); importDlg.close(); e.target.value=""; };
+        document.getElementById('importCancel').onclick = ()=>{ importDlg.close(); e.target.value=""; };
+      }catch(err){
+        alert("Error al importar: "+err.message);
+      }
+    };
+    document.getElementById('exportBtn').onclick = ()=>{
+      const blob=new Blob([JSON.stringify(productos,null,2)],{type:"application/json"});
+      const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='productos.json'; a.click(); URL.revokeObjectURL(a.href);
+    };
+
+    // Nuevo producto
+    document.getElementById("nuevoProd").onclick=()=>{
+      const id="p"+Math.random().toString(36).slice(2,7);
+      productos.unshift({id, nombre:"Nuevo producto", precio:0, categoria:"Librería", imagen:"", descripcion:""});
+      markDirty(); renderProductos();
+    };
+
+    /* =================== Banners =================== */
     function renderBanners(){
       const tbody=document.querySelector("#tablaBanners tbody");
       tbody.innerHTML="";
-      (banners||[]).forEach(b=>{
+      banners.forEach(b=>{
         const tr=document.createElement("tr");
         tr.innerHTML=`
-          <td><input type="checkbox" data-id="${b.id}" data-f="activo" ${b.activo?'checked':''}></td>
-          <td class="td-img">
-            <img alt="prev" class="preview-thumb" src="${b.imagen||''}"/>
-            <input class="url" data-id="${b.id}" data-f="imagen" value="${b.imagen||''}" placeholder="https://...">
-            <label class="img-upload">Subir<input type="file" accept="image/*" data-upb="${b.id}"></label>
-          </td>
-          <td><input data-id="${b.id}" data-f="url" value="${b.url||''}" placeholder="https://..."></td>
-          <td class="td-actions"><button class="btn danger" data-delb="${b.id}">Borrar</button></td>
-        `;
+          <td><input value="${b.titulo ?? ''}" data-f="titulo" data-id="${b.id}"/></td>
+          <td><input value="${b.texto ?? ''}" data-f="texto" data-id="${b.id}"/></td>
+          <td><input value="${b.color ?? '#111111'}" data-f="color" data-id="${b.id}"/></td>
+          <td><input type="checkbox" ${b.activo!==false?'checked':''} data-f="activo" data-id="${b.id}"/></td>
+          <td class="flex"><button class="btn danger small" data-del="${b.id}">Borrar</button></td>`;
         tbody.appendChild(tr);
       });
-
-      document.querySelectorAll("#tablaBanners tbody input").forEach(inp=>{
-        const id=inp.dataset.id, f=inp.dataset.f; if(!id||!f) return;
-        const b=banners.find(x=>x.id===id); if(!b) return;
-        const handler=()=>{
-          if(f==="activo"){ b.activo = inp.checked; }
-          else { b[f]=inp.value; if(f==="imagen"){ const row=inp.closest("tr"); const img=row?.querySelector("img.preview-thumb"); if(img) img.src=inp.value.trim(); } }
-        };
-        inp.addEventListener("input",handler);
-        inp.addEventListener("change",handler);
+      tbody.querySelectorAll("input").forEach(inp=>{
+        const handler=()=>{ const id=inp.dataset.id, f=inp.dataset.f; const bn=banners.find(x=>x.id===id); if(!bn) return; bn[f]=(f==="activo")? inp.checked:inp.value; markDirty(); };
+        inp.addEventListener("input",handler); inp.addEventListener("change",handler);
       });
-
-      tbody.querySelectorAll("[data-delb]").forEach(b=>{
-        b.onclick=()=>{ const id=b.dataset.delb; if(confirm("¿Borrar banner?")){ banners = banners.filter(x=>x.id!==id); renderBanners(); } };
+      tbody.querySelectorAll("[data-del]").forEach(btn=>{
+        btn.onclick=()=>{ const id=btn.dataset.del; if(confirm("¿Eliminar banner?")){ banners=banners.filter(x=>x.id!==id); markDirty(); renderBanners(); } };
       });
-
-      document.querySelectorAll('input[type="file"][data-upb]').forEach(file=>{
-        file.onchange=async ()=>{
-          const id=file.dataset.upb; const f=file.files?.[0]; if(!f) return;
-          const res=await uploadImageFile(f);
-          if(res?.ok && res.url){
-            const b=banners.find(x=>x.id===id); if(b){ b.imagen=res.url; renderBanners(); }
-          }else{
-            alert(res?.error||"Error subiendo imagen");
-          }
-        };
-      });
-
-      document.getElementById("addBan").onclick=()=>{
-        const id="b"+Date.now();
-        banners.unshift({id, activo:true, imagen:"", url:""});
-        renderBanners();
+      document.getElementById("nuevoBanner").onclick=()=>{
+        const id="b"+Math.random().toString(36).slice(2,7);
+        banners.unshift({id, titulo:"Nuevo banner", texto:"", imagen:"", color:"#111111", activo:true});
+        markDirty(); renderBanners();
       };
-      document.getElementById("reloadBan").onclick=()=> loadTables(getLastSHA());
-      document.getElementById("saveNow2").onclick=saveAll;
     }
 
+    /* =================== Config =================== */
     function hydrateConfigUI(){
       if(!config) return;
       document.getElementById("sName").value = config.storeName||"";
       document.getElementById("waNum").value = (config.whatsapp&&config.whatsapp.number)||"";
+      document.getElementById("waPreHeader").value = (config.whatsapp&&config.whatsapp.preHeader)||"";
       document.getElementById("shipPrice").value = (config.shipping && (config.shipping.price ?? config.shipping.default)) || 0;
 
-      const t=config.theme||{};
+      const t=config.theme||{}
       document.getElementById("cText").value=t.text||"#111111";
       document.getElementById("cCard").value=t.card||"#f7f7f8";
       document.getElementById("cBorder").value=t.border||"#e5e7eb";
       document.getElementById("cBrand").value=t.brand||"#111111";
       document.getElementById("cAccent").value=t.accent||"#d4af37";
       document.getElementById("cBg").value=t.bg||"#ffffff";
+
       document.getElementById("seoTitle").value=(config.seo&&config.seo.title)||"";
       document.getElementById("seoDesc").value =(config.seo&&config.seo.description)||"";
       document.getElementById("pgAbout").value =(config.pages&&config.pages.about)||"";
@@ -450,16 +756,27 @@
 
       document.getElementById("apiBase").value   = localStorage.getItem("mgv_apiBase") || "/api";
       document.getElementById("saveToken").value = localStorage.getItem("mgv_saveToken") || "";
-
-      // Override local para previsualización inmediata en la tienda
-      const shipInp = document.getElementById("shipPrice");
-      const pushOverride = ()=>{
-        const v = toInt(shipInp.value);
-        try { localStorage.setItem('mgv_config_override', JSON.stringify({ shipping: { price: v } })); } catch(_){}
+      document.getElementById("toggleTok").onclick = ()=>{
+        const inp=document.getElementById('saveToken'); inp.type = (inp.type==='password'?'text':'password');
       };
-      shipInp.addEventListener('input', pushOverride);
-      shipInp.addEventListener('change', pushOverride);
-      pushOverride();
+      document.getElementById("testApi").onclick = testApi;
+      document.getElementById("saveAll").onclick = saveAll;
+      document.getElementById("dlAll").onclick   = dlAll;
+      document.getElementById("saveNow").onclick = saveAll;
+      document.getElementById("saveNow2").onclick= saveAll;
+
+      // Escuchas para marcar dirty
+      document.querySelectorAll("#configSec input, #configSec textarea, #configSec select").forEach(el=>{
+        el.addEventListener('input', markDirty);
+        el.addEventListener('change', markDirty);
+      });
+
+      const auto = localStorage.getItem('mgv_autosave')==='1';
+      document.getElementById('autoSaveToggle').checked = auto;
+      AUTOSAVE = auto; startAutosave();
+      document.getElementById('autoSaveToggle').onchange = (e)=>{
+        AUTOSAVE = e.target.checked; localStorage.setItem('mgv_autosave', AUTOSAVE?'1':'0'); startAutosave();
+      };
     }
 
     function gatherConfigFromUI(){
@@ -467,6 +784,7 @@
       config.storeName=document.getElementById("sName").value;
       config.whatsapp=config.whatsapp||{};
       config.whatsapp.number=document.getElementById("waNum").value;
+      config.whatsapp.preHeader=document.getElementById("waPreHeader").value;
       config.shipping = config.shipping || {};
       config.shipping.price = toInt(document.getElementById("shipPrice").value);
       t.text  =document.getElementById("cText").value;
@@ -488,8 +806,7 @@
     function updateApiStatus(){
       const base=localStorage.getItem("mgv_apiBase");
       const tok =localStorage.getItem("mgv_saveToken");
-      document.getElementById("apiStatus").textContent=`API: ${base||'sin URL'} · Token ${tok?'listo':'falta'}`;
-      document.getElementById("apiStatus2").textContent = document.getElementById("apiStatus").textContent;
+      document.getElementById("apiStatus").textContent=\`API: \${base||'sin URL'} · Token \${tok?'listo':'falta'}\`;
     }
 
     async function testApi(){
@@ -498,18 +815,22 @@
       localStorage.setItem("mgv_apiBase", base);
       localStorage.setItem("mgv_saveToken", tok);
       updateApiStatus();
+      const out=document.getElementById('testInfo');
       try{
-        const r=await fetch(base+"/ping",{headers: tok?{"Authorization":"Bearer "+tok}:{}, cache:"no-store"});
-        alert(r.ok? "Conexión OK" : ("La API respondió con estado "+r.status));
-      }catch(_){
-        alert("No se pudo conectar");
-      }
+        const t0=performance.now();
+        const r=await fetch(base+"/ping",{headers: tok?{"Authorization":"Bearer "+tok}:{}} );
+        const ms=Math.round(performance.now()-t0);
+        let j={}; try{ j=await r.json(); }catch(_){}
+        out.innerHTML = r.ok
+          ? \`Latencia: <b>\${ms} ms</b> · Versión: <b>\${j.version||j.ver||'n/d'}</b>\`
+          : \`Fallo (\${r.status}) en \${ms} ms\`;
+      }catch(e){ out.textContent="No se pudo conectar: "+e.message; }
     }
 
     function syncTablesBeforeSave(){
       document.querySelectorAll("#tablaProductos tbody input").forEach(inp=>{
         const id=inp.dataset.id, f=inp.dataset.f; if(!id||!f) return;
-        const p=productos.find(x=>x.id===id); if(!p) return;
+        const p=productos.find(x=>String(x.id)===String(id)); if(!p) return;
         p[f]=(f==="precio")? toInt(inp.value):inp.value;
       });
       document.querySelectorAll("#tablaBanners tbody input").forEach(inp=>{
@@ -520,8 +841,8 @@
     }
 
     function dlAll(){
-      const a=(name,txt)=>{const blob=new Blob([txt],{type:"application/json"}); const url=URL.createObjectURL(blob); const an=document.createElement("a"); an.href=url; an.download=name; an.click(); setTimeout(()=>URL.revokeObjectURL(url),250);};
-      syncTablesBeforeSave(); gatherConfigFromUI();
+      const a=(name,txt)=>{const blob=new Blob([txt],{type:"application/json"}); const el=document.createElement("a"); el.href=URL.createObjectURL(blob); el.download=name; el.click(); URL.revokeObjectURL(el.href);};
+      gatherConfigFromUI();
       a("productos.json", JSON.stringify(productos,null,2));
       a("banners.json",   JSON.stringify(banners,null,2));
       a("config.json",    JSON.stringify(config,null,2));
@@ -532,39 +853,34 @@
       const base=localStorage.getItem("mgv_apiBase")||"/api";
       const tok =localStorage.getItem("mgv_saveToken")||"";
       try{
-        const r=await fetch(base+"/save_catalog",{method:"POST",headers:{"Content-Type":"application/json", ...(tok?{"Authorization":"Bearer "+tok}:{})},body:JSON.stringify({productos,banners,config})});
+        const r=await fetch(base+"/save_catalog",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+tok},body:JSON.stringify({productos,banners,config})});
         const txt=await r.text(); let j={}; try{ j=JSON.parse(txt);}catch(_){}
         if(r.ok){
           if (j && Array.isArray(j.commits) && j.commits.length) { window.__MGV_PENDING_SHA=j.commits[j.commits.length-1]; setLastSHA(window.__MGV_PENDING_SHA); }
-          alert("Guardado OK");
-        }else{
-          alert("Error guardando: " + (j.error||txt||r.status));
-        }
-      }catch(err){
-        alert("Error de red: "+err.message);
-      }
+          toast("Guardado en GitHub ✔️"); await loadTables(window.__MGV_PENDING_SHA); clearDirty();
+        } else { alert("Error "+r.status+": "+(j.error||txt)); }
+      }catch(e){ alert("Error de red: "+e.message); }
     }
 
-    async function setNewPass(){
-      const a=document.getElementById("newPass").value;
-      const b=document.getElementById("newPass2").value;
-      if(!a||!b||a!==b) return alert("Las contraseñas no coinciden.");
-      const h = await sha(SALT+a);
-      prompt("Reemplazá el valor de PASS_HASH por este:", h);
+    function toast(msg){
+      const t=document.createElement('div'); t.className='toast'; t.textContent=msg; document.body.appendChild(t);
+      setTimeout(()=>{ t.remove(); }, 2500);
     }
 
-    // Eventos UI
-    document.getElementById("testApiBtn").onclick=testApi;
-    document.getElementById("dlAllBtn").onclick=dlAll;
-    document.getElementById("saveAllBtn").onclick=saveAll;
-    document.getElementById("setPassBtn").onclick=setNewPass;
+    document.getElementById("newPass2").onchange=async ()=>{
+      const p1=document.getElementById("newPass").value;
+      const p2=document.getElementById("newPass2").value;
+      if(!p1 || p1!==p2){ alert("Las contraseñas no coinciden"); return; }
+      const h=await sha256(SALT+p1);
+      alert("Hash generado. Para cambiarla, abrí este archivo y reemplazá HASHED por:\n\n"+h+"\n\nLuego subilo al repo.");
+    };
 
-    // Autologin para pruebas si PASS_HASH está sin configurar
-    (async()=>{ try{
-      const u=new URL(location.href); if(u.searchParams.get("autologin")==="1"){ document.getElementById("pass").value="MGV2025!"; await doLogin(); }
-    }catch(_){}})();
+    // Botones guardado/descarga
+    document.getElementById('dlAll').onclick = dlAll;
 
-    // Arranque
+    // Guardado rápido
+    // Los botones saveNow/saveNow2 ya se asignan en hydrateConfigUI
+
     boot();
   </script>
 </body>
