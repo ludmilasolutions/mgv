@@ -15,10 +15,10 @@ button{font:inherit}
 .container{max-width:1100px;margin:0 auto;padding:16px}
 :focus-visible{outline:3px solid rgba(14,165,233,.45);outline-offset:2px;border-radius:8px}
 
-/* Header / Search / Logo */
+/* Header / Search / Logo (LOGO MÁS GRANDE) */
 .header.container{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
-.header.container>img{width:auto;height:auto;max-height:44px;border-radius:12px;box-shadow:0 1px 0 #0000000a}
-@media (max-width:680px){.header.container>img{max-height:36px}}
+.header.container>img{width:auto;height:auto;max-height:64px;border-radius:12px;box-shadow:0 1px 0 #0000000a}  /* antes 44px */
+@media (max-width:680px){.header.container>img{max-height:48px}} /* antes 36px */
 .header .title{font-weight:800;font-size:clamp(20px,3vw,28px)}
 .search{flex:1;min-width:240px}
 .search input#q{width:100%;padding:12px 14px;border:1px solid var(--border);border-radius:14px;outline:none;background:#fff;color:var(--text)}
@@ -89,14 +89,55 @@ button{font:inherit}
 .cart-header strong{font-size:1.05rem;letter-spacing:.2px;color:#0b1220}
 .cart-header .btn.secondary{padding:8px 10px;border-radius:10px}
 
-/* Resumen con miniaturas bajo el header */
-.cart-summary{padding:10px 14px;border-bottom:1px solid var(--border);background:#fff}
-.cart-summary .sum-title{font-weight:700;font-size:.95rem;margin-bottom:6px;color:#0b1220}
-.cart-summary .sum-grid{list-style:none;margin:0;padding:0;display:grid;grid-auto-rows:minmax(40px,auto);row-gap:8px;max-height:160px;overflow:auto}
-.cart-summary .sum-item{display:grid;grid-template-columns:40px 1fr;align-items:center;gap:10px}
-.cart-summary .sum-item img{width:40px;height:40px;border-radius:8px;object-fit:cover;border:1px solid var(--border)}
-.cart-summary .sum-name{font-weight:700;color:#0b1220;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.cart-summary .sum-qty{font-size:.9rem;color:#475569}
+/* Botón Cerrar arriba del selector */
+.cart-close-row{
+  display:flex;
+  justify-content:flex-end;
+  margin:8px 14px 6px;
+}
+.cart-close-row #closeCart{
+  border-radius:999px;
+}
+
+/* Ocultar cualquier nota vieja de envío si quedara */
+#shipNote, .ship-note { display:none !important; }
+
+/* Resumen con miniaturas (AGRANDADO) bajo el header */
+.cart-summary{
+  padding:12px 14px;
+  border-bottom:1px solid var(--border);
+  background:#fff;
+}
+.cart-summary .sum-title{
+  font-weight:800;
+  font-size:1.05rem; /* antes .95rem */
+  margin-bottom:8px;
+  color:#0b1220;
+}
+.cart-summary .sum-grid{
+  list-style:none;
+  margin:0;
+  padding:0;
+  display:grid;
+  grid-auto-rows:minmax(48px,auto);
+  row-gap:12px;
+  max-height:220px; /* antes 160px */
+  overflow:auto;
+}
+.cart-summary .sum-item{
+  display:grid;
+  grid-template-columns:60px 1fr; /* antes 40px */
+  align-items:center;
+  gap:12px;
+}
+.cart-summary .sum-item img{
+  width:60px; height:60px; /* antes 40/40 */
+  border-radius:10px;
+  object-fit:cover;
+  border:1px solid var(--border);
+}
+.cart-summary .sum-name{font-weight:800;color:#0b1220;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cart-summary .sum-qty{font-size:1rem;color:#475569}
 .cart-summary .sum-empty{color:#64748b}
 
 /* Ítems (scrollable) */
