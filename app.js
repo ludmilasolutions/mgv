@@ -254,8 +254,7 @@ async function initStore(){
   $('#cartFab') && ($('#cartFab').onclick = ()=>{
     const p = $('#cartPanel');
     p.style.display='flex';
-    // asegurar que se vea la parte superior (X + título) en móvil
-    p.scrollTop = 0;
+    p.scrollTop = 0;              // ver header completo
     try{ p.focus({preventScroll:true}); }catch(_){}
   });
   $('#closeCart') && ($('#closeCart').onclick = ()=> $('#cartPanel').style.display='none');
