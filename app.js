@@ -1,5 +1,5 @@
 /* =========================================================
-   App – carrito prolijo con resumen único + envío desde panel
+   App – carrito con un solo resumen (con – / + / ✕) + envío desde panel
    ========================================================= */
 const $  = (s,ctx=document)=>ctx.querySelector(s);
 const $$ = (s,ctx=document)=>[...ctx.querySelectorAll(s)];
@@ -94,23 +94,18 @@ function renderProducts(){
   });
 }
 
-/* ---------- Carrito ---------- */
+/* ---------- Carrito (solo resumen) ---------- */
 function ensureCartLayout(){
   const panel = $('#cartPanel'); if(!panel) return {};
-  let items   = $('#cartItems');
   let summary = $('#cartSummary');
   if(!summary){
     summary=document.createElement('div');
     summary.id='cartSummary'; summary.className='cart-summary';
-    if(items) panel.insertBefore(summary, items); else panel.appendChild(summary);
+    panel.insertBefore(summary, panel.querySelector('.cart-footer'));
   }
-  // Eliminar duplicados de .cart-summary
-  $$('.cart-summary').forEach(el=>{ if(el!==summary) el.remove(); });
-  // Asegurar orden: summary arriba de items
-  if(summary && items && summary.nextElementSibling!==items){
-    panel.insertBefore(summary, items);
-  }
-  return {panel, items, summary};
+  // borrar cualquier lista antigua/duplicada
+  $$('.cart-items, .cart-summary').forEach(el=>{ if(el!==summary) el.remove(); });
+  return {panel, summary};
 }
 function changeQty(id,delta){
   const it=state.cart.find(x=>String(x.id)===String(id)); if(!it) return;
@@ -122,44 +117,33 @@ function removeFromCart(id){
   saveCart(); renderCart();
 }
 function renderCart(){
-  const {items,summary}=ensureCartLayout(); if(!items||!summary) return;
+  const {summary}=ensureCartLayout(); if(!summary) return;
 
   state.shipping.price = state.shipping.method==='envio' ? cfgShipPrice() : 0;
   const subtotal = state.cart.reduce((a,it)=>a+(Number(it.precio||0)*Number(it.cant||1)),0);
   const envio    = state.shipping.price;
   const total    = subtotal + (state.shipping.method==='envio'?envio:0);
 
+  // contar y total
   const count = state.cart.reduce((a,b)=>a+Number(b.cant||1),0);
   const cc = $('#cartCount'); if(cc) cc.textContent=String(count);
   const ct = $('#cartTotal'); if(ct) ct.textContent=money(total);
 
-  // Ítems con – / + / ✕
-  items.innerHTML = state.cart.map(it=>`
-    <div class="cart-item">
-      <img src="${it.imagen}" alt="${it.nombre||''}">
-      <div class="meta">
-        <div class="name">${it.nombre||''}</div>
-        <div class="small">${money(it.precio)} × ${it.cant}</div>
-      </div>
-      <div>
-        <span class="qty-group">
-          <button class="btn secondary" data-q="-1" data-id="${it.id}" aria-label="Restar">-</button>
-          <button class="btn"            data-q="+1" data-id="${it.id}" aria-label="Sumar">+</button>
-        </span>
-        <button class="btn secondary" data-del="${it.id}" aria-label="Eliminar">✕</button>
-      </div>
-    </div>`).join('');
-  items.querySelectorAll('[data-q]').forEach(b=> b.onclick=()=>changeQty(b.dataset.id,parseInt(b.dataset.q)));
-  items.querySelectorAll('[data-del]').forEach(b=> b.onclick=()=>removeFromCart(b.dataset.del));
-
-  // Resumen único
+  // Único resumen con – / + / ✕
   if(state.cart.length){
     const list = state.cart.map(it=>`
       <li class="sum-item">
         <img src="${it.imagen}" alt="${it.nombre||''}">
-        <div class="sum-meta">
+        <div>
           <div class="sum-name">${it.nombre||''}</div>
           <div class="sum-qty">×${it.cant} · ${money(Number(it.precio)*Number(it.cant))}</div>
+        </div>
+        <div class="sum-actions">
+          <span class="qty-group">
+            <button class="btn" data-sq="-1" data-id="${it.id}" aria-label="Restar">-</button>
+            <button class="btn" data-sq="+1" data-id="${it.id}" aria-label="Sumar">+</button>
+          </span>
+          <button class="btn" data-sdel="${it.id}" aria-label="Eliminar">✕</button>
         </div>
       </li>`).join('');
     summary.innerHTML = `<div class="sum-title">Resumen</div><ul class="sum-grid">${list}</ul>`;
@@ -177,10 +161,14 @@ function renderCart(){
       <div class="row"><span>${lbl}</span><span>${val}</span></div>`;
   }
 
-  // Asegurar botón checkout visible
-  const btn = document.getElementById('checkoutBtn');
+  // acciones del resumen
+  summary.querySelectorAll('[data-sq]').forEach(b=> b.onclick=()=>changeQty(b.dataset.id,parseInt(b.dataset.sq)));
+  summary.querySelectorAll('[data-sdel]').forEach(b=> b.onclick=()=>removeFromCart(b.dataset.sdel));
+
+  // botón checkout visible
+  const btn = $('#checkoutBtn');
   if(btn){
-    btn.style.display = 'block';
+    btn.style.display='block';
     btn.disabled = state.cart.length===0;
     btn.setAttribute('aria-disabled', String(btn.disabled));
   }
@@ -196,7 +184,6 @@ function setupShippingSelector(){
       wrap.querySelectorAll('.seg').forEach(x=>x.classList.remove('active'));
       b.classList.add('active');
       state.shipping.method=b.dataset.method;
-      const note=document.getElementById('shipNote'); if(note) note.remove();
       renderCart();
     };
   });
@@ -233,7 +220,7 @@ function setupCheckout(){
       `${state.shipping?.method==='envio' ? 'Envío' : 'Retiro en local'}: ${state.shipping?.method==='envio' ? money(envio) : '$ 0'}`,
       `Total: ${money(total)}`
     ];
-    const text = lines.join('\\n');
+    const text = lines.join('\n');
     const url = 'https://wa.me/' + encodeURIComponent(number) + '?text=' + encodeURIComponent(text);
     window.open(url, '_blank');
     state.cart = [];
@@ -243,7 +230,7 @@ function setupCheckout(){
   };
 }
 
-/* ---------- Init (se llama al final, con todo definido) ---------- */
+/* ---------- Init ---------- */
 async function initStore(){
   const [serverCfg,banners,prods] = await Promise.all([
     fetch('data/config.json').then(r=>r.json()).catch(()=>({})),
@@ -285,5 +272,4 @@ async function initStore(){
     }
   });
 }
-
 initStore();
