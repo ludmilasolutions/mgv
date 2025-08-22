@@ -6,7 +6,7 @@
   <title>MGV Librería–Regalería</title>
   <meta name="description" content="Artículos de librería y regalería. Comprá por WhatsApp; coordinamos la entrega."/>
   <link rel="icon" href="assets/logo.png"/>
-  <link rel="stylesheet" href="styles.css?v=2025-08-22-6"/>
+  <link rel="stylesheet" href="styles.css?v=2025-08-22-7"/>
   <script>
     window.ENV = { GH_OWNER: "ludmilasolutions", GH_REPO: "mgv", GH_BRANCH: "main" };
   </script>
@@ -14,6 +14,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
 </head>
 <body>
+  <!-- Topbar fija con búsqueda -->
   <div class="topbar">
     <header class="header container">
       <img src="assets/logo.png" alt="MGV"/>
@@ -24,24 +25,28 @@
     </header>
   </div>
 
+  <!-- Carrusel -->
   <section class="container">
     <div id="bannerCarousel" class="carousel" aria-label="Promociones"></div>
   </section>
 
+  <!-- Categorías -->
   <section class="container">
     <div id="categoryPills" class="badges" aria-label="Categorías"></div>
   </section>
 
+  <!-- Catálogo -->
   <main class="container" role="main">
     <div id="productGrid" class="grid"></div>
   </main>
 
+  <!-- FAB y panel de carrito -->
   <button id="cartFab" class="cart-fab" aria-label="Abrir carrito">🛒 <span id="cartCount">0</span></button>
 
   <div id="cartPanel" class="cart-panel" aria-hidden="true">
     <div class="cart-header">
       <strong>Tu carrito</strong>
-      <button id="closeCart" class="close-btn" aria-label="Cerrar">✕</button>
+      <button id="closeCart" class="close-btn" aria-label="Cerrar" type="button">✕</button>
     </div>
 
     <div class="cart-top">
@@ -58,13 +63,14 @@
         <input id="customerName" type="text" placeholder="Tu nombre"/>
       </div>
 
+      <!-- (oculto; solo se usa el precio del panel) -->
       <div id="shipPriceWrap" class="field" style="display:none">
         <label for="shippingPrice">Costo de envío ($)</label>
         <input id="shippingPrice" type="number" min="0" step="1" placeholder="Ej: 2500"/>
       </div>
     </div>
 
-    <!-- Resumen único -->
+    <!-- ÚNICO bloque de resumen -->
     <div id="cartSummary" class="cart-summary"></div>
 
     <!-- Footer -->
@@ -74,11 +80,11 @@
         <span>Total</span>
         <strong id="cartTotal">$ 0</strong>
       </div>
-      <button id="checkoutBtn" class="btn">Finalizar por WhatsApp</button>
-      <div class="small">Te llevamos al chat con el resumen del pedido para coordinar entrega y pago.</div>
+      <button id="checkoutBtn" class="btn" type="button">Finalizar por WhatsApp</button>
     </div>
   </div>
 
+  <!-- Modal de producto -->
   <div id="productModal" class="modal" aria-hidden="true">
     <div class="sheet">
       <img id="mImg" src="" alt="Vista del producto"/>
@@ -97,6 +103,7 @@
 
   <hr class="soft-divider"/>
 
+  <!-- Promo inferior -->
   <section class="container">
     <div class="promo-card">
       <div class="promo-header">
@@ -119,6 +126,6 @@
   <footer id="footerInfo" class="container footer"></footer>
 
   <script src="assets/js/promo.js"></script>
-  <script src="app.js?v=2025-08-22-6"></script>
+  <script src="app.js?v=2025-08-22-7"></script>
 </body>
 </html>
