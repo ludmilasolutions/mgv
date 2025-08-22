@@ -6,7 +6,7 @@
   <title>MGV Librería–Regalería</title>
   <meta name="description" content="Artículos de librería y regalería. Comprá por WhatsApp; coordinamos la entrega."/>
   <link rel="icon" href="assets/logo.png"/>
-  <link rel="stylesheet" href="styles.css?v=2025-08-22-4"/>
+  <link rel="stylesheet" href="styles.css?v=2025-08-22-5"/>
   <script>
     window.ENV = { GH_OWNER: "ludmilasolutions", GH_REPO: "mgv", GH_BRANCH: "main" };
   </script>
@@ -63,17 +63,15 @@
         <input id="customerName" type="text" placeholder="Tu nombre"/>
       </div>
 
+      <!-- (oculto; solo se usa el precio del panel) -->
       <div id="shipPriceWrap" class="field" style="display:none">
         <label for="shippingPrice">Costo de envío ($)</label>
         <input id="shippingPrice" type="number" min="0" step="1" placeholder="Ej: 2500"/>
       </div>
     </div>
 
-    <!-- Resumen único -->
+    <!-- ÚNICO bloque de resumen (con – / + / ✕) -->
     <div id="cartSummary" class="cart-summary"></div>
-
-    <!-- Ítems -->
-    <div id="cartItems" class="cart-items"></div>
 
     <!-- Footer con total y checkout -->
     <div class="cart-footer">
@@ -129,6 +127,6 @@
   <footer id="footerInfo" class="container footer"></footer>
 
   <script src="assets/js/promo.js"></script>
-  <script src="app.js?v=2025-08-22-4"></script>
+  <script src="app.js?v=2025-08-22-5"></script>
 </body>
 </html>
