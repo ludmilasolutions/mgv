@@ -101,9 +101,9 @@ function ensureCartLayout(){
   if(!summary){
     summary=document.createElement('div');
     summary.id='cartSummary'; summary.className='cart-summary';
-    panel.insertBefore(summary, panel.querySelector('.cart-footer'));
+    $('#cartScroll').appendChild(summary);
   }
-  // eliminar cualquier lista antigua
+  // Quita cualquier lista antigua
   $$('.cart-items, .cart-summary').forEach(el=>{ if(el!==summary) el.remove(); });
   return {panel, summary};
 }
@@ -116,6 +116,13 @@ function removeFromCart(id){
   state.cart=state.cart.filter(x=>String(x.id)!==String(id));
   saveCart(); renderCart();
 }
+function updateScrollPadding(){
+  const scroll = $('#cartScroll');
+  const footer = $('#cartFooter');
+  if(!scroll || !footer) return;
+  const h = footer.offsetHeight || 0;
+  scroll.style.paddingBottom = `calc(${h}px + 10px)`;
+}
 function renderCart(){
   const {summary}=ensureCartLayout(); if(!summary) return;
 
@@ -125,8 +132,8 @@ function renderCart(){
   const total    = subtotal + (state.shipping.method==='envio'?envio:0);
 
   const count = state.cart.reduce((a,b)=>a+Number(b.cant||1),0);
-  const cc = $('#cartCount'); if(cc) cc.textContent=String(count);
-  const ct = $('#cartTotal'); if(ct) ct.textContent=money(total);
+  $('#cartCount') && ($('#cartCount').textContent=String(count));
+  $('#cartTotal') && ($('#cartTotal').textContent=money(total));
 
   if(state.cart.length){
     const list = state.cart.map(it=>`
@@ -163,10 +170,12 @@ function renderCart(){
 
   const btn = $('#checkoutBtn');
   if(btn){
-    btn.style.display='block';
     btn.disabled = state.cart.length===0;
     btn.setAttribute('aria-disabled', String(btn.disabled));
   }
+
+  // Ajusta padding del área scrolleable para no esconder ítems bajo el footer
+  updateScrollPadding();
 }
 
 /* ---------- Envío (selector) ---------- */
@@ -256,6 +265,8 @@ async function initStore(){
     p.style.display='flex';
     p.scrollTop = 0;              // ver header completo
     try{ p.focus({preventScroll:true}); }catch(_){}
+    // recalcular padding por si cambia el alto del footer (rotación, zoom, etc.)
+    setTimeout(updateScrollPadding, 30);
   });
   $('#closeCart') && ($('#closeCart').onclick = ()=> $('#cartPanel').style.display='none');
 
@@ -273,5 +284,9 @@ async function initStore(){
       renderCart();
     }
   });
+
+  // actualizar padding al cambiar tamaño/orientación
+  window.addEventListener('resize', updateScrollPadding);
+  window.addEventListener('orientationchange', updateScrollPadding);
 }
 initStore();
