@@ -98,90 +98,20 @@ function renderProducts(){
 
 /* ---------- Carrito ---------- */
 function ensureCartLayout(){
-  const panel=$('#cartPanel'); if(!panel) return {};
-  const items=$('#cartItems');
-  const summary=$('#cartSummary');
-
-  // Si por algún motivo hay más de un .cart-summary, eliminar duplicados
-  const allSummaries = $$('.cart-summary');
-  allSummaries.forEach(el=>{ if(el !== summary) el.remove(); });
-
-  return {panel,items,summary};
-}
-function changeQty(id,delta){
-  const it=state.cart.find(x=>String(x.id)===String(id)); if(!it) return;
-  it.cant=Math.max(1,(Number(it.cant||1)+Number(delta||0)));
-  saveCart(); renderCart();
-}
-function removeFromCart(id){
-  state.cart=state.cart.filter(x=>String(x.id)!==String(id));
-  saveCart(); renderCart();
-}
-
-function renderCart(){
-  const {items,summary}=ensureCartLayout(); if(!items||!summary) return;
-
-  // precio desde panel (no editable en carrito)
-  state.shipping.price = state.shipping.method==='envio' ? cfgShipPrice() : 0;
-
-  const subtotal = state.cart.reduce((a,it)=>a+(Number(it.precio||0)*Number(it.cant||1)),0);
-  const envio    = state.shipping.price;
-  const total    = subtotal + (state.shipping.method==='envio'?envio:0);
-
-  const count = state.cart.reduce((a,b)=>a+Number(b.cant||1),0);
-  if($('#cartCount')) $('#cartCount').textContent=String(count);
-  if($('#cartTotal')) $('#cartTotal').textContent=money(total);
-
-  // Ítems (con – / + y eliminar)
-  items.innerHTML = state.cart.map(it=>`
-    <div class="cart-item">
-      <img src="${it.imagen}" alt="${it.nombre}">
-      <div class="meta">
-        <div class="name">${it.nombre}</div>
-        <div class="small">${money(it.precio)} × ${it.cant}</div>
-      </div>
-      <div>
-        <span class="qty-group">
-          <button class="btn secondary" data-q="-1" data-id="${it.id}" aria-label="Restar">-</button>
-          <button class="btn"            data-q="+1" data-id="${it.id}" aria-label="Sumar">+</button>
-        </span>
-        <button class="btn secondary" data-del="${it.id}" aria-label="Eliminar">✕</button>
-      </div>
-    </div>`).join('');
-  items.querySelectorAll('[data-q]').forEach(b=> b.onclick=()=>changeQty(b.dataset.id,parseInt(b.dataset.q)));
-  items.querySelectorAll('[data-del]').forEach(b=> b.onclick=()=>removeFromCart(b.dataset.del));
-
-  // Resumen con miniaturas (ÚNICO)
-  if(state.cart.length){
-    const list = state.cart.map(it=>`
-      <li class="sum-item">
-        <img src="${it.imagen}" alt="${it.nombre}">
-        <div class="sum-meta">
-          <div class="sum-name">${it.nombre}</div>
-          <div class="sum-qty">×${it.cant} · ${money(Number(it.precio)*Number(it.cant))}</div>
-        </div>
-      </li>`).join('');
-    summary.innerHTML = `<div class="sum-title">Resumen</div><ul class="sum-grid">${list}</ul>`;
-  }else{
-    summary.innerHTML = `<div class="sum-empty">Tu carrito está vacío.</div>`;
+  const panel = document.getElementById('cartPanel');
+  if(!panel) return {};
+  let items   = document.getElementById('cartItems');
+  let summary = document.getElementById('cartSummary');
+  document.querySelectorAll('.cart-summary').forEach(el=>{ if(el.id !== 'cartSummary') el.remove(); });
+  if(summary && items && summary.nextElementSibling !== items){
+    panel.insertBefore(summary, items);
   }
-
-  // Desglose
-  const bd = $('#cartBreakdown');
-  if(bd){
-    const lbl = state.shipping.method==='envio' ? 'Envío' : 'Retiro en local';
-    const val = state.shipping.method==='envio' ? money(envio) : '$ 0';
-    bd.innerHTML = `
-      <div class="row"><span>Subtotal</span><span>${money(subtotal)}</span></div>
-      <div class="row"><span>${lbl}</span><span>${val}</span></div>`;
-  }
+  return {panel, items, summary};
 }
 
 /* ---------- Envío (selector) ---------- */
 function setupShippingSelector(){
-  const wrap=$('#shipMethod'); if(!wrap) return;
-
-  // Íconos y cambio de método (SIN mensaje de "Envío seleccionado…")
+  const wrap=document.getElementById('shipMethod'); if(!wrap) return;
   wrap.querySelectorAll('.seg').forEach(b=>{
     if(b.dataset.method==='retiro') b.innerHTML='🏬 <span>Retiro</span>';
     if(b.dataset.method==='envio')  b.innerHTML='🚚 <span>Envío</span>';
@@ -189,32 +119,11 @@ function setupShippingSelector(){
       wrap.querySelectorAll('.seg').forEach(x=>x.classList.remove('active'));
       b.classList.add('active');
       state.shipping.method=b.dataset.method;
-      const old=document.getElementById('shipNote'); if(old) old.remove(); // por si quedó algo viejo
+      const old=document.getElementById('shipNote'); if(old) old.remove();
       renderCart();
     };
   });
-}
-
-/* ---------- Checkout (WhatsApp) ---------- */
-function setupCheckout(){
-  const btn = document.getElementById('checkoutBtn');
-  if(!btn) return;
-  btn.onclick = ()=>{
-    try{
-      const cart = (Array.isArray(state?.cart) && state.cart.length) ? state.cart
-                   : (JSON.parse(localStorage.getItem('mgv_cart')||'[]') || []);
-      if(!cart.length){ alert('Tu carrito está vacío.'); return; }
-      const nameInput = document.getElementById('customerName');
-      const name = (nameInput?.value || '').trim();
-      if(nameInput){ nameInput.classList.remove('error'); }
-      if(!name){
-        if(nameInput){ nameInput.classList.add('error'); nameInput.scrollIntoView({block:'center', behavior:'smooth'}); nameInput.focus(); }
-        alert('Por favor, ingresá tu nombre para enviar el pedido.');
-        return;
-      }
-      const number = state?.config?.whatsapp?.number || '5493412272899';
-      const preHeader = state?.config?.whatsapp?.preHeader || 'Nuevo pedido';
-      const toNumber = (x)=>{ try{ const s = String(x ?? '').replace(/[^\d,\.\-]/g, ''); return Number(s||0); }catch(e){ return 0; } };
+};
       const items = cart.map((it)=>`• ${it.nombre} ×${Number(it.cant||1)} – ${money(toNumber(it.precio))}`);
       const subtotal = cart.reduce((acc, it)=> acc + (toNumber(it.precio) * Number(it.cant||1)), 0);
       const envio = (state.shipping?.method==='envio') ? Number(cfgShipPrice()||0) : 0;
