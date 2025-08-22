@@ -6,7 +6,7 @@
   <title>MGV Librería–Regalería</title>
   <meta name="description" content="Artículos de librería y regalería. Comprá por WhatsApp; coordinamos la entrega."/>
   <link rel="icon" href="assets/logo.png"/>
-  <link rel="stylesheet" href="styles.css?v=2025-08-22-8"/>
+  <link rel="stylesheet" href="styles.css?v=2025-08-22-9"/>
   <script>
     window.ENV = { GH_OWNER: "ludmilasolutions", GH_REPO: "mgv", GH_BRANCH: "main" };
   </script>
@@ -43,7 +43,8 @@
   <!-- FAB y panel de carrito -->
   <button id="cartFab" class="cart-fab" aria-label="Abrir carrito">🛒 <span id="cartCount">0</span></button>
 
-  <div id="cartPanel" class="cart-panel" aria-hidden="true">
+  <!-- tabindex para poder enfocar el panel y llevarlo al tope -->
+  <div id="cartPanel" class="cart-panel" aria-hidden="true" tabindex="-1">
     <div class="cart-header">
       <strong>Tu carrito</strong>
       <button id="closeCart" class="close-btn" aria-label="Cerrar" type="button">✕</button>
@@ -126,6 +127,6 @@
   <footer id="footerInfo" class="container footer"></footer>
 
   <script src="assets/js/promo.js"></script>
-  <script src="app.js?v=2025-08-22-8"></script>
+  <script src="app.js?v=2025-08-22-9"></script>
 </body>
 </html>
