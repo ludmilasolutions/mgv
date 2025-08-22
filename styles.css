@@ -67,7 +67,7 @@ button{font:inherit}
 .close-x{position:absolute;top:12px;right:12px;background:#000;color:#fff;border:none;border-radius:999px;width:32px;height:32px;display:grid;place-items:center;cursor:pointer}
 
 /* =============================================================================
-   CARRITO – con un solo resumen (scrollable) y footer siempre visible
+   CARRITO – resumen más grande y sin scroll lateral
    ============================================================================= */
 #shipPriceWrap{display:none !important;}
 .cart-fab,#cartFab{position:fixed;right:16px;bottom:16px;width:56px;height:56px;border-radius:16px;border:none;cursor:pointer;z-index:60;display:grid;place-items:center;background:linear-gradient(180deg,#111,#0b1220);color:#fff;box-shadow:0 14px 30px rgba(2,6,23,.28),0 1px 0 rgba(255,255,255,.08) inset;font-size:22px;line-height:1;padding:0}
@@ -76,66 +76,72 @@ button{font:inherit}
 
 .cart-panel{
   position:fixed;right:16px;bottom:84px;left:auto;width:380px;
-  max-height:calc(100vh - 140px);
+  /* +altura total del panel para que entre más resumen */
+  max-height:calc(100vh - 96px);
   background:#fff;border:1px solid var(--border);border-radius:16px;
   display:none;flex-direction:column;z-index:55;box-shadow:0 20px 50px rgba(2,6,23,.18);
-  overflow:hidden;animation:slideUp .18s ease both;color:#0b1220
+  overflow:hidden; /* sin scroll lateral del contenedor */
+  color:#0b1220
 }
-@keyframes slideUp{from{transform:translateY(8px);opacity:.0}to{transform:none;opacity:1}}
-@media (max-width:680px){.cart-panel{left:16px;right:16px;width:auto;bottom:84px;max-height:calc(100vh - 130px)}}
+@media (max-width:680px){
+  .cart-panel{left:16px;right:16px;width:auto;bottom:84px;max-height:calc(100vh - 90px)}
+}
 
-/* Header del carrito + botón cerrar estilizado */
+/* Header carrito */
 .cart-header{position:relative;display:flex;justify-content:center;align-items:center;gap:12px;padding:14px;border-bottom:1px solid var(--border);background:linear-gradient(180deg,#fff,#fafafa)}
 .cart-header strong{font-size:1.05rem;letter-spacing:.2px;color:#0b1220}
-.close-btn{
-  position:absolute;right:12px;top:12px;
-  width:32px;height:32px;border-radius:999px;
-  background:#fff;border:1px solid var(--border);color:#0b1220;
-  display:grid;place-items:center;cursor:pointer;
-}
+.close-btn{position:absolute;right:12px;top:12px;width:32px;height:32px;border-radius:999px;background:#fff;border:1px solid var(--border);color:#0b1220;display:grid;place-items:center;cursor:pointer}
 .close-btn:hover{background:#f8fafc}
 
-/* Bloque superior: selector + nombre */
+/* Bloque superior */
 .cart-top{margin:10px 14px 6px;display:flex;flex-direction:column;gap:10px}
 .cart-top .field label{font-weight:700;color:#0b1220}
 .segmented{display:flex;gap:6px;background:#fff;border:1px solid var(--border);border-radius:12px;padding:6px}
 .segmented .seg{flex:1;display:flex;align-items:center;justify-content:center;gap:8px;border:none;background:transparent;padding:12px;border-radius:10px;cursor:pointer;color:#0b1220;font-weight:700;transition:all .15s ease;min-height:44px}
 .segmented .seg.active{background:#f8fafc;border:1px solid var(--border);box-shadow:0 1px 0 rgba(0,0,0,.05)}
 
-/* Resumen con miniaturas (único y scrollable) */
+/* Resumen (único, MÁS GRANDE, sólo scroll vertical) */
 .cart-summary{
-  padding:12px 14px;border-top:1px solid var(--border);border-bottom:1px solid var(--border);
-  background:#fff;flex:1;min-height:80px;max-height:100%;overflow:auto;
+  padding:12px 14px 6px;
+  border-top:1px solid var(--border);border-bottom:1px solid var(--border);
+  background:#fff;
+  flex:1 1 auto;
+  min-height:200px;                /* más alto por defecto */
+  max-height:min(65vh,560px);      /* mucho más espacio para productos */
+  overflow-y:auto;
+  overflow-x:hidden;               /* sin scroll horizontal */
 }
 .cart-summary .sum-title{font-weight:800;font-size:1.05rem;margin-bottom:8px;color:#0b1220}
-.cart-summary .sum-grid{list-style:none;margin:0;padding:0;display:grid;grid-auto-rows:minmax(56px,auto);row-gap:12px}
-.cart-summary .sum-item{display:grid;grid-template-columns:60px 1fr auto;align-items:center;gap:12px}
-.cart-summary .sum-item img{width:60px;height:60px;border-radius:10px;object-fit:cover;border:1px solid var(--border)}
+.cart-summary .sum-grid{
+  list-style:none;margin:0;padding:0 2px 4px 0; /* leve padding para que no aparezca scroll X por la barra */
+  display:grid;grid-auto-rows:minmax(64px,auto);row-gap:12px
+}
+.cart-summary .sum-item{
+  display:grid;grid-template-columns:64px minmax(0,1fr) auto; /* evita overflow lateral */
+  align-items:center;gap:12px
+}
+.cart-summary .sum-item img{width:64px;height:64px;border-radius:10px;object-fit:cover;border:1px solid var(--border)}
 .cart-summary .sum-name{font-weight:800;color:#0b1220;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .cart-summary .sum-qty{font-size:1rem;color:#475569}
-.sum-actions{display:flex;align-items:center;gap:8px}
+.sum-actions{display:flex;align-items:center;gap:8px;justify-self:end;white-space:nowrap}
 .qty-group{display:inline-flex;align-items:center;gap:6px;background:#ffffff;border:1px solid var(--border);border-radius:12px;padding:3px}
 .qty-group .btn,.sum-actions .btn[data-del]{background:#f1f5f9 !important;color:#0f172a;box-shadow:none;border:none;padding:8px 10px;border-radius:10px}
 .qty-group .btn:hover,.sum-actions .btn[data-del]:hover{background:#e2e8f0}
 .cart-summary .sum-empty{color:#64748b}
 
-/* Footer / total / checkout (siempre visible) */
-.cart-footer{padding:12px 14px 18px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:10px;background:#fff;color:#0b1220;flex-shrink:0}
+/* Footer / total / checkout */
+.cart-footer{padding:12px 14px 18px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:10px;background:#fff;color:#0b1220;flex-shrink:0;overflow-x:hidden}
 .cart-breakdown{display:flex;flex-direction:column;gap:6px;margin:4px 0 0}
 .cart-breakdown .row{display:flex;justify-content:space-between;color:#334155}
 .cart-total{display:flex;justify-content:space-between;align-items:center;padding-top:8px;border-top:1px dashed var(--border)}
 #cartTotal{font-size:1.25rem;font-weight:900;color:#0b1220}
 #checkoutBtn{width:100%;background:linear-gradient(180deg,#fbbf24,#f59e0b);border:none;color:#111;font-weight:800;padding:12px 16px;border-radius:12px;box-shadow:0 6px 16px rgba(245,158,11,.35)}
 
-/* Promo */
+/* Promo / Footer (sin dark mode) */
 .promo-card{display:grid;gap:12px;background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px}
 .promo-header h3{margin:0 0 6px}
 .promo-badges{display:flex;flex-wrap:wrap;gap:8px}
 .promo-pill{background:#fff;border:1px solid var(--border);border-radius:999px;padding:6px 10px}
 .promo-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
 .promo-btn{display:inline-flex;align-items:center;justify-content:center;min-height:40px}
-
-/* Footer */
 .footer{color:var(--muted);font-size:.95rem;padding:24px 0}
-
-/* (Sin modo oscuro) */
