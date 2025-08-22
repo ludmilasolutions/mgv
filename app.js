@@ -101,21 +101,35 @@ function ensureCartLayout(){
   const panel=$('#cartPanel'); if(!panel) return {};
   const footer=panel.querySelector('.cart-footer');
 
+  // Items
   let items=$('#cartItems');
   if(!items){ items=document.createElement('div'); items.id='cartItems'; items.className='cart-items'; }
   if(footer && items.nextElementSibling!==footer) panel.insertBefore(items,footer);
 
+  // Resumen: crear UNA sola vez y colocarlo arriba de items
   let summary=$('#cartSummary');
-  if(!summary){ summary=document.createElement('div'); summary.id='cartSummary'; summary.className='cart-summary'; panel.insertBefore(summary,items); }
+  if(!summary){
+    summary=document.createElement('div');
+    summary.id='cartSummary';
+    summary.className='cart-summary';
+    panel.insertBefore(summary,items);
+  }
 
-  // ocultar label de “Forma de entrega” si existiera
+  // Ocultar label de “Forma de entrega” si existiera
   const label = $('#shipMethod')?.parentElement?.querySelector('label[for="shipMethod"]');
   if(label) label.style.display='none';
 
   return {panel,items,summary,footer};
 }
-function changeQty(id,delta){ const it=state.cart.find(x=>String(x.id)===String(id)); if(!it) return; it.cant=Math.max(1,(Number(it.cant||1)+Number(delta||0))); saveCart(); renderCart(); }
-function removeFromCart(id){ state.cart=state.cart.filter(x=>String(x.id)!==String(id)); saveCart(); renderCart(); }
+function changeQty(id,delta){
+  const it=state.cart.find(x=>String(x.id)===String(id)); if(!it) return;
+  it.cant=Math.max(1,(Number(it.cant||1)+Number(delta||0)));
+  saveCart(); renderCart();
+}
+function removeFromCart(id){
+  state.cart=state.cart.filter(x=>String(x.id)!==String(id));
+  saveCart(); renderCart();
+}
 
 function renderCart(){
   const {items,summary}=ensureCartLayout(); if(!items||!summary) return;
@@ -128,10 +142,10 @@ function renderCart(){
   const total    = subtotal + (state.shipping.method==='envio'?envio:0);
 
   const count = state.cart.reduce((a,b)=>a+Number(b.cant||1),0);
-  $('#cartCount') && ($('#cartCount').textContent=String(count));
-  $('#cartTotal') && ($('#cartTotal').textContent=money(total));
+  if($('#cartCount')) $('#cartCount').textContent=String(count);
+  if($('#cartTotal')) $('#cartTotal').textContent=money(total);
 
-  // ítems
+  // Ítems (con – / + y eliminar)
   items.innerHTML = state.cart.map(it=>`
     <div class="cart-item">
       <img src="${it.imagen}" alt="${it.nombre}">
@@ -141,16 +155,16 @@ function renderCart(){
       </div>
       <div>
         <span class="qty-group">
-          <button class="btn secondary" data-q="-1" data-id="${it.id}">-</button>
-          <button class="btn"            data-q="+1" data-id="${it.id}">+</button>
+          <button class="btn secondary" data-q="-1" data-id="${it.id}" aria-label="Restar">-</button>
+          <button class="btn"            data-q="+1" data-id="${it.id}" aria-label="Sumar">+</button>
         </span>
-        <button class="btn secondary" data-del="${it.id}">✕</button>
+        <button class="btn secondary" data-del="${it.id}" aria-label="Eliminar">✕</button>
       </div>
     </div>`).join('');
   items.querySelectorAll('[data-q]').forEach(b=> b.onclick=()=>changeQty(b.dataset.id,parseInt(b.dataset.q)));
   items.querySelectorAll('[data-del]').forEach(b=> b.onclick=()=>removeFromCart(b.dataset.del));
 
-  // resumen con miniaturas
+  // Resumen con miniaturas (una sola vez, reemplaza contenido)
   if(state.cart.length){
     const list = state.cart.map(it=>`
       <li class="sum-item">
@@ -165,7 +179,7 @@ function renderCart(){
     summary.innerHTML = `<div class="sum-empty">Tu carrito está vacío.</div>`;
   }
 
-  // desglose
+  // Desglose
   const bd = $('#cartBreakdown');
   if(bd){
     const lbl = state.shipping.method==='envio' ? 'Envío' : 'Retiro en local';
@@ -188,13 +202,8 @@ function setupShippingSelector(){
       row = document.createElement('div');
       row.className = 'cart-close-row';
     }
-    if (closeBtn.parentElement !== row) {
-      row.appendChild(closeBtn);
-    }
-    // insertar la fila por encima del selector retiro/envío
-    if (wrap.parentElement.firstChild !== row) {
-      wrap.parentElement.insertBefore(row, wrap);
-    }
+    if (closeBtn.parentElement !== row) row.appendChild(closeBtn);
+    if (wrap.parentElement.firstChild !== row) wrap.parentElement.insertBefore(row, wrap);
   }
 
   // Íconos y cambio de método (SIN mensaje "Envío seleccionado…")
@@ -205,8 +214,7 @@ function setupShippingSelector(){
       wrap.querySelectorAll('.seg').forEach(x=>x.classList.remove('active'));
       b.classList.add('active');
       state.shipping.method=b.dataset.method;
-      // borrar cualquier nota vieja si existiera
-      const old = document.getElementById('shipNote'); if(old) old.remove();
+      const old=document.getElementById('shipNote'); if(old) old.remove(); // por si quedó algo viejo
       renderCart();
     };
   });
@@ -225,7 +233,7 @@ function setupCheckout(){
       const name = (nameInput?.value || '').trim();
       if(nameInput){ nameInput.classList.remove('error'); }
       if(!name){
-        if(nameInput){ nameInput.classList.add('error'); nameInput.focus(); }
+        if(nameInput){ nameInput.classList.add('error'); nameInput.scrollIntoView({block:'center', behavior:'smooth'}); nameInput.focus(); }
         alert('Por favor, ingresá tu nombre para enviar el pedido.');
         return;
       }
@@ -271,7 +279,7 @@ function setupCheckout(){
   state.products = prods;
 
   // Header/search/cats
-  $('#storeTitle') && ($('#storeTitle').textContent = state.config.storeName || 'Tienda');
+  if($('#storeTitle')) $('#storeTitle').textContent = state.config.storeName || 'Tienda';
   document.title = state.config?.seo?.title || 'Tienda';
   const search = $('#q'); if(search) search.oninput=()=>renderProducts();
   const cats=[...new Set(state.products.map(p=>p.categoria).filter(Boolean))];
@@ -283,9 +291,9 @@ function setupCheckout(){
     });
   }
 
-  // FAB / panel abrir-cerrar
-  $('#cartFab') && ($('#cartFab').onclick = ()=> $('#cartPanel').style.display='flex');
-  $('#closeCart') && ($('#closeCart').onclick = ()=> $('#cartPanel').style.display='none');
+  // Abrir/cerrar carrito
+  if($('#cartFab')) $('#cartFab').onclick = ()=> $('#cartPanel').style.display='flex';
+  if($('#closeCart')) $('#closeCart').onclick = ()=> $('#cartPanel').style.display='none';
 
   renderBanners();
   renderProducts();
@@ -293,7 +301,7 @@ function setupCheckout(){
   renderCart();
   setupCheckout();
 
-  // si el panel guarda override en otra pestaña, actualizar
+  // Si el panel guarda override en otra pestaña, actualizar
   window.addEventListener('storage',(e)=>{
     if(e.key==='mgv_config_override'){
       const ov = JSON.parse(e.newValue||'null')||{};
