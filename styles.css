@@ -1,5 +1,5 @@
 /* =============================================================================
-   MGV – UI PRO (legibilidad + banners + carrito visible + resumen miniaturas)
+   MGV – UI PRO (legibilidad + banners + carrito visible + resumen único)
    ============================================================================= */
 :root{
   --bg:#ffffff; --card:#f7f7f8; --text:#0b1220; --muted:#475569; --border:#e2e8f0;
@@ -67,9 +67,9 @@ button{font:inherit}
 .close-x{position:absolute;top:12px;right:12px;background:#000;color:#fff;border:none;border-radius:999px;width:32px;height:32px;display:grid;place-items:center;cursor:pointer}
 
 /* =============================================================================
-   CARRITO – visible, legible y con resumen (miniaturas) – SIN texto de envío
+   CARRITO – visible, legible y con resumen (único)
    ============================================================================= */
-#shipPriceWrap{display:none !important;} /* ocultar cualquier input heredado de envío */
+#shipPriceWrap{display:none !important;} /* ocultar input heredado de envío */
 
 .cart-fab,#cartFab{position:fixed;right:16px;bottom:16px;width:56px;height:56px;border-radius:16px;border:none;cursor:pointer;z-index:60;display:grid;place-items:center;background:linear-gradient(180deg,#111,#0b1220);color:#fff;box-shadow:0 14px 30px rgba(2,6,23,.28),0 1px 0 rgba(255,255,255,.08) inset;font-size:22px;line-height:1;padding:0}
 .cart-fab:active{transform:translateY(1px)}
@@ -85,32 +85,28 @@ button{font:inherit}
 @keyframes slideUp{from{transform:translateY(8px);opacity:.0}to{transform:none;opacity:1}}
 @media (max-width:680px){.cart-panel{left:16px;right:16px;width:auto;bottom:84px;max-height:calc(100vh - 130px)}}
 
-/* Campo/selector arriba con buen margen en mobile */
-.cart-panel .field{margin:0 14px 10px}
-.cart-panel .field label{font-weight:700;color:#0b1220}
+/* Header del carrito + botón cerrar estilizado */
+.cart-header{position:relative;display:flex;justify-content:center;align-items:center;gap:12px;padding:14px;border-bottom:1px solid var(--border);background:linear-gradient(180deg,#fff,#fafafa)}
+.cart-header strong{font-size:1.05rem;letter-spacing:.2px;color:#0b1220}
+.close-btn{
+  position:absolute;right:12px;top:12px;
+  width:32px;height:32px;border-radius:999px;
+  background:#fff;border:1px solid var(--border);color:#0b1220;
+  display:grid;place-items:center;cursor:pointer;
+}
+.close-btn:hover{background:#f8fafc}
+
+/* Bloque superior: selector + nombre */
+.cart-top{margin:10px 14px 6px;display:flex;flex-direction:column;gap:10px}
+.cart-top .field label{font-weight:700;color:#0b1220}
 .segmented{display:flex;gap:6px;background:#fff;border:1px solid var(--border);border-radius:12px;padding:6px}
 .segmented .seg{flex:1;display:flex;align-items:center;justify-content:center;gap:8px;border:none;background:transparent;padding:12px;border-radius:10px;cursor:pointer;color:#0b1220;font-weight:700;transition:all .15s ease;min-height:44px}
 .segmented .seg.active{background:#f8fafc;border:1px solid var(--border);box-shadow:0 1px 0 rgba(0,0,0,.05)}
 
-/* Botón Cerrar arriba del selector */
-.cart-close-row{
-  display:flex;
-  justify-content:flex-end;
-  margin:8px 14px 6px;
-}
-.cart-close-row #closeCart{border-radius:999px}
-
-/* Ocultar cualquier nota vieja de envío si quedara */
-#shipNote, .ship-note{display:none !important}
-
-/* Header del carrito */
-.cart-header{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 14px 8px;border-top:1px solid var(--border);border-bottom:1px solid var(--border);background:linear-gradient(180deg,#fff,#fafafa)}
-.cart-header strong{font-size:1.05rem;letter-spacing:.2px;color:#0b1220}
-.cart-header .btn.secondary{padding:8px 10px;border-radius:10px}
-
-/* Resumen con miniaturas (agrandado) */
+/* Resumen con miniaturas (único) */
 .cart-summary{
   padding:12px 14px;
+  border-top:1px solid var(--border);
   border-bottom:1px solid var(--border);
   background:#fff;
 }
@@ -145,8 +141,6 @@ button{font:inherit}
 
 /* Footer */
 .cart-footer{padding:12px 14px 18px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:10px;background:#fff;color:#0b1220}
-.cart-footer .field{display:flex;flex-direction:column;gap:6px}
-.cart-footer .field input{padding:12px;border:1px solid var(--border);border-radius:10px}
 .cart-footer .small{color:#475569;line-height:1.35}
 
 /* Desglose + total */
@@ -178,7 +172,3 @@ button{font:inherit}
   .qty-group .btn,.cart-item .btn[data-del]{background:#1f2937 !important;color:#e5e7eb}
   .qty-group .btn:hover,.cart-item .btn[data-del]:hover{background:#283446 !important}
 }
-
-/* Animaciones */
-.fade-in{animation:fade .4s ease both}
-@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
