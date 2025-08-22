@@ -179,7 +179,25 @@ function renderCart(){
 /* ---------- Envío (selector) ---------- */
 function setupShippingSelector(){
   const wrap=$('#shipMethod'); if(!wrap) return;
-  // íconos
+
+  // Mover "Cerrar" arriba del selector (una sola vez)
+  const closeBtn = $('#closeCart');
+  if (closeBtn && wrap.parentElement) {
+    let row = document.querySelector('.cart-close-row');
+    if (!row) {
+      row = document.createElement('div');
+      row.className = 'cart-close-row';
+    }
+    if (closeBtn.parentElement !== row) {
+      row.appendChild(closeBtn);
+    }
+    // insertar la fila por encima del selector retiro/envío
+    if (wrap.parentElement.firstChild !== row) {
+      wrap.parentElement.insertBefore(row, wrap);
+    }
+  }
+
+  // Íconos y cambio de método (SIN mensaje "Envío seleccionado…")
   wrap.querySelectorAll('.seg').forEach(b=>{
     if(b.dataset.method==='retiro') b.innerHTML='🏬 <span>Retiro</span>';
     if(b.dataset.method==='envio')  b.innerHTML='🚚 <span>Envío</span>';
@@ -187,11 +205,9 @@ function setupShippingSelector(){
       wrap.querySelectorAll('.seg').forEach(x=>x.classList.remove('active'));
       b.classList.add('active');
       state.shipping.method=b.dataset.method;
+      // borrar cualquier nota vieja si existiera
+      const old = document.getElementById('shipNote'); if(old) old.remove();
       renderCart();
-      const note = $('#shipNote') || (()=>{const n=document.createElement('div'); n.id='shipNote'; n.className='ship-note'; wrap.parentElement.appendChild(n); return n;})();
-      note.textContent = (state.shipping.method==='envio')
-        ? 'Envío seleccionado. El costo se define en el panel.'
-        : 'Retiro por el local. Coordinamos por WhatsApp.';
     };
   });
 }
