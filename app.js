@@ -1,5 +1,5 @@
 /* =========================================================
-   App – carrito con un solo resumen (con – / + / ✕) + envío desde panel
+   App – carrito con un solo resumen (– / + / ✕) + envío desde panel
    ========================================================= */
 const $  = (s,ctx=document)=>ctx.querySelector(s);
 const $$ = (s,ctx=document)=>[...ctx.querySelectorAll(s)];
@@ -103,6 +103,7 @@ function ensureCartLayout(){
     summary.id='cartSummary'; summary.className='cart-summary';
     panel.insertBefore(summary, panel.querySelector('.cart-footer'));
   }
+  // eliminar cualquier lista antigua
   $$('.cart-items, .cart-summary').forEach(el=>{ if(el!==summary) el.remove(); });
   return {panel, summary};
 }
@@ -168,7 +169,7 @@ function renderCart(){
   }
 }
 
-/* ---------- Envío ---------- */
+/* ---------- Envío (selector) ---------- */
 function setupShippingSelector(){
   const wrap=$('#shipMethod'); if(!wrap) return;
   wrap.querySelectorAll('.seg').forEach(b=>{
