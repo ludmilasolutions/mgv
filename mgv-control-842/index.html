@@ -113,6 +113,15 @@
             <input id="waNum" placeholder="549351...">
           </div>
         </div>
+      <div class="row">
+
+        <div>
+          <label>Precio de envío (ARS)</label>
+          <input id="shipPrice" type="number" min="0" step="1" placeholder="Ej: 2500"/>
+          <div class="muted" style="font-size:12px;margin-top:6px">Se aplica al carrito automáticamente. No editable desde el carrito.</div>
+        </div>
+
+      </div>
         <div class="row3" style="margin-top:8px">
           <div><label>Color texto</label><input id="cText" type="color"></div>
           <div><label>Color tarjeta</label><input id="cCard" type="color"></div>
@@ -388,7 +397,23 @@
       if(!config) return;
       document.getElementById("sName").value = config.storeName||"";
       document.getElementById("waNum").value = (config.whatsapp&&config.whatsapp.number)||"";
-      const t=config.theme||{};
+      document.getElementById("shipPrice").value = (config.shipping && (config.shipping.price ?? config.shipping.default)) || 0;
+      const t=config.theme||{}
+
+      // Actualiza override local para previsualización en vivo (compartido con la tienda)
+      const shipInp = document.getElementById("shipPrice");
+      if (shipInp) {
+        const pushOverride = ()=>{
+          const v = toInt(shipInp.value);
+          try { localStorage.setItem('mgv_config_override', JSON.stringify({ shipping: { price: v } })); } catch(_){}
+        };
+        shipInp.addEventListener('input', pushOverride);
+        shipInp.addEventListener('change', pushOverride);
+        // Primera vez al cargar
+        pushOverride();
+      }
+
+;
       document.getElementById("cText").value=t.text||"#111111";
       document.getElementById("cCard").value=t.card||"#f7f7f8";
       document.getElementById("cBorder").value=t.border||"#e5e7eb";
@@ -416,6 +441,8 @@
       config.storeName=document.getElementById("sName").value;
       config.whatsapp=config.whatsapp||{};
       config.whatsapp.number=document.getElementById("waNum").value;
+      config.shipping = config.shipping || {};
+      config.shipping.price = toInt(document.getElementById("shipPrice").value);
       t.text  =document.getElementById("cText").value;
       t.card  =document.getElementById("cCard").value;
       t.border=document.getElementById("cBorder").value;
