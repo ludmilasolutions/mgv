@@ -1,5 +1,5 @@
 /* =========================================================
-   App – carrito arreglado + envío desde panel + resumen con miniaturas
+   App – carrito arreglado + envío desde panel + resumen único
    ========================================================= */
 const $  = (s,ctx=document)=>ctx.querySelector(s);
 const $$ = (s,ctx=document)=>[...ctx.querySelectorAll(s)];
@@ -99,27 +99,14 @@ function renderProducts(){
 /* ---------- Carrito ---------- */
 function ensureCartLayout(){
   const panel=$('#cartPanel'); if(!panel) return {};
-  const footer=panel.querySelector('.cart-footer');
+  const items=$('#cartItems');
+  const summary=$('#cartSummary');
 
-  // Items
-  let items=$('#cartItems');
-  if(!items){ items=document.createElement('div'); items.id='cartItems'; items.className='cart-items'; }
-  if(footer && items.nextElementSibling!==footer) panel.insertBefore(items,footer);
+  // Si por algún motivo hay más de un .cart-summary, eliminar duplicados
+  const allSummaries = $$('.cart-summary');
+  allSummaries.forEach(el=>{ if(el !== summary) el.remove(); });
 
-  // Resumen: crear UNA sola vez y colocarlo arriba de items
-  let summary=$('#cartSummary');
-  if(!summary){
-    summary=document.createElement('div');
-    summary.id='cartSummary';
-    summary.className='cart-summary';
-    panel.insertBefore(summary,items);
-  }
-
-  // Ocultar label de “Forma de entrega” si existiera
-  const label = $('#shipMethod')?.parentElement?.querySelector('label[for="shipMethod"]');
-  if(label) label.style.display='none';
-
-  return {panel,items,summary,footer};
+  return {panel,items,summary};
 }
 function changeQty(id,delta){
   const it=state.cart.find(x=>String(x.id)===String(id)); if(!it) return;
@@ -164,7 +151,7 @@ function renderCart(){
   items.querySelectorAll('[data-q]').forEach(b=> b.onclick=()=>changeQty(b.dataset.id,parseInt(b.dataset.q)));
   items.querySelectorAll('[data-del]').forEach(b=> b.onclick=()=>removeFromCart(b.dataset.del));
 
-  // Resumen con miniaturas (una sola vez, reemplaza contenido)
+  // Resumen con miniaturas (ÚNICO)
   if(state.cart.length){
     const list = state.cart.map(it=>`
       <li class="sum-item">
@@ -194,19 +181,7 @@ function renderCart(){
 function setupShippingSelector(){
   const wrap=$('#shipMethod'); if(!wrap) return;
 
-  // Mover "Cerrar" arriba del selector (una sola vez)
-  const closeBtn = $('#closeCart');
-  if (closeBtn && wrap.parentElement) {
-    let row = document.querySelector('.cart-close-row');
-    if (!row) {
-      row = document.createElement('div');
-      row.className = 'cart-close-row';
-    }
-    if (closeBtn.parentElement !== row) row.appendChild(closeBtn);
-    if (wrap.parentElement.firstChild !== row) wrap.parentElement.insertBefore(row, wrap);
-  }
-
-  // Íconos y cambio de método (SIN mensaje "Envío seleccionado…")
+  // Íconos y cambio de método (SIN mensaje de "Envío seleccionado…")
   wrap.querySelectorAll('.seg').forEach(b=>{
     if(b.dataset.method==='retiro') b.innerHTML='🏬 <span>Retiro</span>';
     if(b.dataset.method==='envio')  b.innerHTML='🚚 <span>Envío</span>';
