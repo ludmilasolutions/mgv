@@ -103,7 +103,6 @@ function ensureCartLayout(){
     summary.id='cartSummary'; summary.className='cart-summary';
     panel.insertBefore(summary, panel.querySelector('.cart-footer'));
   }
-  // borrar cualquier lista antigua/duplicada
   $$('.cart-items, .cart-summary').forEach(el=>{ if(el!==summary) el.remove(); });
   return {panel, summary};
 }
@@ -124,12 +123,10 @@ function renderCart(){
   const envio    = state.shipping.price;
   const total    = subtotal + (state.shipping.method==='envio'?envio:0);
 
-  // contar y total
   const count = state.cart.reduce((a,b)=>a+Number(b.cant||1),0);
   const cc = $('#cartCount'); if(cc) cc.textContent=String(count);
   const ct = $('#cartTotal'); if(ct) ct.textContent=money(total);
 
-  // Único resumen con – / + / ✕
   if(state.cart.length){
     const list = state.cart.map(it=>`
       <li class="sum-item">
@@ -151,7 +148,6 @@ function renderCart(){
     summary.innerHTML = `<div class="sum-empty">Tu carrito está vacío.</div>`;
   }
 
-  // Desglose
   const bd = $('#cartBreakdown');
   if(bd){
     const lbl = state.shipping.method==='envio' ? 'Envío' : 'Retiro en local';
@@ -161,11 +157,9 @@ function renderCart(){
       <div class="row"><span>${lbl}</span><span>${val}</span></div>`;
   }
 
-  // acciones del resumen
   summary.querySelectorAll('[data-sq]').forEach(b=> b.onclick=()=>changeQty(b.dataset.id,parseInt(b.dataset.sq)));
   summary.querySelectorAll('[data-sdel]').forEach(b=> b.onclick=()=>removeFromCart(b.dataset.sdel));
 
-  // botón checkout visible
   const btn = $('#checkoutBtn');
   if(btn){
     btn.style.display='block';
@@ -174,7 +168,7 @@ function renderCart(){
   }
 }
 
-/* ---------- Envío (selector) ---------- */
+/* ---------- Envío ---------- */
 function setupShippingSelector(){
   const wrap=$('#shipMethod'); if(!wrap) return;
   wrap.querySelectorAll('.seg').forEach(b=>{
