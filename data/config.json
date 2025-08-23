@@ -12,7 +12,7 @@
   },
   "whatsapp": {
     "number": "5493417558966",
-    "preHeader": "Nuevo pedido",
+    "preHeader": "",
     "thanksMsg": "¡Gracias! Te escribimos por WhatsApp para coordinar la entrega."
   },
   "seo": {
@@ -26,6 +26,6 @@
     "privacy": ""
   },
   "shipping": {
-    "price": 3000
+    "price": 0
   }
 }
