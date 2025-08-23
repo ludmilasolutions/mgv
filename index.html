@@ -7,35 +7,6 @@
   <meta name="description" content="Artículos de librería y regalería. Comprá por WhatsApp; coordinamos la entrega."/>
   <link rel="icon" href="assets/logo.png"/>
   <link rel="stylesheet" href="styles.css"/>
-
-  <!-- Fuerza no-cache del documento (no toca tus imágenes ni JSON externos) -->
-  <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0"/>
-  <meta http-equiv="Pragma" content="no-cache"/>
-  <meta http-equiv="Expires" content="0"/>
-
-  <!-- Mata cualquier Service Worker viejo y limpia caches (arregla el "solo en incógnito") -->
-  <script>
-    (function(){
-      try{
-        if ('serviceWorker' in navigator) {
-          navigator.serviceWorker.getRegistrations().then(regs=>{
-            let found=false;
-            regs.forEach(r=>{ found=true; r.unregister(); });
-            if (found) {
-              if ('caches' in window) {
-                caches.keys().then(keys=>Promise.all(keys.map(k=>caches.delete(k)))).finally(()=>{
-                  setTimeout(()=>{ location.reload(); }, 150);
-                });
-              } else {
-                setTimeout(()=>{ location.reload(); }, 150);
-              }
-            }
-          }).catch(()=>{});
-        }
-      }catch(_){}
-    })();
-  </script>
-
   <script>
     window.ENV = { GH_OWNER: "ludmilasolutions", GH_REPO: "mgv", GH_BRANCH: "main" };
   </script>
@@ -43,6 +14,106 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- 🔧 Parche anti-caché para imágenes (afecta sólo al src al vuelo, no al JSON) -->
+  <script>
+    (function(){
+      function getCookie(name){
+        try{
+          const m=document.cookie.match(new RegExp("(?:^|; )"+name.replace(/([.$?*|{}()\\[\\]\\/+^])/g,"\\$1")+"=([^;]*)"));
+          return m ? decodeURIComponent(m[1]) : null;
+        }catch(_){ return null; }
+      }
+      const VERSION = getCookie('mgvsha') || localStorage.getItem('mgv_last_sha') || String(Math.floor(Date.now()/1000));
+
+      function shouldBust(u){
+        try{
+          if(!u) return false;
+          if(/^data:/.test(u)) return false;
+          const url = new URL(u, location.href);
+          const isImagePath = /\.(png|jpe?g|webp|gif|svg)$/i.test(url.pathname);
+          const isRaw = /(^|\.)(githubusercontent\.com)$/.test(url.hostname) || url.hostname === 'raw.githubusercontent.com';
+          // Forzamos bust a imágenes crudas (raw GH) y, en general, a rutas de imagen
+          return isRaw || isImagePath;
+        }catch(_){ return false; }
+      }
+
+      function bust(url){
+        try{
+          const u = new URL(url, location.href);
+          if(!u.searchParams.has('v')) u.searchParams.set('v', VERSION);
+          return u.toString();
+        }catch(_){ return url; }
+      }
+
+      // Reescribe atributos existentes al cargar
+      function rewriteExisting(){
+        document.querySelectorAll('img[src]').forEach(img=>{
+          const s = img.getAttribute('src');
+          if (shouldBust(s)) {
+            const b = bust(s);
+            if (b !== s) img.setAttribute('src', b);
+          }
+        });
+      }
+
+      // Parchea setAttribute en <img>
+      const origSetAttribute = Element.prototype.setAttribute;
+      Element.prototype.setAttribute = function(name, value){
+        if (this && this.tagName === 'IMG' && name === 'src' && shouldBust(value)) {
+          value = bust(value);
+        }
+        return origSetAttribute.call(this, name, value);
+      };
+
+      // Parchea la propiedad .src directamente
+      try{
+        const imgProto = HTMLImageElement.prototype;
+        const desc = Object.getOwnPropertyDescriptor(imgProto, 'src');
+        if (desc && desc.configurable && desc.set && desc.get) {
+          Object.defineProperty(imgProto, 'src', {
+            set(v){ desc.set.call(this, shouldBust(v) ? bust(v) : v); },
+            get(){ return desc.get.call(this); }
+          });
+        }
+      }catch(_){}
+
+      // Fallback: observa mutaciones por si algún navegador ignora lo anterior
+      try{
+        const mo = new MutationObserver(muts=>{
+          for (const m of muts){
+            if (m.type === 'attributes' && m.target && m.target.tagName === 'IMG' && m.attributeName === 'src') {
+              const el = m.target;
+              const s = el.getAttribute('src');
+              if (shouldBust(s)) {
+                const b = bust(s);
+                if (b !== s) el.setAttribute('src', b);
+              }
+            } else if (m.type === 'childList' && m.addedNodes && m.addedNodes.length){
+              m.addedNodes.forEach(n=>{
+                if (n.nodeType === 1) {
+                  if (n.tagName === 'IMG') {
+                    const s = n.getAttribute('src');
+                    if (shouldBust(s)) n.setAttribute('src', bust(s));
+                  } else {
+                    n.querySelectorAll && n.querySelectorAll('img[src]').forEach(img=>{
+                      const s = img.getAttribute('src');
+                      if (shouldBust(s)) img.setAttribute('src', bust(s));
+                    });
+                  }
+                }
+              });
+            }
+          }
+        });
+        mo.observe(document.documentElement, {subtree:true, childList:true, attributes:true, attributeFilter:['src']});
+      }catch(_){}
+
+      document.addEventListener('DOMContentLoaded', rewriteExisting);
+      // Exponemos por si lo querés usar manualmente
+      window.__mgvBustSrc = s => shouldBust(s) ? bust(s) : s;
+    })();
+  </script>
 </head>
 <body>
   <!-- Topbar fija con búsqueda -->
