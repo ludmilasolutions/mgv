@@ -52,7 +52,6 @@
     .kpi .dot{width:8px;height:8px;border-radius:50%;background:#10b981}
     .toast{position:fixed;right:16px;bottom:16px;background:#111;color:#fff;padding:10px 12px;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.2);z-index:99}
     .mono{font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace}
-    /* Import modal */
     dialog{border:1px solid var(--border);border-radius:12px;padding:0;max-width:780px;width:calc(100% - 24px)}
     dialog::backdrop{background:rgba(2,6,23,.35)}
     .dlg-head{padding:12px 14px;border-bottom:1px solid var(--border);font-weight:700}
@@ -61,7 +60,6 @@
     .diff-add{color:#065f46;background:#ecfdf5;border:1px solid #a7f3d0;border-radius:8px;padding:6px 8px}
     .diff-del{color:#991b1b;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:6px 8px}
     .diff-chg{color:#1f2937;background:#f3f4f6;border:1px solid #e5e7eb;border-radius:8px;padding:6px 8px}
-    /* Uploader */
     .img-upload{display:inline-flex;align-items:center;gap:.5rem;padding:.5rem .75rem;border-radius:.75rem;border:1px solid var(--border);cursor:pointer;font-weight:600}
     .img-upload input[type=file]{display:none}
     .status-ok{color:#16a34a}.status-err{color:#b91c1c}
@@ -300,16 +298,32 @@
   </dialog>
 
   <script>
-    /* =================== Cache tag helpers (para previews e invalidación) =================== */
-    function getCacheTag(){
-      return (document.cookie.match(/(?:^|;\\s*)mgvsha=([^;]+)/)?.[1])
-          || localStorage.getItem('mgv_last_sha')
-          || String(Date.now());
+    /* =================== Cache helpers =================== */
+    const ORG="ludmilasolutions", REPO="mgv";
+    function getCookie(name){ const m=document.cookie.match(new RegExp('(?:^|;\\s*)'+name+'=([^;]+)')); return m?m[1]:null; }
+    function isSha(x){ return /^[a-f0-9]{40}$/i.test(x||""); }
+    function getCacheTag(){ return getCookie('mgvsha') || localStorage.getItem('mgv_last_sha') || String(Date.now()); }
+    function rewriteRawToSha(u){
+      const sha = getCookie('mgvsha') || localStorage.getItem('mgv_last_sha');
+      if(!u || !isSha(sha)) return u;
+      try{
+        const url = new URL(u, location.href);
+        if(url.hostname==='raw.githubusercontent.com'){
+          const parts=url.pathname.split('/').filter(Boolean);
+          if(parts.length>=3 && parts[0]===ORG && parts[1]===REPO && (parts[2]==='main' || parts[2]==='HEAD')){
+            parts[2]=sha; url.pathname='/'+parts.join('/');
+          }
+        }
+        return url.toString();
+      }catch(_){ return u; }
     }
-    function bust(u){
+    function bustURL(u){
       if(!u) return u;
-      try{ const url = new URL(u, location.href); url.searchParams.set('v', getCacheTag()); return url.toString(); }
-      catch(_){ return u + (u.includes('?')?'&':'?') + 'v=' + getCacheTag(); }
+      const tag=getCacheTag();
+      let out = rewriteRawToSha(u);
+      try{ const url=new URL(out, location.href); url.searchParams.set('v', tag); out=url.toString(); }
+      catch(_){ out = out + (out.includes('?')?'&':'?') + 'v=' + encodeURIComponent(tag); }
+      return out;
     }
 
     /* =================== Setup base/RAW GH =================== */
@@ -516,7 +530,7 @@
                 <span>Subir…</span>
                 <input type="file" accept="image/*" data-file="${p.id}"/>
               </label>
-              <img class="preview-thumb" src="${bust(p.imagen || '')}" alt="Vista previa"/>
+              <img class="preview-thumb" src="${bustURL(p.imagen || '')}" alt="Vista previa"/>
               <span class="muted" data-status="${p.id}"></span>
             </div>
           </td>
@@ -565,7 +579,7 @@
             if(f==="imagen"){
               const row=inp.closest("tr");
               const img=row?.querySelector("img.preview-thumb");
-              if(img) img.src = bust(inp.value.trim());
+              if(img) img.src = bustURL(inp.value.trim());
             }
           }
           markDirty();
@@ -589,7 +603,7 @@
             const res=await uploadImageFile(file);
             if(res.ok){
               urlInp.value=res.url;
-              if(prev) prev.src=bust(res.url);           // 🔁 cache-bust preview
+              if(prev) prev.src=bustURL(res.url);
               const p=productos.find(x=>String(x.id)===String(id)); if(p) p.imagen=res.url;
               st.innerHTML = `Listo ✔ <span class="muted">(${res.latency||'?'} ms)</span>`;
               if(res.commitSha){ setLastSHA(res.commitSha); window.__MGV_PENDING_SHA=res.commitSha; }
@@ -860,7 +874,7 @@
         if(r.ok){
           if (j && Array.isArray(j.commits) && j.commits.length) {
             window.__MGV_PENDING_SHA=j.commits[j.commits.length-1];
-            setLastSHA(window.__MGV_PENDING_SHA);      // 🔁 actualiza cookie para todos los devices
+            setLastSHA(window.__MGV_PENDING_SHA); // cookie para futuros loads (todos los dispositivos)
           }
           toast("Guardado en GitHub ✔️"); await loadTables(window.__MGV_PENDING_SHA); clearDirty();
         } else { alert("Error "+r.status+": "+(j.error||txt)); }
