@@ -12,7 +12,31 @@
   </script>
   <script src="assets/js/fetch-raw-patch.js"></script>
 
-  <!-- Fix caché imágenes (liviano y sin loop): usa mgvsha o agrega ?v= -->
+  <!-- Fix caché: fuerza refresh de data/*.json en todos los dispositivos -->
+  <script>
+    (function(){
+      const origFetch = window.fetch;
+      window.fetch = function(input, init){
+        try{
+          const url = typeof input === 'string' ? new URL(input, location.href)
+                                                : new URL(input.url, location.href);
+          const isDataJson = /\/data\/.+\.json$/i.test(url.pathname);
+          if(isDataJson){
+            url.searchParams.set('ts', Date.now().toString());
+            if (typeof input === 'string') {
+              input = url.href;
+            } else {
+              input = new Request(url.href, input);
+            }
+            init = Object.assign({cache:'no-store'}, init||{});
+          }
+        }catch(_){}
+        return origFetch(input, init);
+      };
+    })();
+  </script>
+
+  <!-- Fix caché imágenes de GitHub: usa SHA si existe; sino ?v= -->
   <script>
     (function(){
       const OWNER = (window.ENV && window.ENV.GH_OWNER) || "ludmilasolutions";
@@ -31,7 +55,7 @@
         try{
           const u = new URL(src, location.href);
           if (u.hostname !== 'raw.githubusercontent.com') return src;
-          const parts = u.pathname.split('/'); // ["", owner, repo, branch|sha, ...]
+          const parts = u.pathname.split('/'); // ["", owner, repo, branchOrSha, ...]
           if (parts[1] === OWNER && parts[2] === REPO) {
             if (LAST_SHA){ parts[3] = LAST_SHA; u.pathname = parts.join('/'); return u.href; }
             if (!u.searchParams.has('v')) u.searchParams.set('v', Date.now().toString());
@@ -47,7 +71,6 @@
         imgs.forEach(img=>{
           const orig = img.getAttribute('src'); if(!orig) return;
           const fresh = bustUrl(orig);
-          // Evita loops: sólo cambia si realmente es distinto
           if (fresh && img.src !== fresh) img.src = fresh;
         });
       }
