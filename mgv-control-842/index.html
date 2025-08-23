@@ -69,6 +69,128 @@
       .table-wrap{overflow:auto}
     }
   </style>
+
+  <!-- ======== Cache-buster igual que en la web pública ======== -->
+  <script>
+  (function(){
+    const ORG="ludmilasolutions", REPO="mgv";
+    function getCookie(n){ const m=document.cookie.match(new RegExp('(?:^|;\\s*)'+n+'=([^;]+)')); return m?m[1]:null; }
+    function isSha(x){ return /^[a-f0-9]{40}$/i.test(x||""); }
+    const commitSha = getCookie('mgvsha') || localStorage.getItem('mgv_last_sha');
+    const TAG = commitSha || String(Date.now());
+
+    function rewriteRawToSha(u){
+      if(!u || !isSha(commitSha)) return u;
+      try{
+        const url=new URL(u, location.href);
+        if(url.hostname==='raw.githubusercontent.com'){
+          const p=url.pathname.split('/').filter(Boolean);
+          if(p.length>=3 && p[0]===ORG && p[1]===REPO && (p[2]==='main'||p[2]==='HEAD')){
+            p[2]=commitSha; url.pathname='/'+p.join('/');
+          }
+        }
+        return url.toString();
+      }catch(_){ return u; }
+    }
+    function addTag(u){
+      if(!u) return u;
+      try{ const url=new URL(u, location.href); if(!url.searchParams.has('v')) url.searchParams.set('v', TAG); return url.toString(); }
+      catch(_){ return u + (u.includes('?')?'&':'?') + 'v=' + encodeURIComponent(TAG); }
+    }
+    function bustURL(u){ return addTag(rewriteRawToSha(u)); }
+
+    async function hardReloadIfRaw(imgEl, originalUrl){
+      if(isSha(commitSha)) return;
+      try{
+        const u=new URL(originalUrl, location.href);
+        if(u.hostname!=='raw.githubusercontent.com') return;
+      }catch(_){ return; }
+      if(imgEl.dataset.mgvHard==='1') return;
+      imgEl.dataset.mgvHard='1';
+      try{
+        const resp=await fetch(originalUrl, {cache:'reload', mode:'cors'});
+        if(!resp.ok) return;
+        const blob=await resp.blob();
+        const obj=URL.createObjectURL(blob);
+        imgEl.src=obj;
+      }catch(_){}
+    }
+
+    function bustSrcset(s){
+      if(!s) return s;
+      return s.split(',').map(part=>{
+        const trimmed=part.trim();
+        const sp=trimmed.split(/\s+/);
+        const url=sp[0];
+        const desc=sp.slice(1).join(' ');
+        const busted=bustURL(url);
+        return (desc ? (busted+' '+desc) : busted);
+      }).join(', ');
+    }
+
+    const imgDesc = Object.getOwnPropertyDescriptor(HTMLImageElement.prototype, 'src');
+    Object.defineProperty(HTMLImageElement.prototype, 'src', {
+      set(value){
+        const orig=String(value||'');
+        const busted=bustURL(orig);
+        hardReloadIfRaw(this, orig);
+        return imgDesc.set.call(this, busted);
+      },
+      get(){ return imgDesc.get.call(this); }
+    });
+    const origImgSetAttr = HTMLImageElement.prototype.setAttribute;
+    HTMLImageElement.prototype.setAttribute=function(name, value){
+      if(name==='src'){ const orig=String(value||''); const busted=bustURL(orig); hardReloadIfRaw(this, orig); return origImgSetAttr.call(this,name,busted); }
+      if(name==='srcset'){ return origImgSetAttr.call(this, name, bustSrcset(String(value||''))); }
+      return origImgSetAttr.call(this, name, value);
+    };
+    const origSourceSetAttr = HTMLSourceElement && HTMLSourceElement.prototype.setAttribute;
+    if(origSourceSetAttr){
+      HTMLSourceElement.prototype.setAttribute=function(name, value){
+        if(name==='srcset'){ return origSourceSetAttr.call(this, name, bustSrcset(String(value||''))); }
+        if(name==='src'){ return origSourceSetAttr.call(this, name, bustURL(String(value||''))); }
+        return origSourceSetAttr.call(this, name, value);
+      };
+    }
+
+    function applyToElement(el){
+      if(!el) return;
+      if(el.tagName==='IMG'){
+        const raw=el.getAttribute('src') || el.src || '';
+        if(raw){ const b=bustURL(raw); if(raw!==b) el.src=b; hardReloadIfRaw(el, raw); }
+        const ss=el.getAttribute('srcset'); if(ss){ const bss=bustSrcset(ss); if(bss!==ss) el.setAttribute('srcset', bss); }
+      }else if(el.tagName==='SOURCE'){
+        const ss=el.getAttribute('srcset'); if(ss){ const bss=bustSrcset(ss); if(bss!==ss) el.setAttribute('srcset', bss); }
+        const s2=el.getAttribute('src'); if(s2){ const bs=bustURL(s2); if(bs!==s2) el.setAttribute('src', bs); }
+      }else{
+        const st=el.style && el.style.backgroundImage;
+        if(st && /url\((["']?)(.+?)\1\)/.test(st)){
+          const url = st.replace(/^.*url\((["']?)(.+?)\1\).*$/, '$2');
+          if(url){ const b=bustURL(url); if(url!==b) el.style.backgroundImage=`url("${b}")`; }
+        }
+      }
+    }
+    function applyToTree(root){
+      root.querySelectorAll && root.querySelectorAll('img,source,[style*="background-image"]').forEach(applyToElement);
+    }
+
+    document.addEventListener('DOMContentLoaded', function(){
+      applyToTree(document);
+      const obs=new MutationObserver(muts=>{
+        muts.forEach(m=>{
+          if(m.type==='attributes' && (m.attributeName==='src'||m.attributeName==='srcset'||m.attributeName==='style')) applyToElement(m.target);
+          if(m.addedNodes && m.addedNodes.length){
+            m.addedNodes.forEach(n=>{ if(n.nodeType===1){ applyToElement(n); applyToTree(n); }});
+          }
+        });
+      });
+      obs.observe(document.body, {childList:true, subtree:true, attributes:true, attributeFilter:['src','srcset','style']});
+      // Exponer helper para el resto del script del panel
+      window.bustURL = bustURL;
+    });
+  })();
+  </script>
+  <!-- ===================================================================== -->
 </head>
 <body>
   <div class="wrap">
@@ -298,34 +420,6 @@
   </dialog>
 
   <script>
-    /* =================== Cache helpers =================== */
-    const ORG="ludmilasolutions", REPO="mgv";
-    function getCookie(name){ const m=document.cookie.match(new RegExp('(?:^|;\\s*)'+name+'=([^;]+)')); return m?m[1]:null; }
-    function isSha(x){ return /^[a-f0-9]{40}$/i.test(x||""); }
-    function getCacheTag(){ return getCookie('mgvsha') || localStorage.getItem('mgv_last_sha') || String(Date.now()); }
-    function rewriteRawToSha(u){
-      const sha = getCookie('mgvsha') || localStorage.getItem('mgv_last_sha');
-      if(!u || !isSha(sha)) return u;
-      try{
-        const url = new URL(u, location.href);
-        if(url.hostname==='raw.githubusercontent.com'){
-          const parts=url.pathname.split('/').filter(Boolean);
-          if(parts.length>=3 && parts[0]===ORG && parts[1]===REPO && (parts[2]==='main' || parts[2]==='HEAD')){
-            parts[2]=sha; url.pathname='/'+parts.join('/');
-          }
-        }
-        return url.toString();
-      }catch(_){ return u; }
-    }
-    function bustURL(u){
-      if(!u) return u;
-      const tag=getCacheTag();
-      let out = rewriteRawToSha(u);
-      try{ const url=new URL(out, location.href); url.searchParams.set('v', tag); out=url.toString(); }
-      catch(_){ out = out + (out.includes('?')?'&':'?') + 'v=' + encodeURIComponent(tag); }
-      return out;
-    }
-
     /* =================== Setup base/RAW GH =================== */
     const GH_OWNER  = "ludmilasolutions";
     const GH_REPO   = "mgv";
@@ -340,7 +434,7 @@
     function getLastSHA(){
       try{ const u=new URL(location.href); const qs=u.searchParams.get('sha'); if(qs){ setLastSHA(qs); return qs; } }catch(_){}
       try{ const ls=localStorage.getItem('mgv_last_sha'); if(ls) return ls; }catch(_){}
-      try{ const m=document.cookie.match(/(?:^|;)\\s*mgvsha=([^;]+)/); if(m) return m[1]; }catch(_){}
+      try{ const m=document.cookie.match(/(?:^|;)\s*mgvsha=([^;]+)/); if(m) return m[1]; }catch(_){}
       return null;
     }
 
@@ -427,7 +521,7 @@
     }
 
     /* =================== Helpers =================== */
-    const toInt = v => { const n = parseInt(String(v??"").replace(/[^\\d-]/g,""), 10); return isNaN(n) ? 0 : Math.max(0, n); };
+    const toInt = v => { const n = parseInt(String(v??"").replace(/[^\d-]/g,""), 10); return isNaN(n) ? 0 : Math.max(0, n); };
     const money = n => { try{ n=Number(n||0);}catch(_){n=0} return n.toLocaleString('es-AR',{style:'currency',currency:'ARS',maximumFractionDigits:0}); };
     const round100 = n => Math.round(Number(n||0)/100)*100;
 
@@ -530,7 +624,7 @@
                 <span>Subir…</span>
                 <input type="file" accept="image/*" data-file="${p.id}"/>
               </label>
-              <img class="preview-thumb" src="${bustURL(p.imagen || '')}" alt="Vista previa"/>
+              <img class="preview-thumb" src="${(window.bustURL||((x)=>x))(p.imagen || '')}" alt="Vista previa"/>
               <span class="muted" data-status="${p.id}"></span>
             </div>
           </td>
@@ -579,7 +673,7 @@
             if(f==="imagen"){
               const row=inp.closest("tr");
               const img=row?.querySelector("img.preview-thumb");
-              if(img) img.src = bustURL(inp.value.trim());
+              if(img) img.src = (window.bustURL||((x)=>x))(inp.value.trim());
             }
           }
           markDirty();
@@ -603,7 +697,7 @@
             const res=await uploadImageFile(file);
             if(res.ok){
               urlInp.value=res.url;
-              if(prev) prev.src=bustURL(res.url);
+              if(prev) prev.src=(window.bustURL||((x)=>x))(res.url);
               const p=productos.find(x=>String(x.id)===String(id)); if(p) p.imagen=res.url;
               st.innerHTML = `Listo ✔ <span class="muted">(${res.latency||'?'} ms)</span>`;
               if(res.commitSha){ setLastSHA(res.commitSha); window.__MGV_PENDING_SHA=res.commitSha; }
@@ -872,10 +966,7 @@
         const r=await fetch(base+"/save_catalog",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+tok},body:JSON.stringify({productos,banners,config})});
         const txt=await r.text(); let j={}; try{ j=JSON.parse(txt);}catch(_){}
         if(r.ok){
-          if (j && Array.isArray(j.commits) && j.commits.length) {
-            window.__MGV_PENDING_SHA=j.commits[j.commits.length-1];
-            setLastSHA(window.__MGV_PENDING_SHA); // cookie para futuros loads (todos los dispositivos)
-          }
+          if (j && Array.isArray(j.commits) && j.commits.length) { window.__MGV_PENDING_SHA=j.commits[j.commits.length-1]; setLastSHA(window.__MGV_PENDING_SHA); }
           toast("Guardado en GitHub ✔️"); await loadTables(window.__MGV_PENDING_SHA); clearDirty();
         } else { alert("Error "+r.status+": "+(j.error||txt)); }
       }catch(e){ alert("Error de red: "+e.message); }
