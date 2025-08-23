@@ -7,82 +7,161 @@
   <meta name="description" content="Artículos de librería y regalería. Comprá por WhatsApp; coordinamos la entrega."/>
   <link rel="icon" href="assets/logo.png"/>
   <link id="mainCss" rel="stylesheet" href="styles.css"/>
-  <script>
-    // ================= Cache-buster global (sin tocar app.js) =================
-    (function(){
-      // lee mgvsha (si la API devolvió commitSha) o usa timestamp para bust universal
-      const tag =
-        (document.cookie.match(/(?:^|;\s*)mgvsha=([^;]+)/)?.[1]) ||
-        localStorage.getItem('mgv_last_sha') ||
-        String(Date.now());
 
-      function bust(u){
-        if(!u) return u;
-        try{
-          const url = new URL(u, location.href);
-          // Evita duplicar si ya lo tiene
-          url.searchParams.set('v', tag);
-          return url.toString();
-        }catch(_){
-          return u + (u.includes('?') ? '&' : '?') + 'v=' + tag;
+  <!-- ================= Cache-buster universal (amigable con iOS) ================= -->
+  <script>
+  (function(){
+    const ORG = "ludmilasolutions";
+    const REPO = "mgv";
+
+    function getCookie(name){
+      const m = document.cookie.match(new RegExp('(?:^|;\\s*)'+name+'=([^;]+)'));
+      return m ? m[1] : null;
+    }
+    function isSha(x){ return /^[a-f0-9]{40}$/i.test(x||""); }
+
+    // Tag: commit SHA si existe en este dispositivo; si no, timestamp (para cambiar la query)
+    const commitSha = (getCookie('mgvsha') || localStorage.getItem('mgv_last_sha'));
+    const softTag   = String(Date.now()); // cambia en cada carga (último recurso)
+    const TAG       = commitSha || softTag;
+
+    // Reescribe raw.githubusercontent.com ... /main/... -> /<sha>/...
+    function rewriteRawToSha(u){
+      if(!u) return u;
+      if(!isSha(commitSha)) return u; // solo si tenemos SHA real en ESTE equipo
+      try{
+        const url = new URL(u, location.href);
+        if(url.hostname === 'raw.githubusercontent.com'){
+          // /owner/repo/(branch|sha)/path...
+          const parts = url.pathname.split('/').filter(Boolean);
+          // parts: ["owner","repo","main","data","..."]
+          if(parts.length >= 3 && parts[0]===ORG && parts[1]===REPO && (parts[2]==='main' || parts[2]==='HEAD')){
+            parts[2] = commitSha; // reemplaza main por sha
+            url.pathname = '/' + parts.join('/');
+          }
+        }
+        return url.toString();
+      }catch(_){ return u; }
+    }
+
+    // Agrega ?v=TAG (si no lo tiene ya)
+    function addQueryTag(u){
+      if(!u) return u;
+      try{
+        const url = new URL(u, location.href);
+        if(!url.searchParams.has('v')) url.searchParams.set('v', TAG);
+        return url.toString();
+      }catch(_){
+        return u + (u.includes('?') ? '&' : '?') + 'v=' + encodeURIComponent(TAG);
+      }
+    }
+
+    // Decide versión final de la URL, aplicando ambas reglas
+    function bustURL(u){
+      let out = rewriteRawToSha(u);
+      out = addQueryTag(out);
+      return out;
+    }
+
+    // Para iOS (o cuando no hay SHA): fuerza recarga real del binario de raw.githubusercontent.com
+    async function hardReloadIfRaw(imgEl, rawUrl){
+      try{
+        const url = new URL(rawUrl, location.href);
+        if(url.hostname !== 'raw.githubusercontent.com') return;
+      }catch(_){ return; }
+
+      // Si tenemos SHA real, no hace falta; el path ya cambia.
+      if(isSha(commitSha)) return;
+
+      // Evita bucles si ya lo hicimos
+      if(imgEl.dataset.mgvHard==='1') return;
+      imgEl.dataset.mgvHard = '1';
+
+      try{
+        const resp = await fetch(rawUrl, { cache: 'reload', mode: 'cors' });
+        if(!resp.ok) return;
+        const blob = await resp.blob();
+        const objUrl = URL.createObjectURL(blob);
+        // guardamos original por si hace falta
+        if(!imgEl.dataset.mgvOrig) imgEl.dataset.mgvOrig = rawUrl;
+        imgEl.src = objUrl;
+      }catch(_){}
+    }
+
+    // Aplica buster a un IMG o a un nodo con background-image en style
+    function applyToElement(el){
+      if(!el) return;
+      if(el.tagName === 'IMG'){
+        const raw = el.getAttribute('src') || el.src || '';
+        if(!raw) return;
+        const busted = bustURL(raw);
+        if(raw !== busted) el.src = busted;
+        hardReloadIfRaw(el, raw); // fuerza reload si es raw GH y no hay SHA
+      }else{
+        // background-image inline (por si lo usan)
+        const st = el.style && el.style.backgroundImage;
+        if(st && /url\((["']?)(.+?)\1\)/.test(st)){
+          const url = st.replace(/^.*url\((["']?)(.+?)\1\).*$/, '$2');
+          if(url){
+            const busted = bustURL(url);
+            if(url !== busted){
+              el.style.backgroundImage = `url("${busted}")`;
+              // no hacemos hardReload en bg para no complicar layout
+            }
+          }
         }
       }
+    }
 
-      // expone helpers por si los querés usar en otros scripts
-      window.__MGV_CACHE_TAG = tag;
-      window.__mgvBust = bust;
+    function applyToTree(root){
+      // IMG directos
+      root.querySelectorAll && root.querySelectorAll('img').forEach(applyToElement);
+      // Algunos layouts usan bg-image en cards
+      root.querySelectorAll && root.querySelectorAll('[style*="background-image"]').forEach(applyToElement);
+    }
 
-      // Recarga CSS con versión (opcional, por si fue cambiado)
-      window.addEventListener('DOMContentLoaded', function(){
-        const css = document.getElementById('mainCss');
-        if(css && !/[\?&]v=/.test(css.href)) css.href = bust(css.href);
+    // Exponer por si lo necesitás en otros scripts
+    window.__MGV_CACHE_TAG = TAG;
+    window.__mgvBustURL = bustURL;
 
-        // Busteá el logo apenas exista
-        const lg = document.querySelector('.header.container img');
-        if(lg) lg.src = bust(lg.getAttribute('src'));
+    // Al cargar el DOM: busteá todo lo que ya está en la página
+    document.addEventListener('DOMContentLoaded', function(){
+      // CSS con versión (opcional)
+      const css = document.getElementById('mainCss');
+      if(css && css.href) css.href = addQueryTag(css.href);
 
-        // Busteá imágenes que ya estén renderizadas (banners / productos si hubo render previo)
-        document.querySelectorAll('#bannerCarousel img, #productGrid img').forEach(img=>{
-          const raw = img.getAttribute('src') || img.src;
-          if(raw) img.src = bust(raw);
-        });
+      // Header logo + futuras imágenes renderizadas por app.js
+      applyToTree(document);
 
-        // Observa el DOM y busteá cualquier IMG nueva que pinte app.js
-        const obs = new MutationObserver(muts=>{
-          muts.forEach(m=>{
-            m.addedNodes && m.addedNodes.forEach(n=>{
-              if(n.nodeType===1){
-                if(n.tagName==='IMG'){
-                  const raw = n.getAttribute('src') || n.src;
-                  if(raw && !/[\?&]v=/.test(raw)) n.src = bust(raw);
-                }
-                n.querySelectorAll && n.querySelectorAll('img').forEach(i=>{
-                  const raw = i.getAttribute('src') || i.src;
-                  if(raw && !/[\?&]v=/.test(raw)) i.src = bust(raw);
-                });
-              }
+      // Observa elementos nuevos Y cambios de atributos (src / style)
+      const obs = new MutationObserver((muts)=>{
+        muts.forEach(m=>{
+          if(m.type==='attributes'){
+            if(m.attributeName==='src' || m.attributeName==='style'){
+              applyToElement(m.target);
+              return;
+            }
+          }
+          if(m.addedNodes && m.addedNodes.length){
+            m.addedNodes.forEach(n=>{
+              if(n.nodeType!==1) return;
+              applyToElement(n);
+              applyToTree(n);
             });
-          });
+          }
         });
-        obs.observe(document.body, {childList:true, subtree:true});
       });
-
-      // Carga scripts con versión (reemplaza tags <script src> estáticos)
-      // Así no toco tu app.js y sigue funcionando igual.
-      window.addEventListener('DOMContentLoaded', function(){
-        function addScript(src){
-          const s = document.createElement('script');
-          s.src = bust(src);
-          s.defer = true;
-          document.body.appendChild(s);
-        }
-        addScript('assets/js/promo.js');
-        addScript('app.js');
+      obs.observe(document.body, {
+        childList: true,
+        subtree: true,
+        attributes: true,
+        attributeFilter: ['src','style']
       });
-    })();
+    });
+  })();
   </script>
+  <!-- ======================================================================== -->
 
-  <!-- Mantengo tus metas y fuentes -->
   <script>
     window.ENV = { GH_OWNER: "ludmilasolutions", GH_REPO: "mgv", GH_BRANCH: "main" };
   </script>
@@ -118,7 +197,7 @@
     <div id="productGrid" class="grid"></div>
   </main>
 
-  <!-- FAB y Carrito (SIN CAMBIOS de diseño/funcionalidad) -->
+  <!-- FAB y Carrito -->
   <button id="cartFab" class="cart-fab" aria-label="Abrir carrito">🛒 <span id="cartCount">0</span></button>
 
   <div id="cartPanel" class="cart-panel" style="display:none" aria-modal="true" role="dialog">
@@ -182,6 +261,8 @@
 
   <footer id="footerInfo" class="container footer"></footer>
 
-  <!-- OJO: ya no incluimos <script src="app.js"> aquí; lo inyecta el buster con ?v= -->
+  <!-- Mantengo tus scripts tal cual -->
+  <script src="assets/js/promo.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>
