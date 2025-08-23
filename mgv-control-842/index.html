@@ -304,7 +304,7 @@
     const GH_OWNER  = "ludmilasolutions";
     const GH_REPO   = "mgv";
     const GH_BRANCH = "main";
-    function rawBase(sha){ return \`https://raw.githubusercontent.com/\${GH_OWNER}/\${GH_REPO}/\${sha||GH_BRANCH}/data\`; }
+    function rawBase(sha){ return `https://raw.githubusercontent.com/${GH_OWNER}/${GH_REPO}/${sha||GH_BRANCH}/data`; }
 
     function setLastSHA(sha){
       try{ if(!sha) return; localStorage.setItem('mgv_last_sha', sha);
@@ -314,7 +314,7 @@
     function getLastSHA(){
       try{ const u=new URL(location.href); const qs=u.searchParams.get('sha'); if(qs){ setLastSHA(qs); return qs; } }catch(_){}
       try{ const ls=localStorage.getItem('mgv_last_sha'); if(ls) return ls; }catch(_){}
-      try{ const m=document.cookie.match(/(?:^|;)\\s*mgvsha=([^;]+)/); if(m) return m[1]; }catch(_){}
+      try{ const m=document.cookie.match(/(?:^|;)\s*mgvsha=([^;]+)/); if(m) return m[1]; }catch(_){}
       return null;
     }
 
@@ -371,9 +371,9 @@
     async function loadTables(sha){
       const BASE = rawBase(sha || window.__MGV_PENDING_SHA);
       const ts = Date.now();
-      productos = await fetchJsonWithRetry(\`\${BASE}/productos.json?ts=\${ts}\`);
-      banners   = await fetchJsonWithRetry(\`\${BASE}/banners.json?ts=\${ts}\`);
-      config    = await fetchJsonWithRetry(\`\${BASE}/config.json?ts=\${ts}\`);
+      productos = await fetchJsonWithRetry(`${BASE}/productos.json?ts=${ts}`);
+      banners   = await fetchJsonWithRetry(`${BASE}/banners.json?ts=${ts}`);
+      config    = await fetchJsonWithRetry(`${BASE}/config.json?ts=${ts}`);
       window.__MGV_PENDING_SHA = null;
       computeCats();
       renderProductos();
@@ -386,7 +386,6 @@
     /* =================== Upload imagen =================== */
     async function uploadImageFile(file){
       if(!file) return { ok:false, error:"No file" };
-      // validación rápida
       if(file.size > 2*1024*1024) return { ok:false, error:"Archivo > 2MB" };
       const fd=new FormData();
       fd.append("file",file,file.name);
@@ -439,7 +438,7 @@
     function computeCats(){
       const sel=document.getElementById('prodCatFilter');
       const cats=[...new Set((productos||[]).map(p=>p.categoria).filter(Boolean))].sort();
-      sel.innerHTML='<option value="">Categoría: todas</option>'+cats.map(c=>\`<option>\${c}</option>\`).join('');
+      sel.innerHTML='<option value="">Categoría: todas</option>'+cats.map(c=>`<option>${c}</option>`).join('');
     }
 
     function applyFilters(){
@@ -474,18 +473,15 @@
       const tbody=document.querySelector("#tablaProductos tbody");
       tbody.innerHTML="";
 
-      // filtros + paginación
       const filtered = applyFilters();
       const {slice, total, totalPages} = paginated(filtered);
-      document.getElementById('rowsInfo').textContent = \`\${total} ítems (mostrando \${slice.length})\`;
-      document.getElementById('pageLabel').textContent = \`\${ui.page} / \${totalPages}\`;
+      document.getElementById('rowsInfo').textContent = `${total} ítems (mostrando ${slice.length})`;
+      document.getElementById('pageLabel').textContent = `${ui.page} / ${totalPages}`;
 
-      // header check
       const hdrChk=document.getElementById('hdrChk');
       hdrChk.checked = slice.length && slice.every(p=>ui.selected.has(String(p.id)));
       hdrChk.onchange = ()=>{ slice.forEach(p=>{ const id=String(p.id); if(hdrChk.checked) ui.selected.add(id); else ui.selected.delete(id); }); renderProductos(); };
 
-      // filas
       slice.forEach(p=>{
         const tr=document.createElement("tr");
         tr.draggable=true;
@@ -519,19 +515,16 @@
         tbody.appendChild(tr);
       });
 
-      // drag & drop
       tbody.querySelectorAll("tr").forEach(tr=>{
         tr.addEventListener('dragstart', (e)=>{
           ui.dragging = tr.dataset.id; tr.classList.add('dragging'); e.dataTransfer.effectAllowed='move';
         });
-        tr.addEventListener('dragover', e=>{ e.preventDefault(); const over = e.currentTarget; if(over===tr) return; });
+        tr.addEventListener('dragover', e=>{ e.preventDefault(); });
         tr.addEventListener('drop', e=>{
           e.preventDefault();
           const fromId = ui.dragging;
           const toId   = tr.dataset.id;
           ui.dragging=null;
-          // reordenar en el array completo según el orden actual filtrado
-          const filtered = applyFilters();
           const fromIdxGlobal = productos.findIndex(x=>String(x.id)===String(fromId));
           const toIdxGlobal   = productos.findIndex(x=>String(x.id)===String(toId));
           if(fromIdxGlobal<0 || toIdxGlobal<0) return;
@@ -542,17 +535,14 @@
         tr.addEventListener('dragend', ()=>{ ui.dragging=null; tr.classList.remove('dragging'); });
       });
 
-      // selección por fila
       tbody.querySelectorAll('.rowChk').forEach(chk=>{
         chk.onchange = ()=>{ const id=String(chk.dataset.id); if(chk.checked) ui.selected.add(id); else ui.selected.delete(id); updateBulkButtons(); };
       });
 
-      // bloqueo scroll wheel en inputs numeric
       tbody.querySelectorAll("input[type='number'][data-f='precio']").forEach(n=>{
         n.addEventListener('wheel', e=> e.preventDefault(), {passive:false});
       });
 
-      // listeners de campos
       tbody.querySelectorAll("input.url, td input[type='text'], td input[type='number']").forEach(inp=>{
         const handler=()=>{
           const id=inp.dataset.id, f=inp.dataset.f; if(!id||!f) return;
@@ -565,7 +555,6 @@
         inp.addEventListener("change",handler);
       });
 
-      // subir imagen
       tbody.querySelectorAll("input[type=file][data-file]").forEach(fi=>{
         fi.addEventListener("change", async ()=>{
           const id=fi.dataset.file;
@@ -590,7 +579,6 @@
         });
       });
 
-      // botones por fila
       tbody.querySelectorAll("[data-ed]").forEach(b=>{
         b.onclick=()=>{ const id=b.dataset.ed; const p=productos.find(x=>String(x.id)===String(id)); const d=prompt("Descripción",p.descripcion||""); if(d!==null){ p.descripcion=d; markDirty(); renderProductos(); } };
       });
@@ -601,7 +589,6 @@
       updateBulkButtons();
     }
 
-    /* =================== Productos: UI wiring =================== */
     document.getElementById('prodSearch').oninput = (e)=>{ ui.q=e.target.value; ui.page=1; renderProductos(); };
     document.getElementById('prodCatFilter').onchange = (e)=>{ ui.cat=e.target.value; ui.page=1; renderProductos(); };
     document.getElementById('fNoImg').onchange  = (e)=>{ ui.noImg=e.target.checked; ui.page=1; renderProductos(); };
@@ -611,7 +598,7 @@
 
     document.getElementById('pageSize').onchange = (e)=>{ ui.pageSize=parseInt(e.target.value,10)||50; ui.page=1; renderProductos(); };
     document.getElementById('pagePrev').onclick = ()=>{ if(ui.page>1){ ui.page--; renderProductos(); } };
-    document.getElementById('pageNext').onclick = ()=>{ ui.page++; renderProductos(); }; // corregido por renderProductos con totalPages
+    document.getElementById('pageNext').onclick = ()=>{ ui.page++; renderProductos(); };
 
     document.getElementById('selectAll').onchange = (e)=>{
       const filtered = applyFilters(); const {slice} = paginated(filtered);
@@ -619,7 +606,6 @@
       renderProductos();
     };
 
-    // Bulk actions
     document.getElementById('bulkDelete').onclick = ()=>{
       if(!ui.selected.size) return;
       if(!confirm('¿Borrar los productos seleccionados?')) return;
@@ -637,7 +623,6 @@
       markDirty(); renderProductos();
     };
 
-    // Import/Export productos.json
     const importDlg = document.getElementById('importDlg');
     const importPreview = document.getElementById('importPreview');
     document.getElementById('importBtn').onclick = ()=> document.getElementById('importFile').click();
@@ -647,17 +632,14 @@
         const txt=await f.text();
         const arr=JSON.parse(txt);
         if(!Array.isArray(arr)) throw new Error("El JSON debe ser un array de productos");
-        // Validación mínima
         const ids=new Set(); for(const it of arr){
           if(!it.id) throw new Error("Falta id en algún producto");
           if(ids.has(String(it.id))) throw new Error("IDs repetidos en archivo");
           ids.add(String(it.id));
         }
-        // Diff simple
         const curById=new Map(productos.map(p=>[String(p.id),p]));
         const newById=new Map(arr.map(p=>[String(p.id),p]));
         const adds=[], dels=[], chgs=[];
-        // agregados y cambios
         for(const [id, np] of newById){
           if(!curById.has(id)) adds.push(np);
           else{
@@ -666,10 +648,8 @@
             if(changed) chgs.push({id, before:cp, after:np});
           }
         }
-        // eliminados
         for(const [id, cp] of curById){ if(!newById.has(id)) dels.push(cp); }
 
-        // Render diff
         importPreview.innerHTML = `
           <div class="flex" style="flex-wrap:wrap;gap:8px;margin-bottom:8px">
             <span class="diff-add">+ ${adds.length} nuevos</span>
@@ -696,7 +676,6 @@
       const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='productos.json'; a.click(); URL.revokeObjectURL(a.href);
     };
 
-    // Nuevo producto
     document.getElementById("nuevoProd").onclick=()=>{
       const id="p"+Math.random().toString(36).slice(2,7);
       productos.unshift({id, nombre:"Nuevo producto", precio:0, categoria:"Librería", imagen:"", descripcion:""});
@@ -765,7 +744,6 @@
       document.getElementById("saveNow").onclick = saveAll;
       document.getElementById("saveNow2").onclick= saveAll;
 
-      // Escuchas para marcar dirty
       document.querySelectorAll("#configSec input, #configSec textarea, #configSec select").forEach(el=>{
         el.addEventListener('input', markDirty);
         el.addEventListener('change', markDirty);
@@ -806,7 +784,7 @@
     function updateApiStatus(){
       const base=localStorage.getItem("mgv_apiBase");
       const tok =localStorage.getItem("mgv_saveToken");
-      document.getElementById("apiStatus").textContent=\`API: \${base||'sin URL'} · Token \${tok?'listo':'falta'}\`;
+      document.getElementById("apiStatus").textContent=`API: ${base||'sin URL'} · Token ${tok?'listo':'falta'}`;
     }
 
     async function testApi(){
@@ -822,8 +800,8 @@
         const ms=Math.round(performance.now()-t0);
         let j={}; try{ j=await r.json(); }catch(_){}
         out.innerHTML = r.ok
-          ? \`Latencia: <b>\${ms} ms</b> · Versión: <b>\${j.version||j.ver||'n/d'}</b>\`
-          : \`Fallo (\${r.status}) en \${ms} ms\`;
+          ? `Latencia: <b>${ms} ms</b> · Versión: <b>${j.version||j.ver||'n/d'}</b>`
+          : `Fallo (${r.status}) en ${ms} ms`;
       }catch(e){ out.textContent="No se pudo conectar: "+e.message; }
     }
 
@@ -875,11 +853,7 @@
       alert("Hash generado. Para cambiarla, abrí este archivo y reemplazá HASHED por:\n\n"+h+"\n\nLuego subilo al repo.");
     };
 
-    // Botones guardado/descarga
     document.getElementById('dlAll').onclick = dlAll;
-
-    // Guardado rápido
-    // Los botones saveNow/saveNow2 ya se asignan en hydrateConfigUI
 
     boot();
   </script>
