@@ -20,7 +20,7 @@ button{font:inherit}
 .header.container{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
 .header.container>img{width:auto;height:auto;max-height:64px;border-radius:12px;box-shadow:0 1px 0 #0000000a}
 /* Aumentamos un poco más el logo en móvil */
-@media (max-width:680px){.header.container>img{max-height:56px}}
+@media (max-width:680px){.header.container>img{max-height:64px}}
 .header .title{font-weight:800;font-size:clamp(20px,3vw,28px)}
 .search{flex:1;min-width:240px}
 .search input#q{width:100%;padding:12px 14px;border:1px solid var(--border);border-radius:14px;outline:none;background:#fff;color:#var(--text)}
