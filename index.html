@@ -11,6 +11,66 @@
     window.ENV = { GH_OWNER: "ludmilasolutions", GH_REPO: "mgv", GH_BRANCH: "main" };
   </script>
   <script src="assets/js/fetch-raw-patch.js"></script>
+
+  <!-- Hotfix de caché: agrega ?ts=<timestamp> a imágenes de *.githubusercontent.com -->
+  <script>
+    (function(){
+      // Hosts típicos de imágenes de GitHub
+      const GH_REGEX = /(^|\.)((raw|user-images|media)\.)?githubusercontent\.com$/i;
+
+      function isGithubImg(urlStr){
+        try{ return GH_REGEX.test(new URL(urlStr, location.href).hostname); }
+        catch(_){ return false; }
+      }
+      function hasTs(urlStr){
+        try{ return new URL(urlStr, location.href).searchParams.has('ts'); }
+        catch(_){ return /[?&]ts=\d+/.test(urlStr); }
+      }
+      function bust(urlStr){
+        try{
+          const u = new URL(urlStr, location.href);
+          // Si ya tiene ts, no hacemos loop
+          if(!u.searchParams.has('ts')) u.searchParams.set('ts', Date.now().toString());
+          return u.href;
+        }catch(_){
+          return urlStr + (urlStr.includes('?') ? '&' : '?') + 'ts=' + Date.now();
+        }
+      }
+      function processImg(img){
+        if(!img || img.tagName !== 'IMG') return;
+        const src = img.getAttribute('src');
+        if(!src) return;
+        if(isGithubImg(src) && !hasTs(src)){
+          const newSrc = bust(src);
+          // Evitar bucle: solo cambiamos si es distinto
+          if(img.src !== newSrc) img.src = newSrc;
+        }
+      }
+
+      // Procesar las imágenes ya presentes
+      const init = ()=> document.querySelectorAll('img[src]').forEach(processImg);
+      if(document.readyState === 'loading'){ document.addEventListener('DOMContentLoaded', init); } else { init(); }
+
+      // Vigilar cambios futuros (banners/productos renderizados por app.js)
+      const mo = new MutationObserver(muts=>{
+        for(const m of muts){
+          if(m.type === 'attributes' && m.attributeName === 'src' && m.target.tagName === 'IMG'){
+            processImg(m.target);
+          }
+          if(m.type === 'childList' && m.addedNodes){
+            m.addedNodes.forEach(n=>{
+              if(n.nodeType === 1){ // Element
+                if(n.tagName === 'IMG') processImg(n);
+                n.querySelectorAll && n.querySelectorAll('img[src]').forEach(processImg);
+              }
+            });
+          }
+        }
+      });
+      mo.observe(document.documentElement, {subtree:true, childList:true, attributes:true, attributeFilter:['src']});
+    })();
+  </script>
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
