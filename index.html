@@ -11,6 +11,72 @@
     window.ENV = { GH_OWNER: "ludmilasolutions", GH_REPO: "mgv", GH_BRANCH: "main" };
   </script>
   <script src="assets/js/fetch-raw-patch.js"></script>
+
+  <!-- Hotfix caché imágenes: usar SHA del último commit (mgvsha) o ?ts= -->
+  <script>
+    (function(){
+      const GH_RE = /(^|\.)((raw|user-images|media)\.)?githubusercontent\.com$/i;
+
+      function getLastSHA(){
+        try { const u=new URL(location.href); const qs=u.searchParams.get('sha'); if(qs) return qs; } catch(_){}
+        try { const m=document.cookie.match(/(?:^|;)\s*mgvsha=([^;]+)/); if(m) return m[1]; } catch(_){}
+        try { const ls=localStorage.getItem('mgv_last_sha'); if(ls) return ls; } catch(_){}
+        return null;
+      }
+      const LAST_SHA = getLastSHA();
+      const ENV = window.ENV || {};
+      const OWNER = ENV.GH_OWNER, REPO = ENV.GH_REPO;
+
+      function toFresh(urlStr){
+        try{
+          const u = new URL(urlStr, location.href);
+          if (!GH_RE.test(u.hostname)) return urlStr;
+
+          // Si es raw.githubusercontent.com/<owner>/<repo>/<branch|sha>/...
+          if (u.hostname === 'raw.githubusercontent.com' && OWNER && REPO) {
+            const parts = u.pathname.split('/'); // ["",owner,repo,branch,...]
+            if (parts[1] === OWNER && parts[2] === REPO && LAST_SHA) {
+              parts[3] = LAST_SHA;           // reemplazamos main por sha
+              u.pathname = parts.join('/');
+              return u.href;
+            }
+          }
+          // Fallback: agregar ?ts si no está
+          if (!u.searchParams.has('ts')) u.searchParams.set('ts', Date.now().toString());
+          return u.href;
+        }catch(_){
+          return urlStr + (urlStr.includes('?')?'&':'?') + 'ts=' + Date.now();
+        }
+      }
+
+      function processImg(img){
+        if(!img || img.tagName!=='IMG') return;
+        const src = img.getAttribute('src');
+        if(!src) return;
+        const fresh = toFresh(src);
+        if (fresh && img.src !== fresh) img.src = fresh;
+      }
+
+      function init(){ document.querySelectorAll('img[src]').forEach(processImg); }
+      if (document.readyState==='loading') document.addEventListener('DOMContentLoaded', init); else init();
+
+      const mo = new MutationObserver(muts=>{
+        for(const m of muts){
+          if(m.type==='attributes' && m.attributeName==='src' && m.target.tagName==='IMG'){ processImg(m.target); }
+          if(m.type==='childList'){
+            m.addedNodes.forEach(n=>{
+              if(n.nodeType===1){
+                if(n.tagName==='IMG') processImg(n);
+                n.querySelectorAll && n.querySelectorAll('img[src]').forEach(processImg);
+              }
+            });
+          }
+        }
+      });
+      mo.observe(document.documentElement,{subtree:true,childList:true,attributes:true,attributeFilter:['src']});
+    })();
+  </script>
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
