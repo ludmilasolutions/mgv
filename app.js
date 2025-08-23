@@ -1,5 +1,5 @@
 /* =========================================================
-   App – carrito con un solo resumen (– / + / ✕) + envío desde panel
+   App – carrito limpio (un solo resumen), +/−, borrar y WhatsApp
    ========================================================= */
 const $  = (s,ctx=document)=>ctx.querySelector(s);
 const $$ = (s,ctx=document)=>[...ctx.querySelectorAll(s)];
@@ -12,32 +12,34 @@ const state = {
   shipping: { method: 'retiro', price: 0 }
 };
 
-const money = (n)=>{
-  try{ n = Number(n||0); }catch(_){ n = 0; }
+const money = n=>{
+  try{ n = Number(n||0); }catch(e){ n=0; }
   return n.toLocaleString('es-AR',{style:'currency',currency:'ARS',maximumFractionDigits:0});
 };
 const saveCart = ()=> localStorage.setItem('mgv_cart', JSON.stringify(state.cart));
 
 function deepMerge(base, extra){
-  if(Array.isArray(base) || Array.isArray(extra)) return (extra ?? base);
+  if(Array.isArray(base) || Array.isArray(extra)) return extra ?? base;
   const out = {...(base||{})};
   for(const k of Object.keys(extra||{})){
     const v = extra[k];
-    out[k] = (v && typeof v==='object' && !Array.isArray(v)) ? deepMerge(out[k], v) : v;
+    out[k] = (v && typeof v==='object' && !Array.isArray(v))
+      ? deepMerge(out[k], v)
+      : v;
   }
   return out;
 }
-const cfgShipPrice = ()=>{
+const cfgShipPrice = ()=> {
   const v = state?.config?.shipping?.price ?? state?.config?.shipping?.default ?? 0;
   const n = Number(v||0);
-  return Number.isFinite(n) ? n : 0;
+  return isNaN(n)?0:n;
 };
 
 /* ---------- Banners ---------- */
 function normalizeBanners(arr){
   return (arr||[]).map(b=>({
-    img:b.img||b.imagen, title:b.title||b.titulo||'', text:b.text||b.texto||'',
-    active:(typeof b.active!=='undefined'? b.active : b.activo)
+    img: b.img||b.imagen, title: b.title||b.titulo||'', text: b.text||b.texto||'',
+    active: (typeof b.active!=='undefined'? b.active : b.activo)
   })).filter(b=> b.img && (b.active===undefined || b.active===true));
 }
 function renderBanners(){
@@ -47,20 +49,17 @@ function renderBanners(){
   wrap.style.display='';
   wrap.innerHTML = active.map((b,i)=>`
     <article class="banner${i===0?' active':''}">
-      <img src="${b.img}" alt="${b.title||''}">
-      <div class="content">
-        <div class="title">${b.title||''}</div>
-        <div class="text">${b.text||''}</div>
-      </div>
+      <img src="${b.img}" alt="${b.title}">
+      <div class="content"><div class="title">${b.title||''}</div><div class="text">${b.text||''}</div></div>
     </article>`).join('');
   const dots=document.createElement('div'); dots.className='dots';
-  let idx=0; const show=(n)=>{
+  active.forEach((_,i)=>{ const d=document.createElement('div'); d.className='dot'+(i?'':' active'); d.onclick=()=>show(i); dots.appendChild(d); });
+  wrap.appendChild(dots);
+  let idx=0; function show(n){
     wrap.querySelectorAll('.banner').forEach((c,i)=>c.classList.toggle('active',i===n));
     wrap.querySelectorAll('.dot').forEach((d,i)=>d.classList.toggle('active',i===n));
     idx=n;
-  };
-  active.forEach((_,i)=>{ const d=document.createElement('div'); d.className='dot'+(i?'':' active'); d.onclick=()=>show(i); dots.appendChild(d); });
-  wrap.appendChild(dots);
+  }
   if(active.length>1) setInterval(()=>show((idx+1)%active.length),5000);
 }
 
@@ -71,12 +70,15 @@ function renderProducts(){
   const cat = $('.badge.active')?.dataset?.cat||'';
   const items = state.products
     .filter(p=>!cat || p.categoria===cat)
-    .filter(p=> (p.nombre||'').toLowerCase().includes(q) || (p.descripcion||'').toLowerCase().includes(q) );
+    .filter(p=>{
+      const n=(p.nombre||'').toLowerCase(); const d=(p.descripcion||'').toLowerCase();
+      return n.includes(q)||d.includes(q);
+    });
   grid.innerHTML = items.map(p=>`
     <article class="card">
-      <img src="${p.imagen}" alt="${p.nombre||''}">
+      <img src="${p.imagen}" alt="${p.nombre}">
       <div class="body">
-        <div class="name">${p.nombre||''}</div>
+        <div class="name">${p.nombre}</div>
         <div class="desc">${p.descripcion||''}</div>
         <div class="row">
           <div class="price">${money(p.precio)}</div>
@@ -94,39 +96,32 @@ function renderProducts(){
   });
 }
 
-/* ---------- Carrito (solo resumen) ---------- */
+/* ---------- Carrito ---------- */
 function ensureCartLayout(){
-  const panel = $('#cartPanel'); if(!panel) return {};
-  let summary = $('#cartSummary');
-  if(!summary){
-    summary=document.createElement('div');
-    summary.id='cartSummary'; summary.className='cart-summary';
-    $('#cartScroll').appendChild(summary);
-  }
-  // Quita cualquier lista antigua
-  $$('.cart-items, .cart-summary').forEach(el=>{ if(el!==summary) el.remove(); });
-  return {panel, summary};
+  return {
+    panel: $('#cartPanel'),
+    scroll: $('#cartScroll'),
+    summary: $('#cartSummary'),
+    sumList: $('#sumList'),
+    bd: $('#cartBreakdown'),
+    footer: $('#cartFooter'),
+  };
 }
 function changeQty(id,delta){
   const it=state.cart.find(x=>String(x.id)===String(id)); if(!it) return;
   it.cant=Math.max(1,(Number(it.cant||1)+Number(delta||0)));
   saveCart(); renderCart();
 }
-function removeFromCart(id){
-  state.cart=state.cart.filter(x=>String(x.id)!==String(id));
-  saveCart(); renderCart();
-}
-function updateScrollPadding(){
-  const scroll = $('#cartScroll');
-  const footer = $('#cartFooter');
-  if(!scroll || !footer) return;
-  const h = footer.offsetHeight || 0;
-  scroll.style.paddingBottom = `calc(${h}px + 10px)`;
-}
-function renderCart(){
-  const {summary}=ensureCartLayout(); if(!summary) return;
+function removeFromCart(id){ state.cart=state.cart.filter(x=>String(x.id)!==String(id)); saveCart(); renderCart(); }
 
+function renderCart(){
+  const {panel,scroll,summary,sumList,bd,footer}=ensureCartLayout(); if(!panel) return;
+
+  panel.style.display = 'flex';
+
+  // precio desde panel (no editable en carrito)
   state.shipping.price = state.shipping.method==='envio' ? cfgShipPrice() : 0;
+
   const subtotal = state.cart.reduce((a,it)=>a+(Number(it.precio||0)*Number(it.cant||1)),0);
   const envio    = state.shipping.price;
   const total    = subtotal + (state.shipping.method==='envio'?envio:0);
@@ -135,28 +130,30 @@ function renderCart(){
   $('#cartCount') && ($('#cartCount').textContent=String(count));
   $('#cartTotal') && ($('#cartTotal').textContent=money(total));
 
+  // resumen único
   if(state.cart.length){
-    const list = state.cart.map(it=>`
+    sumList.innerHTML = state.cart.map(it=>`
       <li class="sum-item">
-        <img src="${it.imagen}" alt="${it.nombre||''}">
-        <div>
-          <div class="sum-name">${it.nombre||''}</div>
+        <img src="${it.imagen}" alt="${it.nombre}">
+        <div class="sum-meta">
+          <div class="sum-name">${it.nombre}</div>
           <div class="sum-qty">×${it.cant} · ${money(Number(it.precio)*Number(it.cant))}</div>
         </div>
         <div class="sum-actions">
           <span class="qty-group">
-            <button class="btn" data-sq="-1" data-id="${it.id}" aria-label="Restar">-</button>
-            <button class="btn" data-sq="+1" data-id="${it.id}" aria-label="Sumar">+</button>
+            <button class="btn secondary" data-q="-1" data-id="${it.id}">-</button>
+            <button class="btn"            data-q="+1" data-id="${it.id}">+</button>
           </span>
-          <button class="btn" data-sdel="${it.id}" aria-label="Eliminar">✕</button>
+          <button class="btn secondary" data-del="${it.id}">✕</button>
         </div>
       </li>`).join('');
-    summary.innerHTML = `<div class="sum-title">Resumen</div><ul class="sum-grid">${list}</ul>`;
   }else{
-    summary.innerHTML = `<div class="sum-empty">Tu carrito está vacío.</div>`;
+    sumList.innerHTML = `<div class="sum-empty">Tu carrito está vacío.</div>`;
   }
 
-  const bd = $('#cartBreakdown');
+  sumList.querySelectorAll('[data-q]').forEach(b=> b.onclick=()=>changeQty(b.dataset.id,parseInt(b.dataset.q)));
+  sumList.querySelectorAll('[data-del]').forEach(b=> b.onclick=()=>removeFromCart(b.dataset.del));
+
   if(bd){
     const lbl = state.shipping.method==='envio' ? 'Envío' : 'Retiro en local';
     const val = state.shipping.method==='envio' ? money(envio) : '$ 0';
@@ -165,25 +162,17 @@ function renderCart(){
       <div class="row"><span>${lbl}</span><span>${val}</span></div>`;
   }
 
-  summary.querySelectorAll('[data-sq]').forEach(b=> b.onclick=()=>changeQty(b.dataset.id,parseInt(b.dataset.sq)));
-  summary.querySelectorAll('[data-sdel]').forEach(b=> b.onclick=()=>removeFromCart(b.dataset.sdel));
-
-  const btn = $('#checkoutBtn');
-  if(btn){
-    btn.disabled = state.cart.length===0;
-    btn.setAttribute('aria-disabled', String(btn.disabled));
+  // padding para que nunca tape el botón
+  if(scroll && footer){
+    const h = footer.offsetHeight || 0;
+    scroll.style.paddingBottom = (h + 18) + 'px';
   }
-
-  // Ajusta padding del área scrolleable para no esconder ítems bajo el footer
-  updateScrollPadding();
 }
 
 /* ---------- Envío (selector) ---------- */
 function setupShippingSelector(){
   const wrap=$('#shipMethod'); if(!wrap) return;
   wrap.querySelectorAll('.seg').forEach(b=>{
-    if(b.dataset.method==='retiro') b.innerHTML='🏬 <span>Retiro</span>';
-    if(b.dataset.method==='envio')  b.innerHTML='🚚 <span>Envío</span>';
     b.onclick=()=>{
       wrap.querySelectorAll('.seg').forEach(x=>x.classList.remove('active'));
       b.classList.add('active');
@@ -198,76 +187,80 @@ function setupCheckout(){
   const btn = document.getElementById('checkoutBtn');
   if(!btn) return;
   btn.onclick = ()=>{
-    const cart = Array.isArray(state.cart)? state.cart: [];
-    if(!cart.length){ alert('Tu carrito está vacío.'); return; }
-    const nameInput = document.getElementById('customerName');
-    const name = (nameInput?.value || '').trim();
-    if(nameInput){ nameInput.classList.remove('error'); }
-    if(!name){
-      if(nameInput){ nameInput.classList.add('error'); nameInput.scrollIntoView({block:'center', behavior:'smooth'}); nameInput.focus(); }
-      alert('Por favor, ingresá tu nombre para enviar el pedido.');
-      return;
-    }
-    const number = state?.config?.whatsapp?.number || '5493412272899';
-    const preHeader = state?.config?.whatsapp?.preHeader || 'Nuevo pedido';
-    const toNumber = (x)=>{ try{ const s=String(x??'').replace(/[^\d,.-]/g,''); return Number(s||0);}catch(_){return 0;} };
-    const items = cart.map((it)=>`• ${it.nombre} ×${Number(it.cant||1)} – ${money(toNumber(it.precio))}`);
-    const subtotal = cart.reduce((acc, it)=> acc + (toNumber(it.precio) * Number(it.cant||1)), 0);
-    const envio = (state.shipping?.method==='envio') ? Number(cfgShipPrice()||0) : 0;
-    const total = subtotal + envio;
-    const lines = [
-      `Pedido de: ${name}`,
-      preHeader,
-      'Hola, quiero hacer un pedido:',
-      ...items,
-      '',
-      `${state.shipping?.method==='envio' ? 'Envío' : 'Retiro en local'}: ${state.shipping?.method==='envio' ? money(envio) : '$ 0'}`,
-      `Total: ${money(total)}`
-    ];
-    const text = lines.join('\n');
-    const url = 'https://wa.me/' + encodeURIComponent(number) + '?text=' + encodeURIComponent(text);
-    window.open(url, '_blank');
-    state.cart = [];
-    localStorage.setItem('mgv_cart', JSON.stringify(state.cart));
-    renderCart();
-    const panel = document.getElementById('cartPanel'); if(panel) panel.style.display='none';
+    try{
+      const cart = (Array.isArray(state?.cart) && state.cart.length) ? state.cart
+                   : (JSON.parse(localStorage.getItem('mgv_cart')||'[]') || []);
+      if(!cart.length){ alert('Tu carrito está vacío.'); return; }
+      const nameInput = document.getElementById('customerName');
+      const name = (nameInput?.value || '').trim();
+      if(nameInput){ nameInput.classList.remove('error'); }
+      if(!name){
+        if(nameInput){ nameInput.classList.add('error'); nameInput.focus(); }
+        alert('Por favor, ingresá tu nombre para enviar el pedido.');
+        return;
+      }
+      const number = state?.config?.whatsapp?.number || '5493412272899';
+      const preHeader = state?.config?.whatsapp?.preHeader || 'Nuevo pedido';
+      const toNumber = (x)=>{ try{ const s = String(x ?? '').replace(/[^\d,\\.\\-]/g, ''); return Number(s||0); }catch(e){ return 0; } };
+      const items = cart.map((it)=>`• ${it.nombre} ×${Number(it.cant||1)} – ${money(toNumber(it.precio))}`);
+      const subtotal = cart.reduce((acc, it)=> acc + (toNumber(it.precio) * Number(it.cant||1)), 0);
+      const envio = (state.shipping?.method==='envio') ? Number(cfgShipPrice()||0) : 0;
+      const total = subtotal + envio;
+
+      const lines = [
+        `Pedido de: ${name}`,
+        preHeader,
+        'Hola, quiero hacer un pedido:',
+        ...items,
+        '',
+        `${state.shipping?.method==='envio' ? 'Envío' : 'Retiro en local'}: ${state.shipping?.method==='envio' ? money(envio) : '$ 0'}`,
+        `Total: ${money(total)}`
+      ];
+      const text = lines.join('\\n');
+      const url = 'https://wa.me/' + encodeURIComponent(number) + '?text=' + encodeURIComponent(text);
+      window.open(url, '_blank');
+      state.cart = [];
+      localStorage.setItem('mgv_cart', JSON.stringify(state.cart));
+      renderCart();
+      const panel = document.getElementById('cartPanel'); if(panel) panel.style.display = 'none';
+    }catch(err){ console.error(err); }
   };
 }
 
+/* ---------- Categorías dinámicas ---------- */
+function setupCategoryPills(){
+  const pills=$('#categoryPills'); if(!pills) return;
+  const cats=[...new Set(state.products.map(p=>p.categoria).filter(Boolean))];
+  pills.innerHTML = `<span class="badge active" data-cat="">Todo</span>` + cats.map(c=>`<span class="badge" data-cat="${c}">${c}</span>`).join('');
+  pills.querySelectorAll('.badge').forEach(b=>{
+    b.onclick=()=>{
+      pills.querySelectorAll('.badge').forEach(x=>x.classList.remove('active'));
+      b.classList.add('active'); renderProducts();
+    };
+  });
+}
+
 /* ---------- Init ---------- */
-async function initStore(){
+(async function(){
   const [serverCfg,banners,prods] = await Promise.all([
     fetch('data/config.json').then(r=>r.json()).catch(()=>({})),
     fetch('data/banners.json').then(r=>r.json()).catch(()=>[]),
     fetch('data/productos.json').then(r=>r.json()).catch(()=>[])
   ]);
+  // Override local desde el panel (previsualización)
   const localOverride = JSON.parse(localStorage.getItem('mgv_config_override')||'null')||{};
   state.config   = deepMerge(serverCfg, localOverride);
   state.banners  = normalizeBanners(banners);
   state.products = prods;
 
-  if($('#storeTitle')) $('#storeTitle').textContent = state.config.storeName || 'Tienda';
+  // Header/search/cats
+  $('#storeTitle') && ($('#storeTitle').textContent = state.config.storeName || 'Tienda');
   document.title = state.config?.seo?.title || 'Tienda';
-
   const search = $('#q'); if(search) search.oninput=()=>renderProducts();
-  const cats=[...new Set(state.products.map(p=>p.categoria).filter(Boolean))];
-  const pills=$('#categoryPills');
-  if(pills){
-    pills.innerHTML = `<span class="badge active" data-cat="">Todo</span>` + cats.map(c=>`<span class="badge" data-cat="${c}">${c}</span>`).join('');
-    pills.querySelectorAll('.badge').forEach(b=>{
-      b.onclick=()=>{ pills.querySelectorAll('.badge').forEach(x=>x.classList.remove('active')); b.classList.add('active'); renderProducts(); };
-    });
-  }
+  setupCategoryPills();
 
-  // Abrir y cerrar carrito
-  $('#cartFab') && ($('#cartFab').onclick = ()=>{
-    const p = $('#cartPanel');
-    p.style.display='flex';
-    p.scrollTop = 0;              // ver header completo
-    try{ p.focus({preventScroll:true}); }catch(_){}
-    // recalcular padding por si cambia el alto del footer (rotación, zoom, etc.)
-    setTimeout(updateScrollPadding, 30);
-  });
+  // FAB / panel abrir-cerrar
+  $('#cartFab') && ($('#cartFab').onclick = ()=> { $('#cartPanel').style.display='flex'; renderCart(); });
   $('#closeCart') && ($('#closeCart').onclick = ()=> $('#cartPanel').style.display='none');
 
   renderBanners();
@@ -276,7 +269,7 @@ async function initStore(){
   renderCart();
   setupCheckout();
 
-  // si cambia el envío desde el panel en otra pestaña
+  // si el panel guarda override en otra pestaña, actualizar
   window.addEventListener('storage',(e)=>{
     if(e.key==='mgv_config_override'){
       const ov = JSON.parse(e.newValue||'null')||{};
@@ -284,9 +277,4 @@ async function initStore(){
       renderCart();
     }
   });
-
-  // actualizar padding al cambiar tamaño/orientación
-  window.addEventListener('resize', updateScrollPadding);
-  window.addEventListener('orientationchange', updateScrollPadding);
-}
-initStore();
+})();
