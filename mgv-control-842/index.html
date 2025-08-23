@@ -6,6 +6,35 @@
   <title>Panel MGV</title>
   <link rel="icon" href="../assets/logo.png"/>
   <link rel="stylesheet" href="../styles.css"/>
+
+  <!-- Fuerza no-cache del documento -->
+  <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0"/>
+  <meta http-equiv="Pragma" content="no-cache"/>
+  <meta http-equiv="Expires" content="0"/>
+
+  <!-- Mata cualquier Service Worker viejo y limpia caches -->
+  <script>
+    (function(){
+      try{
+        if ('serviceWorker' in navigator) {
+          navigator.serviceWorker.getRegistrations().then(regs=>{
+            let found=false;
+            regs.forEach(r=>{ found=true; r.unregister(); });
+            if (found) {
+              if ('caches' in window) {
+                caches.keys().then(keys=>Promise.all(keys.map(k=>caches.delete(k)))).finally(()=>{
+                  setTimeout(()=>{ location.reload(); }, 150);
+                });
+              } else {
+                setTimeout(()=>{ location.reload(); }, 150);
+              }
+            }
+          }).catch(()=>{});
+        }
+      }catch(_){}
+    })();
+  </script>
+
   <style>
     :root{ --border:#e5e7eb; --muted:#6b7280; --brand:#0ea5e9; --accent:#f59e0b; }
     body{background:#f8fafc;color:#0b1220}
@@ -380,35 +409,6 @@
       clearDirty();
     }
 
-    /* ===== Helpers de URL: reemplaza branch->SHA y agrega ?v= para vistas ===== */
-    function toShaUrl(url, sha){
-      if(!url || !sha) return url;
-      try{
-        const u=new URL(url);
-        if(u.hostname==='raw.githubusercontent.com'){
-          const parts=u.pathname.split('/'); // ["", owner, repo, branchOrSha, ...]
-          if(parts.length>4){ parts[3]=sha; u.pathname=parts.join('/'); }
-          return u.href;
-        }
-      }catch(_){}
-      return url;
-    }
-    function bustImg(url, sha){
-      try{
-        const u = new URL(url, location.href);
-        if(u.hostname==='raw.githubusercontent.com'){
-          if(sha){
-            const parts=u.pathname.split('/');
-            if(parts.length>4){ parts[3]=sha; u.pathname=parts.join('/'); }
-          }
-          const ver = sha || getLastSHA() || Date.now().toString();
-          u.searchParams.set('v', ver);
-          return u.href;
-        }
-      }catch(_){}
-      return url;
-    }
-
     /* =================== Upload imagen =================== */
     async function uploadImageFile(file){
       if(!file) return { ok:false, error:"No file" };
@@ -530,7 +530,7 @@
                 <span>Subir…</span>
                 <input type="file" accept="image/*" data-file="${p.id}"/>
               </label>
-              <img class="preview-thumb" src="${bustImg(p.imagen || '')}" alt="Vista previa"/>
+              <img class="preview-thumb" src="${p.imagen || ''}" alt="Vista previa"/>
               <span class="muted" data-status="${p.id}"></span>
             </div>
           </td>
@@ -574,14 +574,7 @@
           const id=inp.dataset.id, f=inp.dataset.f; if(!id||!f) return;
           const p=productos.find(x=>String(x.id)===String(id)); if(!p) return;
           if(f==="precio"){ p[f] = toInt(inp.value); inp.value = p[f]; }
-          else{
-            p[f]=inp.value;
-            if(f==="imagen"){
-              const row=inp.closest("tr");
-              const img=row?.querySelector("img.preview-thumb");
-              if(img) img.src=bustImg(inp.value.trim());
-            }
-          }
+          else{ p[f]=inp.value; if(f==="imagen"){ const row=inp.closest("tr"); const img=row?.querySelector("img.preview-thumb"); if(img) img.src=inp.value.trim(); } }
           markDirty();
         };
         inp.addEventListener("input",handler);
@@ -602,25 +595,13 @@
           try{
             const res=await uploadImageFile(file);
             if(res.ok){
-              // URL estable por commit y vista con cache-busting
-              const urlBySha = toShaUrl(res.url, res.commitSha) || res.url;
-              const viewUrl  = bustImg(res.url, res.commitSha);
-
-              urlInp.value = urlBySha; // lo que se guarda en JSON (cuando guardes)
-              if(prev) prev.src = viewUrl; // refresco inmediato en panel
-
-              const p=productos.find(x=>String(x.id)===String(id));
-              if(p) p.imagen=urlBySha;
-
+              urlInp.value=res.url; if(prev) prev.src=res.url;
+              const p=productos.find(x=>String(x.id)===String(id)); if(p) p.imagen=res.url;
               st.innerHTML = `Listo ✔ <span class="muted">(${res.latency||'?'} ms)</span>`;
               if(res.commitSha){ setLastSHA(res.commitSha); window.__MGV_PENDING_SHA=res.commitSha; }
               markDirty();
-            }else{
-              st.innerHTML=`<span class="status-err">Error: ${(res.error||"no se pudo subir")}</span>`;
-            }
-          }catch(e){
-            st.innerHTML=`<span class="status-err">Error: ${e.message}</span>`;
-          }
+            }else{ st.innerHTML=`<span class="status-err">Error: ${(res.error||"no se pudo subir")}</span>`; }
+          }catch(e){ st.innerHTML=`<span class="status-err">Error: ${e.message}</span>`; }
         });
       });
 
