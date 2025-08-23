@@ -117,7 +117,8 @@ function removeFromCart(id){ state.cart=state.cart.filter(x=>String(x.id)!==Stri
 function renderCart(){
   const {panel,scroll,summary,sumList,bd,footer}=ensureCartLayout(); if(!panel) return;
 
-  panel.style.display = 'flex';
+  // ⚠️ Ya NO forzamos abrir el panel: solo actualizamos contenido
+  // panel.style.display = 'flex';
 
   // precio desde panel (no editable en carrito)
   state.shipping.price = state.shipping.method==='envio' ? cfgShipPrice() : 0;
@@ -201,7 +202,7 @@ function setupCheckout(){
       }
       const number = state?.config?.whatsapp?.number || '5493412272899';
       const preHeader = state?.config?.whatsapp?.preHeader || 'Nuevo pedido';
-      const toNumber = (x)=>{ try{ const s = String(x ?? '').replace(/[^\d,\\.\\-]/g, ''); return Number(s||0); }catch(e){ return 0; } };
+      const toNumber = (x)=>{ try{ const s = String(x ?? '').replace(/[^\d,\.\-]/g, ''); return Number(s||0); }catch(e){ return 0; } };
       const items = cart.map((it)=>`• ${it.nombre} ×${Number(it.cant||1)} – ${money(toNumber(it.precio))}`);
       const subtotal = cart.reduce((acc, it)=> acc + (toNumber(it.precio) * Number(it.cant||1)), 0);
       const envio = (state.shipping?.method==='envio') ? Number(cfgShipPrice()||0) : 0;
@@ -216,7 +217,7 @@ function setupCheckout(){
         `${state.shipping?.method==='envio' ? 'Envío' : 'Retiro en local'}: ${state.shipping?.method==='envio' ? money(envio) : '$ 0'}`,
         `Total: ${money(total)}`
       ];
-      const text = lines.join('\\n');
+      const text = lines.join('\n');
       const url = 'https://wa.me/' + encodeURIComponent(number) + '?text=' + encodeURIComponent(text);
       window.open(url, '_blank');
       state.cart = [];
@@ -266,7 +267,8 @@ function setupCategoryPills(){
   renderBanners();
   renderProducts();
   setupShippingSelector();
-  renderCart();
+  renderCart(); // actualiza badge y totales sin abrir el panel
+
   setupCheckout();
 
   // si el panel guarda override en otra pestaña, actualizar
