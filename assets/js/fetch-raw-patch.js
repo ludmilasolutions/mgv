@@ -1,52 +1,69 @@
-// fetch-raw-patch.js
-// Reescribe peticiones a data/*.json para que salgan de GitHub RAW.
-// Usa solo ?sha= de la URL (ignora cookies/localStorage).
-// Además, limpia el cookie mgvsha para evitar pins viejos.
+// assets/js/fetch-raw-patch.js
+// Reescribe los fetch() de /data/*.json para que lean desde raw.githubusercontent
+// usando el SHA más reciente guardado por el panel en cookie/localStorage.
+// No toca tu app.js: funciona como "shim" transparente.
 
 (function(){
-  try{
-    document.cookie = 'mgvsha=; Max-Age=0; path=/';
-  }catch(_){}
-
   const ENV = (window.ENV||{});
-  const OWNER  = ENV.GH_OWNER  || 'ludmilasolutions';
-  const REPO   = ENV.GH_REPO   || 'mgv';
-  const BRANCH = ENV.GH_BRANCH || 'main';
+  const OWNER  = ENV.GH_OWNER  || "ludmilasolutions";
+  const REPO   = ENV.GH_REPO   || "mgv";
+  const BRANCH = ENV.GH_BRANCH || "main";
 
-  function getShaFromUrl(){
+  function setLastSHA(sha){
     try{
-      const u = new URL(location.href);
-      const s = u.searchParams.get('sha');
-      return s || null;
-    }catch(_){ return null; }
+      if(!sha) return;
+      localStorage.setItem('mgv_last_sha', sha);
+      document.cookie = 'mgvsha='+sha+';path=/;max-age='+(60*60*24*30);
+    }catch(_){}
+  }
+  function getLastSHA(){
+    try{
+      const u = new URL(window.location.href);
+      const qs = u.searchParams.get('sha');
+      if(qs){ setLastSHA(qs); return qs; }
+    }catch(_){}
+    try{
+      const ls = localStorage.getItem('mgv_last_sha');
+      if(ls) return ls;
+    }catch(_){}
+    try{
+      const m = document.cookie.match(/(?:^|;)\s*mgvsha=([^;]+)/);
+      if(m) return m[1];
+    }catch(_){}
+    return null;
   }
 
-  function toRawDataUrl(path){
-    const sha = getShaFromUrl() || BRANCH;
-    const clean = String(path||'').replace(/^\/+/,''); // quita / inicial
-    const full = clean.startsWith('data/') ? clean : ('data/' + clean);
-    return `https://raw.githubusercontent.com/${OWNER}/${REPO}/${sha}/${full}`;
+  function rawBase(sha){
+    return `https://raw.githubusercontent.com/${OWNER}/${REPO}/${sha||BRANCH}/data`;
   }
 
-  const origFetch = window.fetch;
+  // Exponer helpers por si querés usarlos en app.js
+  window.MGVData = {
+    get sha(){ return getLastSHA(); },
+    rawBase,
+    dataUrl: (rel)=> rawBase(getLastSHA()) + '/' + String(rel||'').replace(/^\.?\/?data\//,'')
+  };
+  window.__MGV_SHA = getLastSHA();
+
+  const isDataJson = (url)=>{
+    try{
+      const u = String(url);
+      if (/^https?:/i.test(u)) return /\/data\/[^?]+\.(json)(\?|$)/i.test(u);
+      return /^\.?\/?data\/[^?]+\.(json)(\?|$)/i.test(u);
+    }catch(_){ return false; }
+  };
+
+  const origFetch = window.fetch.bind(window);
   window.fetch = function(input, init){
     try{
-      let url = (typeof input === 'string') ? input : (input && input.url) || '';
-      const isAbsolute = /^https?:\/\//i.test(url);
-      const isData = !isAbsolute && /^data\//.test(url) || (!isAbsolute && /(^|\/)data\/.+\.json(\?|$)/i.test(url)) || (typeof input === 'string' && /^data\/.+\.json(\?|$)/i.test(input));
-
-      if(isData){
-        const raw = toRawDataUrl(url);
-        const ts = Date.now();
-        const final = raw + (raw.includes('?') ? '&' : '?') + 'ts=' + ts;
-        if(typeof input === 'string'){
-          return origFetch(final, init);
-        }else{
-          const req = new Request(final, input);
-          return origFetch(req, init);
-        }
+      const url = (typeof input==='string') ? input : (input && input.url);
+      if (url && isDataJson(url)){
+        const rel = String(url).replace(/^https?:\/\/[^/]+\/?/,'').replace(/^\.?\/?/,''); // strip origin & leading ./
+        const finalUrl = window.MGVData.dataUrl(rel) + (url.includes('?')?'&':'?') + 'ts=' + Date.now();
+        const opts = Object.assign({}, init||{}, { cache:'no-store' });
+        return origFetch(finalUrl, opts);
       }
-    }catch(_){/* si algo falla, seguimos con fetch normal */}
+    }catch(_){}
     return origFetch(input, init);
   };
 })();
