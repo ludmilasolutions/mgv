@@ -79,7 +79,6 @@
       <h2>Panel oculto MGV <span id="dirtyDot" class="muted" style="display:none">● Cambios sin guardar</span></h2>
       <div class="right flex muted">
         <span id="apiStatus" class="pill">API: sin configurar</span>
-        <!-- NUEVO: reset rápido de cache/sha -->
         <button class="btn secondary small" id="resetCache" type="button">Reset cache</button>
       </div>
     </header>
@@ -308,30 +307,21 @@
     const GH_BRANCH = "main";
     function rawBase(sha){ return `https://raw.githubusercontent.com/${GH_OWNER}/${GH_REPO}/${sha||GH_BRANCH}/data`; }
 
-    function setLastSHA(sha){
-      try{ if(!sha) return; localStorage.setItem('mgv_last_sha', sha);
-        document.cookie='mgvsha='+sha+';path=/;max-age='+(60*60*24*30);
-      }catch(_){}
-    }
-    function getLastSHA(){
-      try{ const u=new URL(location.href); const qs=u.searchParams.get('sha'); if(qs){ setLastSHA(qs); return qs; } }catch(_){}
-      try{ const ls=localStorage.getItem('mgv_last_sha'); if(ls) return ls; }catch(_){}
-      try{ const m=document.cookie.match(/(?:^|;)\s*mgvsha=([^;]+)/); if(m) return m[1]; }catch(_){}
-      return null;
+    /* ⛔️ Eliminamos pin de SHA persistente. Sólo leemos ?sha= de la URL si existe. */
+    function getUrlSHA(){
+      try{ const u=new URL(location.href); return u.searchParams.get('sha'); }catch(_){ return null; }
     }
 
-    /* ===== NUEVO: busting de caché para imágenes ===== */
+    /* Cache-buster para imágenes: siempre agrega ts y opcionalmente sha si lo pasamos explícito */
     function bustUrl(u, shaOpt){
       if(!u) return "";
-      const sha = shaOpt || getLastSHA() || "x";
       try{
         const url = new URL(u, location.origin);
-        url.searchParams.set("sha", sha);
         url.searchParams.set("ts", Date.now().toString());
+        if(shaOpt) url.searchParams.set("sha", shaOpt);
         return url.href;
       }catch(_){
-        // si es una ruta cruda o no parseable
-        return u + (u.includes("?") ? "&" : "?") + "sha="+sha+"&ts="+Date.now();
+        return u + (u.includes("?") ? "&" : "?") + "ts="+Date.now() + (shaOpt ? "&sha="+shaOpt : "");
       }
     }
 
@@ -386,7 +376,7 @@
     }
 
     async function loadTables(sha){
-      const BASE = rawBase(sha || window.__MGV_PENDING_SHA);
+      const BASE = rawBase(sha || window.__MGV_PENDING_SHA); // usa sha explícito sólo si lo pasamos
       const ts = Date.now();
       productos = await fetchJsonWithRetry(`${BASE}/productos.json?ts=${ts}`);
       banners   = await fetchJsonWithRetry(`${BASE}/banners.json?ts=${ts}`);
@@ -428,8 +418,7 @@
       show("loginSec", !sess.logged);
       show("appSec",  sess.logged);
       if(sess.logged){
-        const _sha=getLastSHA();
-        loadTables(_sha);
+        loadTables(getUrlSHA());   // sólo respeta ?sha=
         updateApiStatus();
         AUTOSAVE = localStorage.getItem('mgv_autosave')==='1';
         document.getElementById('autoSaveToggle').checked = AUTOSAVE;
@@ -521,7 +510,6 @@
                 <span>Subir…</span>
                 <input type="file" accept="image/*" data-file="${p.id}"/>
               </label>
-              <!-- preview con bust de cache -->
               <img class="preview-thumb" src="${bustUrl(p.imagen || '')}" alt="Vista previa"/>
               <span class="muted" data-status="${p.id}"></span>
             </div>
@@ -594,21 +582,19 @@
           try{
             const res=await uploadImageFile(file);
             if(res.ok){
-              // construir URL final con pin al commit si es posible
               let finalUrl = res.url || (urlInp.value || "");
               if(res.commitSha){
-                setLastSHA(res.commitSha);
-                window.__MGV_PENDING_SHA = res.commitSha;
+                window.__MGV_PENDING_SHA = res.commitSha; // sólo para recargar JSON luego de GUARDAR
                 try{
-                  // si es una URL raw GH, rearmar con el commit
                   const m = (finalUrl||"").match(/^https:\/\/raw\.githubusercontent\.com\/[^\/]+\/[^\/]+\/[^\/]+\/(.+)$/i);
                   if(m && m[1]){
                     finalUrl = `https://raw.githubusercontent.com/${GH_OWNER}/${GH_REPO}/${res.commitSha}/${m[1]}`;
                   }else{
-                    // plan B: agregar sha como query
                     finalUrl = bustUrl(finalUrl, res.commitSha);
                   }
                 }catch(_){}
+              }else{
+                finalUrl = bustUrl(finalUrl);
               }
               urlInp.value = finalUrl;
               if(prev) prev.src = bustUrl(finalUrl, res.commitSha);
@@ -879,8 +865,12 @@
         const r=await fetch(base+"/save_catalog",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+tok},body:JSON.stringify({productos,banners,config})});
         const txt=await r.text(); let j={}; try{ j=JSON.parse(txt);}catch(_){}
         if(r.ok){
-          if (j && Array.isArray(j.commits) && j.commits.length) { window.__MGV_PENDING_SHA=j.commits[j.commits.length-1]; setLastSHA(window.__MGV_PENDING_SHA); }
-          toast("Guardado en GitHub ✔️"); await loadTables(window.__MGV_PENDING_SHA); clearDirty();
+          if (j && Array.isArray(j.commits) && j.commits.length) {
+            window.__MGV_PENDING_SHA = j.commits[j.commits.length-1];
+          }
+          toast("Guardado en GitHub ✔️");
+          await loadTables(window.__MGV_PENDING_SHA);
+          clearDirty();
         } else { alert("Error "+r.status+": "+(j.error||txt)); }
       }catch(e){ alert("Error de red: "+e.message); }
     }
@@ -900,13 +890,10 @@
 
     document.getElementById('dlAll').onclick = dlAll;
 
-    /* NUEVO: reset de cache rápido (borra pin SHA y recarga fuerte) */
+    /* Reset cache: recarga con ts (ya no hay cookie ni localStorage de sha) */
     document.getElementById('resetCache').onclick = ()=>{
-      try{
-        localStorage.removeItem('mgv_last_sha');
-        document.cookie = 'mgvsha=; Max-Age=0; path=/';
-      }catch(_){}
       const url = new URL(location.href);
+      url.searchParams.delete('sha'); // por si alguien lo puso manual
       url.searchParams.set('ts', Date.now().toString());
       location.href = url.toString();
     };
