@@ -6,12 +6,14 @@
   <title>MGV Librería–Regalería</title>
   <meta name="description" content="Artículos de librería y regalería. Comprá por WhatsApp; coordinamos la entrega."/>
   <link rel="icon" href="assets/logo.png"/>
-  <link rel="stylesheet" href="styles.css?v=2025-08-22-11"/>
+  <link rel="stylesheet" href="styles.css"/>
   <script>
     window.ENV = { GH_OWNER: "ludmilasolutions", GH_REPO: "mgv", GH_BRANCH: "main" };
   </script>
   <script src="assets/js/fetch-raw-patch.js"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
 </head>
 <body>
   <!-- Topbar fija con búsqueda -->
@@ -25,12 +27,12 @@
     </header>
   </div>
 
-  <!-- Carrusel -->
+  <!-- Carrusel de banners -->
   <section class="container">
     <div id="bannerCarousel" class="carousel" aria-label="Promociones"></div>
   </section>
 
-  <!-- Categorías -->
+  <!-- Píldoras de categorías -->
   <section class="container">
     <div id="categoryPills" class="badges" aria-label="Categorías"></div>
   </section>
@@ -40,74 +42,48 @@
     <div id="productGrid" class="grid"></div>
   </main>
 
-  <!-- FAB y panel de carrito -->
+  <!-- FAB y Carrito -->
   <button id="cartFab" class="cart-fab" aria-label="Abrir carrito">🛒 <span id="cartCount">0</span></button>
 
-  <!-- Panel de carrito -->
-  <div id="cartPanel" class="cart-panel" aria-hidden="true" tabindex="-1">
+  <div id="cartPanel" class="cart-panel" style="display:none" aria-modal="true" role="dialog">
     <div class="cart-header">
       <strong>Tu carrito</strong>
-      <button id="closeCart" class="close-btn" aria-label="Cerrar" type="button">✕</button>
+      <button id="closeCart" class="close-btn" aria-label="Cerrar">✕</button>
     </div>
 
-    <!-- NUEVO: área scrolleable (no el panel entero) -->
-    <div class="cart-scroll" id="cartScroll">
+    <div id="cartScroll" class="cart-scroll">
       <div class="cart-top">
         <div class="field">
-          <label for="shipMethod">Método de entrega</label>
+          <label>Método de entrega</label>
           <div id="shipMethod" class="segmented">
-            <button type="button" class="seg active" data-method="retiro">Retiro</button>
-            <button type="button" class="seg" data-method="envio">Envío</button>
+            <button class="seg active" data-method="retiro" type="button">🏬 <span>Retiro</span></button>
+            <button class="seg" data-method="envio"  type="button">🚚 <span>Envío</span></button>
           </div>
         </div>
-
         <div class="field">
           <label for="customerName">Tu nombre</label>
           <input id="customerName" type="text" placeholder="Tu nombre"/>
         </div>
-
-        <!-- (oculto; el precio de envío viene del panel admin) -->
-        <div id="shipPriceWrap" class="field" style="display:none">
-          <label for="shippingPrice">Costo de envío ($)</label>
-          <input id="shippingPrice" type="number" min="0" step="1" placeholder="Ej: 2500"/>
-        </div>
       </div>
 
       <!-- Resumen único -->
-      <div id="cartSummary" class="cart-summary"></div>
+      <section id="cartSummary" class="cart-summary">
+        <div class="sum-title">Resumen</div>
+        <ul id="sumList" class="sum-grid" aria-live="polite"></ul>
+        <div id="cartBreakdown" class="cart-breakdown"></div>
+      </section>
     </div>
 
-    <!-- Footer -->
-    <div class="cart-footer" id="cartFooter">
-      <div id="cartBreakdown" class="cart-breakdown"></div>
+    <div id="cartFooter" class="cart-footer">
       <div class="cart-total">
-        <span>Total</span>
-        <strong id="cartTotal">$ 0</strong>
+        <span>Total</span><strong id="cartTotal">$ 0</strong>
       </div>
-      <button id="checkoutBtn" class="btn" type="button">Finalizar por WhatsApp</button>
+      <button id="checkoutBtn" class="btn">Finalizar por WhatsApp</button>
     </div>
   </div>
-
-  <!-- Modal de producto -->
-  <div id="productModal" class="modal" aria-hidden="true">
-    <div class="sheet">
-      <img id="mImg" src="" alt="Vista del producto"/>
-      <div class="content">
-        <div id="mClose" class="close-x" aria-label="Cerrar">✕</div>
-        <h3 id="mName"></h3>
-        <p id="mDesc"></p>
-        <div class="row"><strong id="mPrice"></strong></div>
-        <div class="row">
-          <button id="mAdd" class="btn">Agregar al carrito</button>
-          <button id="mClose2" class="btn secondary">Cerrar</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <hr class="soft-divider"/>
 
   <!-- Promo inferior -->
+  <hr class="soft-divider" />
   <section class="container">
     <div class="promo-card">
       <div class="promo-header">
@@ -121,7 +97,8 @@
         </div>
       </div>
       <div class="promo-actions">
-        <a id="promoMail" class="btn promo-btn" target="_blank" rel="noopener" href="https://wa.me/5493412272899?text=Hola,%20quiero%20presupuesto%20para%20una%20web">Pedí tu presupuesto</a>
+        <a class="btn promo-btn" id="promoMail" target="_blank" rel="noopener"
+           href="https://wa.me/5493412272899?text=Hola,%20quiero%20presupuesto%20para%20una%20web">Pedí tu presupuesto</a>
         <div class="promo-small">Creado por <strong>Sebastián Mascali</strong></div>
       </div>
     </div>
@@ -130,6 +107,6 @@
   <footer id="footerInfo" class="container footer"></footer>
 
   <script src="assets/js/promo.js"></script>
-  <script src="app.js?v=2025-08-22-11"></script>
+  <script src="app.js"></script>
 </body>
 </html>
