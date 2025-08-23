@@ -12,68 +12,73 @@
   </script>
   <script src="assets/js/fetch-raw-patch.js"></script>
 
-  <!-- Hotfix caché imágenes: usar SHA del último commit (mgvsha) o ?ts= -->
+  <!-- Fix caché imágenes (liviano y sin loop): usa mgvsha o agrega ?v= -->
   <script>
     (function(){
-      const GH_RE = /(^|\.)((raw|user-images|media)\.)?githubusercontent\.com$/i;
+      const OWNER = (window.ENV && window.ENV.GH_OWNER) || "ludmilasolutions";
+      const REPO  = (window.ENV && window.ENV.GH_REPO)  || "mgv";
 
       function getLastSHA(){
-        try { const u=new URL(location.href); const qs=u.searchParams.get('sha'); if(qs) return qs; } catch(_){}
-        try { const m=document.cookie.match(/(?:^|;)\s*mgvsha=([^;]+)/); if(m) return m[1]; } catch(_){}
-        try { const ls=localStorage.getItem('mgv_last_sha'); if(ls) return ls; } catch(_){}
+        try{ const u=new URL(location.href); const qs=u.searchParams.get('sha'); if(qs) return qs; }catch(_){}
+        try{ const m=document.cookie.match(/(?:^|;)\s*mgvsha=([^;]+)/); if(m) return m[1]; }catch(_){}
+        try{ const ls=localStorage.getItem('mgv_last_sha'); if(ls) return ls; }catch(_){}
         return null;
       }
       const LAST_SHA = getLastSHA();
-      const ENV = window.ENV || {};
-      const OWNER = ENV.GH_OWNER, REPO = ENV.GH_REPO;
 
-      function toFresh(urlStr){
+      function bustUrl(src){
+        if(!src) return src;
         try{
-          const u = new URL(urlStr, location.href);
-          if (!GH_RE.test(u.hostname)) return urlStr;
-
-          // Si es raw.githubusercontent.com/<owner>/<repo>/<branch|sha>/...
-          if (u.hostname === 'raw.githubusercontent.com' && OWNER && REPO) {
-            const parts = u.pathname.split('/'); // ["",owner,repo,branch,...]
-            if (parts[1] === OWNER && parts[2] === REPO && LAST_SHA) {
-              parts[3] = LAST_SHA;           // reemplazamos main por sha
-              u.pathname = parts.join('/');
-              return u.href;
-            }
+          const u = new URL(src, location.href);
+          if (u.hostname !== 'raw.githubusercontent.com') return src;
+          const parts = u.pathname.split('/'); // ["", owner, repo, branch|sha, ...]
+          if (parts[1] === OWNER && parts[2] === REPO) {
+            if (LAST_SHA){ parts[3] = LAST_SHA; u.pathname = parts.join('/'); return u.href; }
+            if (!u.searchParams.has('v')) u.searchParams.set('v', Date.now().toString());
+            return u.href;
           }
-          // Fallback: agregar ?ts si no está
-          if (!u.searchParams.has('ts')) u.searchParams.set('ts', Date.now().toString());
-          return u.href;
-        }catch(_){
-          return urlStr + (urlStr.includes('?')?'&':'?') + 'ts=' + Date.now();
-        }
+          return src;
+        }catch(_){ return src; }
       }
 
-      function processImg(img){
-        if(!img || img.tagName!=='IMG') return;
-        const src = img.getAttribute('src');
-        if(!src) return;
-        const fresh = toFresh(src);
-        if (fresh && img.src !== fresh) img.src = fresh;
+      function apply(node){
+        if(!node) return;
+        const imgs = node.tagName === 'IMG' ? [node] : node.querySelectorAll('img[src]');
+        imgs.forEach(img=>{
+          const orig = img.getAttribute('src'); if(!orig) return;
+          const fresh = bustUrl(orig);
+          // Evita loops: sólo cambia si realmente es distinto
+          if (fresh && img.src !== fresh) img.src = fresh;
+        });
       }
 
-      function init(){ document.querySelectorAll('img[src]').forEach(processImg); }
-      if (document.readyState==='loading') document.addEventListener('DOMContentLoaded', init); else init();
+      function init(){
+        // Procesa imágenes ya presentes
+        apply(document);
 
-      const mo = new MutationObserver(muts=>{
-        for(const m of muts){
-          if(m.type==='attributes' && m.attributeName==='src' && m.target.tagName==='IMG'){ processImg(m.target); }
-          if(m.type==='childList'){
-            m.addedNodes.forEach(n=>{
-              if(n.nodeType===1){
-                if(n.tagName==='IMG') processImg(n);
-                n.querySelectorAll && n.querySelectorAll('img[src]').forEach(processImg);
-              }
+        // Observa SOLO contenedores que agregan productos/banners
+        const targets = [
+          document.getElementById('bannerCarousel'),
+          document.getElementById('productGrid')
+        ].filter(Boolean);
+
+        targets.forEach(t=>{
+          const mo = new MutationObserver(muts=>{
+            muts.forEach(m=>{
+              m.addedNodes.forEach(n=>{
+                if(n.nodeType===1) apply(n);
+              });
             });
-          }
-        }
-      });
-      mo.observe(document.documentElement,{subtree:true,childList:true,attributes:true,attributeFilter:['src']});
+          });
+          mo.observe(t, { childList:true, subtree:true });
+        });
+      }
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+      } else {
+        init();
+      }
     })();
   </script>
 
