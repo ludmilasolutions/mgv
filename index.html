@@ -7,94 +7,39 @@
   <meta name="description" content="Artículos de librería y regalería. Comprá por WhatsApp; coordinamos la entrega."/>
   <link rel="icon" href="assets/logo.png"/>
   <link rel="stylesheet" href="styles.css"/>
+
+  <!-- Fuerza no-cache del documento (no toca tus imágenes ni JSON externos) -->
+  <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0"/>
+  <meta http-equiv="Pragma" content="no-cache"/>
+  <meta http-equiv="Expires" content="0"/>
+
+  <!-- Mata cualquier Service Worker viejo y limpia caches (arregla el "solo en incógnito") -->
+  <script>
+    (function(){
+      try{
+        if ('serviceWorker' in navigator) {
+          navigator.serviceWorker.getRegistrations().then(regs=>{
+            let found=false;
+            regs.forEach(r=>{ found=true; r.unregister(); });
+            if (found) {
+              if ('caches' in window) {
+                caches.keys().then(keys=>Promise.all(keys.map(k=>caches.delete(k)))).finally(()=>{
+                  setTimeout(()=>{ location.reload(); }, 150);
+                });
+              } else {
+                setTimeout(()=>{ location.reload(); }, 150);
+              }
+            }
+          }).catch(()=>{});
+        }
+      }catch(_){}
+    })();
+  </script>
+
   <script>
     window.ENV = { GH_OWNER: "ludmilasolutions", GH_REPO: "mgv", GH_BRANCH: "main" };
   </script>
   <script src="assets/js/fetch-raw-patch.js"></script>
-
-  <!-- Cache-busting: JSON fresco y forzar imágenes RAW con v=SHA o v=timestamp -->
-  <script>
-    (function(){
-      const OWNER = (window.ENV && window.ENV.GH_OWNER) || "ludmilasolutions";
-      const REPO  = (window.ENV && window.ENV.GH_REPO)  || "mgv";
-
-      // 1) JSON SIEMPRE FRESCO (productos/banners/config)
-      const _fetch = window.fetch;
-      window.fetch = function(input, init){
-        try{
-          const u = typeof input === 'string' ? new URL(input, location.href)
-                                              : new URL(input.url, location.href);
-          if (/\/data\/.+\.json$/i.test(u.pathname)) {
-            u.searchParams.set('ts', Date.now().toString());
-            if (typeof input === 'string') input = u.href; else input = new Request(u.href, input);
-            init = Object.assign({cache: 'no-store'}, init || {});
-          }
-        } catch(_){}
-        return _fetch(input, init);
-      };
-
-      // 2) Imágenes RAW: reescribe a SHA si lo conocemos, y SIEMPRE agrega ?v=
-      function getLastSHA(){
-        try{ const u=new URL(location.href); const qs=u.searchParams.get('sha'); if(qs) return qs; }catch(_){}
-        try{ const m=document.cookie.match(/(?:^|;)\s*mgvsha=([^;]+)/); if(m) return m[1]; }catch(_){}
-        try{ const ls=localStorage.getItem('mgv_last_sha'); if(ls) return ls; }catch(_){}
-        return null;
-      }
-      const LAST_SHA = getLastSHA();
-
-      function bustImageUrl(src){
-        if(!src) return src;
-        try{
-          const u = new URL(src, location.href);
-          if (u.hostname !== 'raw.githubusercontent.com') return src;
-
-          // Path: /OWNER/REPO/(branch|sha)/...
-          const parts = u.pathname.split('/');
-          if (parts[1] === OWNER && parts[2] === REPO && parts.length > 3 && LAST_SHA) {
-            parts[3] = LAST_SHA;        // forzamos snapshot por commit
-            u.pathname = parts.join('/');
-          }
-          // SIEMPRE agregamos ?v= (SHA si hay; si no timestamp)
-          u.searchParams.set('v', LAST_SHA || Date.now().toString());
-          return u.href;
-        }catch(_){ return src; }
-      }
-
-      function apply(node){
-        const imgs = node.tagName === 'IMG' ? [node] : (node.querySelectorAll ? node.querySelectorAll('img[src]') : []);
-        imgs.forEach(img=>{
-          const orig = img.getAttribute('src'); if(!orig) return;
-          const fresh = bustImageUrl(orig);
-          if (fresh && img.src !== fresh) img.src = fresh;
-
-          const ss = img.getAttribute('srcset');
-          if (ss){
-            const freshSet = ss.split(',').map(s=>{
-              const [url, d] = s.trim().split(/\s+/,2);
-              const nu = bustImageUrl(url);
-              return nu + (d ? ' ' + d : '');
-            }).join(', ');
-            img.setAttribute('srcset', freshSet);
-          }
-        });
-      }
-
-      function init(){
-        // Aplica a lo que ya está y observa TODO el documento (productos/banners se insertan luego)
-        apply(document);
-        const mo = new MutationObserver(muts=>{
-          muts.forEach(m=>{
-            m.addedNodes.forEach(n=>{ if(n.nodeType===1) apply(n); });
-          });
-        });
-        mo.observe(document.body, { childList:true, subtree:true });
-      }
-
-      if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
-      else init();
-    })();
-  </script>
-
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
