@@ -79,6 +79,8 @@
       <h2>Panel oculto MGV <span id="dirtyDot" class="muted" style="display:none">● Cambios sin guardar</span></h2>
       <div class="right flex muted">
         <span id="apiStatus" class="pill">API: sin configurar</span>
+        <!-- NUEVO: reset rápido de cache/sha -->
+        <button class="btn secondary small" id="resetCache" type="button">Reset cache</button>
       </div>
     </header>
 
@@ -318,6 +320,21 @@
       return null;
     }
 
+    /* ===== NUEVO: busting de caché para imágenes ===== */
+    function bustUrl(u, shaOpt){
+      if(!u) return "";
+      const sha = shaOpt || getLastSHA() || "x";
+      try{
+        const url = new URL(u, location.origin);
+        url.searchParams.set("sha", sha);
+        url.searchParams.set("ts", Date.now().toString());
+        return url.href;
+      }catch(_){
+        // si es una ruta cruda o no parseable
+        return u + (u.includes("?") ? "&" : "?") + "sha="+sha+"&ts="+Date.now();
+      }
+    }
+
     /* =================== Auth mínima (cliente) =================== */
     const SALT = "mgv~panel#2025";
     const HASHED = "b950ddfbf98b1a566a9445e569d2e31e894a8026cbf0eb447846b254c820ce23";
@@ -504,7 +521,8 @@
                 <span>Subir…</span>
                 <input type="file" accept="image/*" data-file="${p.id}"/>
               </label>
-              <img class="preview-thumb" src="${p.imagen || ''}" alt="Vista previa"/>
+              <!-- preview con bust de cache -->
+              <img class="preview-thumb" src="${bustUrl(p.imagen || '')}" alt="Vista previa"/>
               <span class="muted" data-status="${p.id}"></span>
             </div>
           </td>
@@ -548,7 +566,14 @@
           const id=inp.dataset.id, f=inp.dataset.f; if(!id||!f) return;
           const p=productos.find(x=>String(x.id)===String(id)); if(!p) return;
           if(f==="precio"){ p[f] = toInt(inp.value); inp.value = p[f]; }
-          else{ p[f]=inp.value; if(f==="imagen"){ const row=inp.closest("tr"); const img=row?.querySelector("img.preview-thumb"); if(img) img.src=inp.value.trim(); } }
+          else{
+            p[f]=inp.value;
+            if(f==="imagen"){
+              const row=inp.closest("tr");
+              const img=row?.querySelector("img.preview-thumb");
+              if(img) img.src=bustUrl(inp.value.trim());
+            }
+          }
           markDirty();
         };
         inp.addEventListener("input",handler);
@@ -569,13 +594,33 @@
           try{
             const res=await uploadImageFile(file);
             if(res.ok){
-              urlInp.value=res.url; if(prev) prev.src=res.url;
-              const p=productos.find(x=>String(x.id)===String(id)); if(p) p.imagen=res.url;
+              // construir URL final con pin al commit si es posible
+              let finalUrl = res.url || (urlInp.value || "");
+              if(res.commitSha){
+                setLastSHA(res.commitSha);
+                window.__MGV_PENDING_SHA = res.commitSha;
+                try{
+                  // si es una URL raw GH, rearmar con el commit
+                  const m = (finalUrl||"").match(/^https:\/\/raw\.githubusercontent\.com\/[^\/]+\/[^\/]+\/[^\/]+\/(.+)$/i);
+                  if(m && m[1]){
+                    finalUrl = `https://raw.githubusercontent.com/${GH_OWNER}/${GH_REPO}/${res.commitSha}/${m[1]}`;
+                  }else{
+                    // plan B: agregar sha como query
+                    finalUrl = bustUrl(finalUrl, res.commitSha);
+                  }
+                }catch(_){}
+              }
+              urlInp.value = finalUrl;
+              if(prev) prev.src = bustUrl(finalUrl, res.commitSha);
+              const p=productos.find(x=>String(x.id)===String(id)); if(p) p.imagen=finalUrl;
               st.innerHTML = `Listo ✔ <span class="muted">(${res.latency||'?'} ms)</span>`;
-              if(res.commitSha){ setLastSHA(res.commitSha); window.__MGV_PENDING_SHA=res.commitSha; }
               markDirty();
-            }else{ st.innerHTML=`<span class="status-err">Error: ${(res.error||"no se pudo subir")}</span>`; }
-          }catch(e){ st.innerHTML=`<span class="status-err">Error: ${e.message}</span>`; }
+            }else{
+              st.innerHTML=`<span class="status-err">Error: ${(res.error||"no se pudo subir")}</span>`;
+            }
+          }catch(e){
+            st.innerHTML=`<span class="status-err">Error: ${e.message}</span>`;
+          }
         });
       });
 
@@ -854,6 +899,17 @@
     };
 
     document.getElementById('dlAll').onclick = dlAll;
+
+    /* NUEVO: reset de cache rápido (borra pin SHA y recarga fuerte) */
+    document.getElementById('resetCache').onclick = ()=>{
+      try{
+        localStorage.removeItem('mgv_last_sha');
+        document.cookie = 'mgvsha=; Max-Age=0; path=/';
+      }catch(_){}
+      const url = new URL(location.href);
+      url.searchParams.set('ts', Date.now().toString());
+      location.href = url.toString();
+    };
 
     boot();
   </script>
