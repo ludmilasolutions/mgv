@@ -1,206 +1,112 @@
 <!DOCTYPE html>
 <html lang="es-AR">
 <head>
-<meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>MGV Librería–Regalería</title>
-<meta content="Artículos de librería y regalería. Comprá por WhatsApp; coordinamos la entrega." name="description"/>
-
-<!-- Evitar caché agresivo del documento -->
-<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
-<meta http-equiv="Pragma" content="no-cache"/>
-<meta http-equiv="Expires" content="0"/>
-
-<link href="assets/logo.png" rel="icon"/>
-<!-- bump de versión para forzar recarga de estilos -->
-<link href="styles.css?v=2025-08-22-2" rel="stylesheet"/>
-
-<script>
-  /* ENV para app.js */
-  window.ENV = { GH_OWNER: "ludmilasolutions", GH_REPO: "mgv", GH_BRANCH: "main" };
-</script>
-
-<!-- (si lo usás) -->
-<script src="assets/js/fetch-raw-patch.js"></script>
-
-<!-- 🔧 Hotfix anti-caché de imágenes de GitHub + eliminar pin de SHA -->
-<script>
-  (function(){
-    /* 1) Despinneamos cualquier SHA previo en esta vista pública */
-    try { localStorage.removeItem('mgv_last_sha'); } catch(_) {}
-    try {
-      document.cookie = 'mgvsha=; Max-Age=0; path=/';
-      document.cookie = 'mgvsha=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/';
-    } catch(_) {}
-
-    /* 2) Cache-buster para imágenes servidas por *.githubusercontent.com */
-    function needsBust(u){
-      try {
-        const h = new URL(u, location.origin).hostname;
-        return /(^|\.)(githubusercontent)\.com$/i.test(h);
-      } catch(_) { return false; }
-    }
-    function bust(u){
-      try{
-        const url = new URL(u, location.origin);
-        url.searchParams.set('ts', Date.now().toString());
-        return url.href;
-      }catch(_){
-        return u + (u.includes('?')?'&':'?') + 'ts=' + Date.now();
-      }
-    }
-    function fixImg(img){
-      if(!img || !img.getAttribute) return;
-      const src = img.getAttribute('src');
-      if(!src) return;
-      if(needsBust(src)){
-        const newSrc = bust(src);
-        if(img.src !== newSrc) img.src = newSrc;
-      }
-    }
-    // Ajustar las imágenes ya presentes
-    if(document.readyState === 'loading'){
-      document.addEventListener('DOMContentLoaded', () => {
-        document.querySelectorAll('img[src]').forEach(fixImg);
-      });
-    } else {
-      document.querySelectorAll('img[src]').forEach(fixImg);
-    }
-    // Vigilar imágenes que se agreguen/cambien dinámicamente (catálogo, banners, modal, etc.)
-    const obs = new MutationObserver(muts=>{
-      for(const m of muts){
-        if(m.type === 'attributes' && m.attributeName === 'src' && m.target.tagName === 'IMG'){
-          fixImg(m.target);
-        }
-        if(m.type === 'childList'){
-          m.addedNodes && m.addedNodes.forEach(n=>{
-            if(n.nodeType === 1){ // Element
-              if(n.tagName === 'IMG') fixImg(n);
-              n.querySelectorAll && n.querySelectorAll('img[src]').forEach(fixImg);
-            }
-          });
-        }
-      }
-    });
-    obs.observe(document.documentElement, {subtree:true, childList:true, attributes:true, attributeFilter:['src']});
-  })();
-</script>
-
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>MGV Librería–Regalería</title>
+  <meta name="description" content="Artículos de librería y regalería. Comprá por WhatsApp; coordinamos la entrega."/>
+  <link rel="icon" href="assets/logo.png"/>
+  <link rel="stylesheet" href="styles.css"/>
+  <script>
+    window.ENV = { GH_OWNER: "ludmilasolutions", GH_REPO: "mgv", GH_BRANCH: "main" };
+  </script>
+  <script src="assets/js/fetch-raw-patch.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
 </head>
 <body>
-<!-- Topbar fija con búsqueda -->
-<div class="topbar">
-  <header class="header container">
-    <img alt="MGV" src="assets/logo.png"/>
-    <div class="title" id="storeTitle">MGV Librería–Regalería</div>
-    <div class="search">
-      <input aria-label="Buscar productos" id="q" placeholder="Buscar..."/>
+  <!-- Topbar fija con búsqueda -->
+  <div class="topbar">
+    <header class="header container">
+      <img src="assets/logo.png" alt="MGV"/>
+      <div class="title" id="storeTitle">MGV Librería–Regalería</div>
+      <div class="search">
+        <input id="q" placeholder="Buscar..." aria-label="Buscar productos"/>
+      </div>
+    </header>
+  </div>
+
+  <!-- Carrusel de banners -->
+  <section class="container">
+    <div id="bannerCarousel" class="carousel" aria-label="Promociones"></div>
+  </section>
+
+  <!-- Píldoras de categorías -->
+  <section class="container">
+    <div id="categoryPills" class="badges" aria-label="Categorías"></div>
+  </section>
+
+  <!-- Catálogo -->
+  <main class="container" role="main">
+    <div id="productGrid" class="grid"></div>
+  </main>
+
+  <!-- FAB y Carrito -->
+  <button id="cartFab" class="cart-fab" aria-label="Abrir carrito">🛒 <span id="cartCount">0</span></button>
+
+  <div id="cartPanel" class="cart-panel" style="display:none" aria-modal="true" role="dialog">
+    <div class="cart-header">
+      <strong>Tu carrito</strong>
+      <button id="closeCart" class="close-btn" aria-label="Cerrar">✕</button>
     </div>
-  </header>
-</div>
 
-<!-- Carrusel de banners (usa data/banners.json) -->
-<section class="container">
-  <div aria-label="Promociones" class="carousel" id="bannerCarousel"></div>
-</section>
+    <div id="cartScroll" class="cart-scroll">
+      <div class="cart-top">
+        <div class="field">
+          <label>Método de entrega</label>
+          <div id="shipMethod" class="segmented">
+            <button class="seg active" data-method="retiro" type="button">🏬 <span>Retiro</span></button>
+            <button class="seg" data-method="envio"  type="button">🚚 <span>Envío</span></button>
+          </div>
+        </div>
+        <div class="field">
+          <label for="customerName">Tu nombre</label>
+          <input id="customerName" type="text" placeholder="Tu nombre"/>
+        </div>
+      </div>
 
-<!-- Píldoras de categorías (se llenan con data/productos.json) -->
-<section class="container">
-  <div aria-label="Categorías" class="badges" id="categoryPills"></div>
-</section>
+      <!-- Resumen único -->
+      <section id="cartSummary" class="cart-summary">
+        <div class="sum-title">Resumen</div>
+        <ul id="sumList" class="sum-grid" aria-live="polite"></ul>
+        <div id="cartBreakdown" class="cart-breakdown"></div>
+      </section>
+    </div>
 
-<!-- Catálogo -->
-<main class="container" role="main">
-  <div class="grid" id="productGrid"></div>
-</main>
-
-<!-- FAB y panel de carrito -->
-<button aria-label="Abrir carrito" class="cart-fab" id="cartFab">🛒 <span id="cartCount">0</span></button>
-
-<div aria-hidden="true" class="cart-panel" id="cartPanel">
-  <div class="field">
-    <label for="shipMethod">Método de entrega</label>
-    <div class="segmented" id="shipMethod">
-      <button class="seg active" data-method="retiro" type="button">Retiro</button>
-      <button class="seg" data-method="envio" type="button">Envío</button>
+    <div id="cartFooter" class="cart-footer">
+      <div class="cart-total">
+        <span>Total</span><strong id="cartTotal">$ 0</strong>
+      </div>
+      <button id="checkoutBtn" class="btn">Finalizar por WhatsApp</button>
     </div>
   </div>
 
-  <div class="field" id="shipPriceWrap" style="display:none">
-    <label for="shippingPrice">Costo de envío ($)</label>
-    <input id="shippingPrice" min="0" placeholder="Ej: 2500" step="1" type="number"/>
-  </div>
-
-  <div class="cart-header">
-    <strong>Tu carrito</strong>
-    <button class="btn secondary" id="closeCart">Cerrar</button>
-  </div>
-
-  <div class="cart-items" id="cartItems"></div>
-
-  <div class="cart-footer">
-    <div class="field">
-      <label for="customerName">Tu nombre</label>
-      <input id="customerName" placeholder="Ej: Tu nombre" type="text"/>
-    </div>
-
-    <div class="cart-breakdown" id="cartBreakdown"></div>
-
-    <div class="cart-total">
-      <span>Total</span>
-      <strong id="cartTotal">$ 0</strong>
-    </div>
-
-    <button class="btn" id="checkoutBtn">Finalizar por WhatsApp</button>
-  </div>
-</div>
-
-<!-- Modal de producto -->
-<div aria-hidden="true" class="modal" id="productModal">
-  <div class="sheet">
-    <img alt="Vista del producto" id="mImg" src=""/>
-    <div class="content">
-      <div aria-label="Cerrar" class="close-x" id="mClose">✕</div>
-      <h3 id="mName"></h3>
-      <p id="mDesc"></p>
-      <div class="row"><strong id="mPrice"></strong></div>
-      <div class="row">
-        <button class="btn" id="mAdd">Agregar al carrito</button>
-        <button class="btn secondary" id="mClose2">Cerrar</button>
+  <!-- Promo inferior -->
+  <hr class="soft-divider" />
+  <section class="container">
+    <div class="promo-card">
+      <div class="promo-header">
+        <h3>¿Querés una web como esta para tu negocio?</h3>
+        <div class="promo-badges">
+          <span class="promo-pill">⚡ Entrega rápida</span>
+          <span class="promo-pill">📱 100% responsive</span>
+          <span class="promo-pill">🧩 Panel para productos</span>
+          <span class="promo-pill">🔒 Hosting & dominio opcional</span>
+          <span class="promo-pill">✉️ Soporte por email</span>
+        </div>
+      </div>
+      <div class="promo-actions">
+        <a class="btn promo-btn" id="promoMail" target="_blank" rel="noopener"
+           href="https://wa.me/5493412272899?text=Hola,%20quiero%20presupuesto%20para%20una%20web">Pedí tu presupuesto</a>
+        <div class="promo-small">Creado por <strong>Sebastián Mascali</strong></div>
       </div>
     </div>
-  </div>
-</div>
+  </section>
 
-<!-- División suave para separar del bloque de promo -->
-<hr class="soft-divider"/>
+  <footer id="footerInfo" class="container footer"></footer>
 
-<!-- Promo inferior -->
-<section class="container">
-  <div class="promo-card">
-    <div class="promo-header">
-      <h3>¿Querés una web como esta para tu negocio?</h3>
-      <div class="promo-badges">
-        <span class="promo-pill">⚡ Entrega rápida</span>
-        <span class="promo-pill">📱 100% responsive</span>
-        <span class="promo-pill">🧩 Panel para productos</span>
-        <span class="promo-pill">🔒 Hosting &amp; dominio opcional</span>
-        <span class="promo-pill">✉️ Soporte por email</span>
-      </div>
-    </div>
-    <div class="promo-actions">
-      <a class="btn promo-btn" href="https://wa.me/5493412272899?text=Hola,%20quiero%20presupuesto%20para%20una%20web" id="promoMail" rel="noopener" target="_blank">Pedí tu presupuesto</a>
-      <div class="promo-small">Creado por <strong>Sebastián Mascali</strong></div>
-    </div>
-  </div>
-</section>
-
-<!-- Footer (oculto por CSS del parche si no lo usás) -->
-<footer class="container footer" id="footerInfo"></footer>
-
-<script src="assets/js/promo.js"></script>
-<!-- bump de versión para forzar recarga del script -->
-<script src="app.js?v=2025-08-22-2"></script>
+  <script src="assets/js/promo.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>
