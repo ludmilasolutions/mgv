@@ -461,7 +461,7 @@
     const GH_OWNER  = "ludmilasolutions";
     const GH_REPO   = "mgv";
     const GH_BRANCH = "main";
-    function rawBase(sha){ return \`https://raw.githubusercontent.com/\${GH_OWNER}/\${GH_REPO}/\${sha||GH_BRANCH}/data\`; }
+    function rawBase(sha){ return \`https://raw.githubusercontent.com/${GH_OWNER}/${GH_REPO}/${sha||GH_BRANCH}/data\`; }
 
     function setLastSHA(sha){
       try{ if(!sha) return; localStorage.setItem('mgv_last_sha', sha);
