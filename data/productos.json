@@ -2,15 +2,15 @@
   {
     "id": "p1",
     "nombre": "Cuaderno A4 Tapa Dura",
-    "precio": 4000,
+    "precio": 3000,
     "categoria": "Librería",
-    "imagen": "https://raw.githubusercontent.com/ludmilasolutions/mgv/f5ca2db5243f618e9ffd84ae07dd4666c29f076b/assets/uploads/2025/08/1755988226381_whatsapp-image-2025-08-11-at-2.57.30-pm.jpeg",
+    "imagen": "https://raw.githubusercontent.com/ludmilasolutions/mgv/ea6b728e10ad24a7d3db02439f4cf6e4a4f2e10f/assets/uploads/2025/08/1756235490849_screenshot_20250722-190742_samsung-internet.jpg",
     "descripcion": "96 hojas rayadas, tapa dura."
   },
   {
     "id": "p2",
     "nombre": "Lapicera Gel Multicolor",
-    "precio": 0,
+    "precio": 1200,
     "categoria": "Librería",
     "imagen": "https://images.unsplash.com/photo-1526318472351-c75fcf070305?w=800&q=80",
     "descripcion": "Trazo suave, colores intensos."
@@ -18,7 +18,7 @@
   {
     "id": "p3",
     "nombre": "Taza personalizada",
-    "precio": 0,
+    "precio": 6000,
     "categoria": "Regalería",
     "imagen": "https://images.unsplash.com/photo-1517705008128-361805f42e86?w=800&q=80",
     "descripcion": "Cerámica, impresión full color."
@@ -26,7 +26,7 @@
   {
     "id": "p4",
     "nombre": "Almohadón estampado",
-    "precio": 0,
+    "precio": 7500,
     "categoria": "Regalería",
     "imagen": "https://images.unsplash.com/photo-1494438639946-1ebd1d20bf85?w=800&q=80",
     "descripcion": "45x45 cm, súper suave."
@@ -34,7 +34,7 @@
   {
     "id": "p5",
     "nombre": "Set marcadores flúo x6",
-    "precio": 0,
+    "precio": 2800,
     "categoria": "Ofertas",
     "imagen": "https://images.unsplash.com/photo-1584380931276-32aebf3a4906?w=800&q=80",
     "descripcion": "Alta visibilidad y durabilidad."
