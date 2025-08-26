@@ -76,7 +76,7 @@
     "nombre": "Sandwichera Panini/Grill Oryx OR-170",
     "precio": 42000,
     "categoria": "Electro",
-    "imagen": "https://tu-repo/assets/sandwichera-panini-oryx-or170.jpg",
+    "imagen": "https://raw.githubusercontent.com/ludmilasolutions/mgv/0fe9680862faed9c0686a35f68ad567f3587b6f6/assets/uploads/2025/08/1756238412081_screenshot_20250826-163822.png",
     "descripcion": "Parrilla tipo panini con tapa flotante. Ideal para sándwiches y grill."
   }
 ]
