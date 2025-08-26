@@ -4,7 +4,7 @@
     "nombre": "Sandwichera, Grill y Waffle 3 en 1 Dinax",
     "precio": 50000,
     "categoria": "Electro",
-    "imagen": "https://tu-repo/assets/sandwichera-dinax-3en1.jpg",
+    "imagen": "https://raw.githubusercontent.com/ludmilasolutions/mgv/e1f72439239cfeb67ae863eb1a059dd8a550c561/assets/uploads/2025/08/1756238300785_screenshot_20250826-163827.png",
     "descripcion": "Placas intercambiables: triángulos, grill y waffle. Antiadherente e indicadores de encendido/listo."
   },
   {
@@ -12,7 +12,7 @@
     "nombre": "Minipimer Sokany SK-02013 2 en 1 (600W)",
     "precio": 35000,
     "categoria": "Electro",
-    "imagen": "https://tu-repo/assets/minipimer-sokany-sk02013.jpg",
+    "imagen": "https://raw.githubusercontent.com/ludmilasolutions/mgv/116950d918a1e168e713c995be0766792357c59b/assets/uploads/2025/08/1756238315044_screenshot_20250826-163832.png",
     "descripcion": "Mixer de mano 2 en 1 con vaso. Pie de acero inoxidable. 600W."
   },
   {
@@ -20,7 +20,7 @@
     "nombre": "Mate tipo Stanley con bombilla",
     "precio": 15000,
     "categoria": "Regalería",
-    "imagen": "https://tu-repo/assets/mate-stanley-colores.jpg",
+    "imagen": "https://raw.githubusercontent.com/ludmilasolutions/mgv/69327bc4b8e5a31a8a430f27542f517bb6df2960/assets/uploads/2025/08/1756238319874_screenshot_20250826-163838.png",
     "descripcion": "Incluye bombilla. Colores sujetos a stock."
   },
   {
