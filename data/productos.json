@@ -1,42 +1,82 @@
 [
   {
     "id": "p1",
-    "nombre": "Cuaderno A4 Tapa Dura",
-    "precio": 4000,
-    "categoria": "Librería",
-    "imagen": "https://raw.githubusercontent.com/ludmilasolutions/mgv/1918e57093e009cc8510f071a6744486b7017e67/assets/uploads/2025/08/1756235912980_screenshot_20250722-190742_samsung-internet.jpg",
-    "descripcion": "96 hojas rayadas, tapa dura."
+    "nombre": "Sandwichera, Grill y Waffle 3 en 1 Dinax",
+    "precio": 50000,
+    "categoria": "Electro",
+    "imagen": "https://tu-repo/assets/sandwichera-dinax-3en1.jpg",
+    "descripcion": "Placas intercambiables: triángulos, grill y waffle. Antiadherente e indicadores de encendido/listo."
   },
   {
     "id": "p2",
-    "nombre": "Lapicera Gel Multicolor",
-    "precio": 1200,
-    "categoria": "Librería",
-    "imagen": "https://images.unsplash.com/photo-1526318472351-c75fcf070305?w=800&q=80",
-    "descripcion": "Trazo suave, colores intensos."
+    "nombre": "Minipimer Sokany SK-02013 2 en 1 (600W)",
+    "precio": 35000,
+    "categoria": "Electro",
+    "imagen": "https://tu-repo/assets/minipimer-sokany-sk02013.jpg",
+    "descripcion": "Mixer de mano 2 en 1 con vaso. Pie de acero inoxidable. 600W."
   },
   {
     "id": "p3",
-    "nombre": "Taza personalizada",
-    "precio": 6000,
+    "nombre": "Mate tipo Stanley con bombilla",
+    "precio": 15000,
     "categoria": "Regalería",
-    "imagen": "https://images.unsplash.com/photo-1517705008128-361805f42e86?w=800&q=80",
-    "descripcion": "Cerámica, impresión full color."
+    "imagen": "https://tu-repo/assets/mate-stanley-colores.jpg",
+    "descripcion": "Incluye bombilla. Colores sujetos a stock."
   },
   {
     "id": "p4",
-    "nombre": "Almohadón estampado",
-    "precio": 7500,
-    "categoria": "Regalería",
-    "imagen": "https://images.unsplash.com/photo-1494438639946-1ebd1d20bf85?w=800&q=80",
-    "descripcion": "45x45 cm, súper suave."
+    "nombre": "Lápiz Corrector Divo Ezco",
+    "precio": 550,
+    "categoria": "Librería",
+    "imagen": "https://tu-repo/assets/lapiz-corrector-divo-ezco.jpg",
+    "descripcion": "Lápiz corrector de punta fina. Secado rápido."
   },
   {
     "id": "p5",
-    "nombre": "Set marcadores flúo x6",
-    "precio": 2800,
-    "categoria": "Ofertas",
-    "imagen": "https://images.unsplash.com/photo-1584380931276-32aebf3a4906?w=800&q=80",
-    "descripcion": "Alta visibilidad y durabilidad."
+    "nombre": "Cartulinas de colores (unidad)",
+    "precio": 800,
+    "categoria": "Librería",
+    "imagen": "https://tu-repo/assets/cartulinas-colores.jpg",
+    "descripcion": "Cartulinas de colores surtidos. Precio por unidad."
+  },
+  {
+    "id": "p6",
+    "nombre": "Lápices Maped Color'Peps Strong x24",
+    "precio": 4000,
+    "categoria": "Librería",
+    "imagen": "https://tu-repo/assets/maped-colorpeps-strong-x24.jpg",
+    "descripcion": "Estuche x24. Mina 3.2 mm, extra resistente (resina)."
+  },
+  {
+    "id": "p7",
+    "nombre": "Lápices de colores Ezco Mito x12",
+    "precio": 770,
+    "categoria": "Librería",
+    "imagen": "https://tu-repo/assets/ezco-mito-x12.jpg",
+    "descripcion": "Caja x12. Trazo suave y parejo."
+  },
+  {
+    "id": "p8",
+    "nombre": "Termo con taza (diseños varios)",
+    "precio": 15500,
+    "categoria": "Regalería",
+    "imagen": "https://tu-repo/assets/termo-con-taza-varios.jpg",
+    "descripcion": "Termo con tapa/taza. Colores y diseños sujetos a stock."
+  },
+  {
+    "id": "p9",
+    "nombre": "Sandwichera Eléctrica 700W Kanji",
+    "precio": 26000,
+    "categoria": "Electro",
+    "imagen": "https://tu-repo/assets/sandwichera-kanji-700w.jpg",
+    "descripcion": "Placas triangulares antiadherentes. Indicadores de encendido/listo."
+  },
+  {
+    "id": "p10",
+    "nombre": "Sandwichera Panini/Grill Oryx OR-170",
+    "precio": 42000,
+    "categoria": "Electro",
+    "imagen": "https://tu-repo/assets/sandwichera-panini-oryx-or170.jpg",
+    "descripcion": "Parrilla tipo panini con tapa flotante. Ideal para sándwiches y grill."
   }
 ]
