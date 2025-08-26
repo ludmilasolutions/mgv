@@ -28,7 +28,7 @@
     "nombre": "Lápiz Corrector Divo Ezco",
     "precio": 550,
     "categoria": "Librería",
-    "imagen": "https://tu-repo/assets/lapiz-corrector-divo-ezco.jpg",
+    "imagen": "https://raw.githubusercontent.com/ludmilasolutions/mgv/0f334eed26a1530446ec05106e80a599fdae259a/assets/uploads/2025/08/1756238369127_screenshot_20250826-163850.png",
     "descripcion": "Lápiz corrector de punta fina. Secado rápido."
   },
   {
@@ -36,7 +36,7 @@
     "nombre": "Cartulinas de colores (unidad)",
     "precio": 800,
     "categoria": "Librería",
-    "imagen": "https://tu-repo/assets/cartulinas-colores.jpg",
+    "imagen": "https://raw.githubusercontent.com/ludmilasolutions/mgv/53a6aabe0276fa3a147b77d09ce2a8e4c3771c29/assets/uploads/2025/08/1756238376241_screenshot_20250826-163901.png",
     "descripcion": "Cartulinas de colores surtidos. Precio por unidad."
   },
   {
@@ -44,7 +44,7 @@
     "nombre": "Lápices Maped Color'Peps Strong x24",
     "precio": 4000,
     "categoria": "Librería",
-    "imagen": "https://tu-repo/assets/maped-colorpeps-strong-x24.jpg",
+    "imagen": "https://raw.githubusercontent.com/ludmilasolutions/mgv/a9a59dc0d00f1f492abfaf4f682fff76cbfbea4e/assets/uploads/2025/08/1756238384079_screenshot_20250826-163738.png",
     "descripcion": "Estuche x24. Mina 3.2 mm, extra resistente (resina)."
   },
   {
@@ -52,7 +52,7 @@
     "nombre": "Lápices de colores Ezco Mito x12",
     "precio": 770,
     "categoria": "Librería",
-    "imagen": "https://tu-repo/assets/ezco-mito-x12.jpg",
+    "imagen": "https://raw.githubusercontent.com/ludmilasolutions/mgv/70d42a2ade5bf18fecdce3b91b8299d417d8ead4/assets/uploads/2025/08/1756238388404_screenshot_20250826-163747.png",
     "descripcion": "Caja x12. Trazo suave y parejo."
   },
   {
@@ -60,7 +60,7 @@
     "nombre": "Termo con taza (diseños varios)",
     "precio": 15500,
     "categoria": "Regalería",
-    "imagen": "https://tu-repo/assets/termo-con-taza-varios.jpg",
+    "imagen": "https://raw.githubusercontent.com/ludmilasolutions/mgv/1fbfd3ae6b35835b7a89e314dc2a659c1e3c9a41/assets/uploads/2025/08/1756238393802_screenshot_20250826-163811.png",
     "descripcion": "Termo con tapa/taza. Colores y diseños sujetos a stock."
   },
   {
@@ -68,7 +68,7 @@
     "nombre": "Sandwichera Eléctrica 700W Kanji",
     "precio": 26000,
     "categoria": "Electro",
-    "imagen": "https://tu-repo/assets/sandwichera-kanji-700w.jpg",
+    "imagen": "https://raw.githubusercontent.com/ludmilasolutions/mgv/a8a1839b6f24b90b0567abde0907a99903f94bc4/assets/uploads/2025/08/1756238398719_screenshot_20250826-163816.png",
     "descripcion": "Placas triangulares antiadherentes. Indicadores de encendido/listo."
   },
   {
