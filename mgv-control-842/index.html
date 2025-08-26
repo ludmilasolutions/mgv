@@ -11,7 +11,6 @@
       --border:#e5e7eb; --muted:#6b7280; --brand:#0ea5e9; --accent:#f59e0b;
       --card-bg:#ffffff; --page-bg:#f8fafc;
     }
-    /* Base */
     html,body{height:100%}
     body{background:var(--page-bg);color:#0b1220;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;line-height:1.35}
     .wrap{max-width:1200px;margin:0 auto;padding:16px}
@@ -67,12 +66,8 @@
     .img-upload{display:inline-flex;align-items:center;gap:.5rem;padding:.5rem .75rem;border-radius:.75rem;border:1px solid var(--border);cursor:pointer;font-weight:600}
     .img-upload input[type=file]{display:none}
     .status-ok{color:#16a34a}.status-err{color:#b91c1c}
-
-    /* Botón flotante de guardado solo en móvil */
     .fab-save{position:fixed;right:16px;bottom:16px;z-index:60;border-radius:999px;padding:12px 16px;font-weight:700;box-shadow:0 10px 30px rgba(0,0,0,.2);display:none}
     .fab-save .dot{margin-left:8px;width:8px;height:8px;border-radius:50%;background:#10b981;display:inline-block}
-
-    /* ===== Responsive móvil ===== */
     @media (max-width:900px){
       .row,.row3{grid-template-columns:1fr}
       .table-wrap{overflow:auto}
@@ -81,17 +76,13 @@
       .btn.small{font-size:15px}
       .cardx{padding:14px}
     }
-    /* Tabla como tarjetas en pantallas pequeñas */
     @media (max-width:720px){
       table, thead, tbody, th, tr{display:block}
       thead{display:none}
       tbody{display:grid;gap:12px;padding:8px}
       tr{border:1px solid var(--border);border-radius:12px;background:#fff;padding:10px}
       td{display:flex;align-items:center;justify-content:space-between;border:none;padding:8px 6px}
-      td[data-label]::before{
-        content:attr(data-label);
-        font-size:12px;color:var(--muted);margin-right:8px;flex:0 0 auto;
-      }
+      td[data-label]::before{content:attr(data-label);font-size:12px;color:var(--muted);margin-right:8px;flex:0 0 auto;}
       td.col-aux{order:-10;display:flex;gap:8px}
       .drag-handle{font-size:18px}
       .td-actions{gap:8px}
@@ -461,7 +452,7 @@
     const GH_OWNER  = "ludmilasolutions";
     const GH_REPO   = "mgv";
     const GH_BRANCH = "main";
-    function rawBase(sha){ return \`https://raw.githubusercontent.com/${GH_OWNER}/${GH_REPO}/${sha||GH_BRANCH}/data\`; }
+    function rawBase(sha){ return `https://raw.githubusercontent.com/${GH_OWNER}/${GH_REPO}/${sha||GH_BRANCH}/data`; }
 
     function setLastSHA(sha){
       try{ if(!sha) return; localStorage.setItem('mgv_last_sha', sha);
@@ -471,7 +462,7 @@
     function getLastSHA(){
       try{ const u=new URL(location.href); const qs=u.searchParams.get('sha'); if(qs){ setLastSHA(qs); return qs; } }catch(_){}
       try{ const ls=localStorage.getItem('mgv_last_sha'); if(ls) return ls; }catch(_){}
-      try{ const m=document.cookie.match(/(?:^|;)\\s*mgvsha=([^;]+)/); if(m) return m[1]; }catch(_){}
+      try{ const m=document.cookie.match(/(?:^|;)\s*mgvsha=([^;]+)/); if(m) return m[1]; }catch(_){}
       return null;
     }
 
@@ -536,9 +527,9 @@
     async function loadTables(sha){
       const BASE = rawBase(sha || window.__MGV_PENDING_SHA);
       const ts = Date.now();
-      productos = await fetchJsonWithRetry(\`\${BASE}/productos.json?ts=\${ts}\`);
-      banners   = await fetchJsonWithRetry(\`\${BASE}/banners.json?ts=\${ts}\`);
-      config    = await fetchJsonWithRetry(\`\${BASE}/config.json?ts=\${ts}\`);
+      productos = await fetchJsonWithRetry(`${BASE}/productos.json?ts=${ts}`);
+      banners   = await fetchJsonWithRetry(`${BASE}/banners.json?ts=${ts}`);
+      config    = await fetchJsonWithRetry(`${BASE}/config.json?ts=${ts}`);
       window.__MGV_PENDING_SHA = null;
       computeCats();
       renderProductos();
@@ -683,7 +674,6 @@
         tbody.appendChild(tr);
       });
 
-      /* Drag & drop desktop */
       tbody.querySelectorAll("tr").forEach(tr=>{
         tr.addEventListener('dragstart', (e)=>{
           ui.dragging = tr.dataset.id; tr.classList.add('dragging'); e.dataTransfer.effectAllowed='move';
@@ -704,17 +694,14 @@
         tr.addEventListener('dragend', ()=>{ ui.dragging=null; tr.classList.remove('dragging'); });
       });
 
-      /* Selección */
       tbody.querySelectorAll('.rowChk').forEach(chk=>{
         chk.onchange = ()=>{ const id=String(chk.dataset.id); if(chk.checked) ui.selected.add(id); else ui.selected.delete(id); updateBulkButtons(); };
       });
 
-      /* Evitar zoom por scroll en inputs numéricos */
       tbody.querySelectorAll("input[type='number'][data-f='precio']").forEach(n=>{
         n.addEventListener('wheel', e=> e.preventDefault(), {passive:false});
       });
 
-      /* Inputs: sync + preview con bust */
       tbody.querySelectorAll("input.url, td input[type='text'], td input[type='number']").forEach(inp=>{
         const handler=()=>{
           const id=inp.dataset.id, f=inp.dataset.f; if(!id||!f) return;
@@ -734,7 +721,6 @@
         inp.addEventListener("change",handler);
       });
 
-      /* Upload imagen Productos */
       tbody.querySelectorAll("input[type=file][data-file]").forEach(fi=>{
         fi.addEventListener("change", async ()=>{
           const id=fi.dataset.file;
@@ -752,19 +738,18 @@
               urlInp.value=res.url;
               if(prev) prev.src=(window.bustURL||((x)=>x))(res.url);
               const p=productos.find(x=>String(x.id)===String(id)); if(p) p.imagen=res.url;
-              st.innerHTML = \`Listo ✔ <span class="muted">(\${res.latency||'?'} ms)</span>\`;
+              st.innerHTML = `Listo ✔ <span class="muted">(${res.latency||'?'} ms)</span>`;
               if(res.commitSha){ setLastSHA(res.commitSha); window.__MGV_PENDING_SHA=res.commitSha; }
               markDirty();
             }else{
-              st.innerHTML=\`<span class="status-err">Error: \${(res.error||"no se pudo subir")}</span>\`;
+              st.innerHTML=`<span class="status-err">Error: ${(res.error||"no se pudo subir")}</span>`;
             }
           }catch(e){
-            st.innerHTML=\`<span class="status-err">Error: \${e.message}</span>\`;
+            st.innerHTML=`<span class="status-err">Error: ${e.message}</span>`;
           }
         });
       });
 
-      /* Editar / borrar */
       tbody.querySelectorAll("[data-ed]").forEach(b=>{
         b.onclick=()=>{ const id=b.dataset.ed; const p=productos.find(x=>String(x.id)===String(id)); const d=prompt("Descripción",p.descripcion||""); if(d!==null){ p.descripcion=d; markDirty(); renderProductos(); } };
       });
@@ -772,7 +757,6 @@
         b.onclick=()=>{ const id=b.dataset.del; if(confirm("¿Eliminar producto?")){ productos=productos.filter(x=>String(x.id)!==String(id)); ui.selected.delete(String(id)); markDirty(); renderProductos(); } };
       });
 
-      /* Reordenar en móvil (↑ ↓) */
       tbody.querySelectorAll("[data-up]").forEach(btn=>{
         btn.onclick=()=>{
           const id=String(btn.dataset.up);
@@ -791,7 +775,6 @@
       updateBulkButtons();
     }
 
-    /* Filtros / paginación */
     document.getElementById('prodSearch').oninput = (e)=>{ ui.q=e.target.value; ui.page=1; renderProductos(); };
     document.getElementById('prodCatFilter').onchange = (e)=>{ ui.cat=e.target.value; ui.page=1; renderProductos(); };
     document.getElementById('fNoImg').onchange  = (e)=>{ ui.noImg=e.target.checked; ui.page=1; renderProductos(); };
@@ -809,7 +792,6 @@
       renderProductos();
     };
 
-    /* Acciones masivas */
     document.getElementById('bulkDelete').onclick = ()=>{
       if(!ui.selected.size) return;
       if(!confirm('¿Borrar los productos seleccionados?')) return;
@@ -854,7 +836,6 @@
         tbody.appendChild(tr);
       });
 
-      /* Inputs de banners (incluye imagen URL con preview + bust) */
       tbody.querySelectorAll("input").forEach(inp=>{
         const handler=()=>{
           const id=inp.dataset.id, f=inp.dataset.f; const bn=banners.find(x=>x.id===id); if(!bn) return;
@@ -869,7 +850,6 @@
         inp.addEventListener("input",handler); inp.addEventListener("change",handler);
       });
 
-      /* Subida de imagen para banners */
       tbody.querySelectorAll("input[type=file][data-bfile]").forEach(fi=>{
         fi.addEventListener("change", async ()=>{
           const id=fi.dataset.bfile;
@@ -887,19 +867,18 @@
               urlInp.value=res.url;
               if(prev) prev.src=(window.bustURL||((x)=>x))(res.url);
               const bn=banners.find(x=>x.id===id); if(bn) bn.imagen=res.url;
-              st.innerHTML = \`Listo ✔ <span class="muted">(\${res.latency||'?'} ms)</span>\`;
+              st.innerHTML = `Listo ✔ <span class="muted">(${res.latency||'?'} ms)</span>`;
               if(res.commitSha){ setLastSHA(res.commitSha); window.__MGV_PENDING_SHA=res.commitSha; }
               markDirty();
             }else{
-              st.innerHTML=\`<span class="status-err">Error: \${(res.error||"no se pudo subir")}</span>\`;
+              st.innerHTML=`<span class="status-err">Error: ${(res.error||"no se pudo subir")}</span>`;
             }
           }catch(e){
-            st.innerHTML=\`<span class="status-err">Error: \${e.message}</span>\`;
+            st.innerHTML=`<span class="status-err">Error: ${e.message}</span>`;
           }
         });
       });
 
-      /* Borrar / Nuevo */
       tbody.querySelectorAll("[data-del]").forEach(btn=>{
         btn.onclick=()=>{ const id=btn.dataset.del; if(confirm("¿Eliminar banner?")){ banners=banners.filter(x=>x.id!==id); markDirty(); renderBanners(); } };
       });
@@ -984,7 +963,7 @@
     function updateApiStatus(){
       const base=localStorage.getItem("mgv_apiBase");
       const tok =localStorage.getItem("mgv_saveToken");
-      document.getElementById("apiStatus").textContent=\`API: \${base||'sin URL'} · Token \${tok?'listo':'falta'}\`;
+      document.getElementById("apiStatus").textContent=`API: ${base||'sin URL'} · Token ${tok?'listo':'falta'}`;
     }
 
     async function testApi(){
@@ -1000,8 +979,8 @@
         const ms=Math.round(performance.now()-t0);
         let j={}; try{ j=await r.json(); }catch(_){}
         out.innerHTML = r.ok
-          ? \`Latencia: <b>\${ms} ms</b> · Versión: <b>\${j.version||j.ver||'n/d'}</b>\`
-          : \`Fallo (\${r.status}) en \${ms} ms\`;
+          ? `Latencia: <b>${ms} ms</b> · Versión: <b>${j.version||j.ver||'n/d'}</b>`
+          : `Fallo (${r.status}) en ${ms} ms`;
       }catch(e){ out.textContent="No se pudo conectar: "+e.message; }
     }
 
