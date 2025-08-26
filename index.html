@@ -8,23 +8,46 @@
   <link rel="icon" href="assets/logo.png"/>
   <link id="mainCss" rel="stylesheet" href="styles.css"/>
 
-  <!-- ======== Cache-buster universal (funciona en iOS/Android/Chrome/Safari) ======== -->
+  <!-- ====== 1) Sync de SHA entre dispositivos (GitHub API) ====== -->
+  <script>
+  (function(){
+    const ORG="ludmilasolutions", REPO="mgv", BR="main";
+    async function syncLatestSHA(){
+      try{
+        const r=await fetch(`https://api.github.com/repos/${ORG}/${REPO}/commits/${BR}`, {cache:'no-store'});
+        if(!r.ok) return;
+        const j=await r.json(); const sha=j && j.sha;
+        if(!sha) return;
+        try{
+          localStorage.setItem('mgv_last_sha', sha);
+          document.cookie='mgvsha='+sha+';path=/;max-age='+(60*60*24*30);
+        }catch(_){}
+        document.dispatchEvent(new CustomEvent('mgvsha:update',{detail:{sha}}));
+      }catch(_){}
+    }
+    // corre apenas abre
+    syncLatestSHA();
+  })();
+  </script>
+
+  <!-- ====== 2) Cache-buster universal de imágenes ====== -->
   <script>
   (function(){
     const ORG="ludmilasolutions", REPO="mgv";
     function getCookie(n){ const m=document.cookie.match(new RegExp('(?:^|;\\s*)'+n+'=([^;]+)')); return m?m[1]:null; }
     function isSha(x){ return /^[a-f0-9]{40}$/i.test(x||""); }
-    const commitSha = getCookie('mgvsha') || localStorage.getItem('mgv_last_sha');
-    const TAG = commitSha || String(Date.now());
+
+    let COMMIT_SHA = getCookie('mgvsha') || localStorage.getItem('mgv_last_sha') || "";
+    let TAG = COMMIT_SHA || String(Date.now());
 
     function rewriteRawToSha(u){
-      if(!u || !isSha(commitSha)) return u;
+      if(!u || !isSha(COMMIT_SHA)) return u;
       try{
         const url=new URL(u, location.href);
         if(url.hostname==='raw.githubusercontent.com'){
           const p=url.pathname.split('/').filter(Boolean);
           if(p.length>=3 && p[0]===ORG && p[1]===REPO && (p[2]==='main'||p[2]==='HEAD')){
-            p[2]=commitSha; url.pathname='/'+p.join('/');
+            p[2]=COMMIT_SHA; url.pathname='/'+p.join('/');
           }
         }
         return url.toString();
@@ -32,78 +55,33 @@
     }
     function addTag(u){
       if(!u) return u;
-      try{ const url=new URL(u, location.href); if(!url.searchParams.has('v')) url.searchParams.set('v', TAG); return url.toString(); }
+      try{ const url=new URL(u, location.href); url.searchParams.set('v', TAG); return url.toString(); }
       catch(_){ return u + (u.includes('?')?'&':'?') + 'v=' + encodeURIComponent(TAG); }
     }
     function bustURL(u){ return addTag(rewriteRawToSha(u)); }
 
-    // Forzar recarga real del binario en móviles sin SHA (Safari suele ignorar el querystring)
-    async function hardReloadIfRaw(imgEl, originalUrl){
-      if(isSha(commitSha)) return; // si ya tenemos sha, el path cambió y no hace falta
-      try{
-        const u=new URL(originalUrl, location.href);
-        if(u.hostname!=='raw.githubusercontent.com') return;
-      }catch(_){ return; }
-      if(imgEl.dataset.mgvHard==='1') return;
-      imgEl.dataset.mgvHard='1';
-      try{
-        const resp=await fetch(originalUrl, {cache:'reload', mode:'cors'});
-        if(!resp.ok) return;
-        const blob=await resp.blob();
-        const obj=URL.createObjectURL(blob);
-        imgEl.src=obj;
-      }catch(_){}
-    }
-
-    // srcset buster
+    // srcset
     function bustSrcset(s){
       if(!s) return s;
       return s.split(',').map(part=>{
-        const trimmed=part.trim();
-        const sp=trimmed.split(/\s+/);
-        const url=sp[0];
-        const desc=sp.slice(1).join(' ');
-        const busted=bustURL(url);
-        return (desc ? (busted+' '+desc) : busted);
+        const t=part.trim(); const sp=t.split(/\s+/); const url=sp[0]; const desc=sp.slice(1).join(' ');
+        const b=bustURL(url); return desc ? (b+' '+desc) : b;
       }).join(', ');
     }
 
-    // Parchear setters para atrapar TODAS las asignaciones
-    const imgDesc = Object.getOwnPropertyDescriptor(HTMLImageElement.prototype, 'src');
-    Object.defineProperty(HTMLImageElement.prototype, 'src', {
-      set(value){
-        const orig = String(value||'');
-        const busted = bustURL(orig);
-        hardReloadIfRaw(this, orig);
-        return imgDesc.set.call(this, busted);
-      },
-      get(){ return imgDesc.get.call(this); }
-    });
-    const origImgSetAttr = HTMLImageElement.prototype.setAttribute;
-    HTMLImageElement.prototype.setAttribute = function(name, value){
-      if(name==='src'){ const orig=String(value||''); const busted=bustURL(orig); hardReloadIfRaw(this, orig); return origImgSetAttr.call(this, name, busted); }
-      if(name==='srcset'){ return origImgSetAttr.call(this, name, bustSrcset(String(value||''))); }
-      return origImgSetAttr.call(this, name, value);
-    };
-    // <source> dentro de <picture>
-    const origSourceSetAttr = HTMLSourceElement && HTMLSourceElement.prototype.setAttribute;
-    if(origSourceSetAttr){
-      HTMLSourceElement.prototype.setAttribute=function(name, value){
-        if(name==='srcset'){ return origSourceSetAttr.call(this, name, bustSrcset(String(value||''))); }
-        if(name==='src'){ return origSourceSetAttr.call(this, name, bustURL(String(value||''))); }
-        return origSourceSetAttr.call(this, name, value);
-      };
-    }
-
+    // Aplicar a un elemento
     function applyToElement(el){
       if(!el) return;
       if(el.tagName==='IMG'){
-        const raw=el.getAttribute('src') || el.src || '';
-        if(raw){ const busted=bustURL(raw); if(raw!==busted) el.src=busted; hardReloadIfRaw(el, raw); }
-        const ss=el.getAttribute('srcset'); if(ss){ const bss=bustSrcset(ss); if(bss!==ss) el.setAttribute('srcset', bss); }
+        const raw = el.getAttribute('src') || el.src || '';
+        if(raw){ const b=bustURL(raw); if(raw!==b) el.src=b; }
+        const ss = el.getAttribute('srcset');
+        if(ss){ const bss=bustSrcset(ss); if(bss!==ss) el.setAttribute('srcset', bss); }
       }else if(el.tagName==='SOURCE'){
-        const ss=el.getAttribute('srcset'); if(ss){ const bss=bustSrcset(ss); if(bss!==ss) el.setAttribute('srcset', bss); }
-        const s2=el.getAttribute('src'); if(s2){ const bs=bustURL(s2); if(bs!==s2) el.setAttribute('src', bs); }
+        const ss = el.getAttribute('srcset');
+        if(ss){ const bss=bustSrcset(ss); if(bss!==ss) el.setAttribute('srcset', bss); }
+        const s2 = el.getAttribute('src');
+        if(s2){ const bs=bustURL(s2); if(bs!==s2) el.setAttribute('src', bs); }
       }else{
         const st = el.style && el.style.backgroundImage;
         if(st && /url\((["']?)(.+?)\1\)/.test(st)){
@@ -115,6 +93,16 @@
     function applyToTree(root){
       root.querySelectorAll && root.querySelectorAll('img,source,[style*="background-image"]').forEach(applyToElement);
     }
+
+    // re-aplicar cuando llega SHA nuevo
+    document.addEventListener('mgvsha:update', (e)=>{
+      const sha=e && e.detail && e.detail.sha;
+      if(sha && sha!==COMMIT_SHA){
+        COMMIT_SHA=sha; TAG=sha;
+        const css=document.getElementById('mainCss'); if(css && css.href) css.href = addTag(css.href);
+        applyToTree(document);
+      }
+    });
 
     document.addEventListener('DOMContentLoaded', function(){
       const css=document.getElementById('mainCss'); if(css && css.href) css.href = addTag(css.href);
@@ -128,12 +116,12 @@
         });
       });
       obs.observe(document.body, {childList:true, subtree:true, attributes:true, attributeFilter:['src','srcset','style']});
+      // expongo por si otro script lo necesita
+      window.__mgvBustURL = bustURL;
     });
-    // Exponer por si se necesita en otros scripts
-    window.__mgvBustURL = bustURL;
   })();
   </script>
-  <!-- ======================================================================== -->
+  <!-- ============================================================ -->
 
   <script>
     window.ENV = { GH_OWNER: "ludmilasolutions", GH_REPO: "mgv", GH_BRANCH: "main" };
